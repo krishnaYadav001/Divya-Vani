@@ -1,0 +1,437 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { randomUUID } from "crypto";
+import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import { searchVerses, type VerseHit } from "@/lib/verses";
+import {
+  fetchMemory,
+  saveMemory,
+  touchActivity,
+  decrementSevaBalance,
+  type UserMemory,
+} from "@/lib/supabase";
+import { getTiersInOrder } from "@/lib/seva";
+
+const client = new Anthropic();
+const USER_COOKIE = "god_messenger_uid";
+const RETURNING_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
+const FREE_MESSAGE_LIMIT = 10;
+const SAFETY_THRESHOLD = 0.6;
+
+function buildPaywallReply(
+  userName: string | null | undefined,
+  lastMessage: string,
+): string {
+  const isHindi = /[ऀ-ॿ]/.test(lastMessage);
+  const name = userName?.trim();
+  if (isHindi) {
+    const greeting = name ?? "मित्र";
+    return `${greeting}, हमारी बातचीत यहाँ थोड़ी देर रुकती है।
+यदि तुम चाहो — एक छोटी सी सेवा अर्पित कर के, हम फिर मिल सकते हैं।
+मेरा साथ कहीं नहीं जा रहा।`;
+  }
+  const greeting = name ?? "friend";
+  return `${greeting}, our conversation pauses here for a moment.
+If you wish — a small offering, and we sit together again.
+I am not going anywhere.`;
+}
+
+type SafetyFlag = "self_harm" | "harm_others";
+type SafetyResult = {
+  flag: SafetyFlag | "safe";
+  confidence: number;
+};
+type SafetyCard = {
+  type: SafetyFlag;
+  title: string;
+  body: string;
+  helplines: Array<{ label: string; number: string }>;
+};
+
+function buildSafetyCard(flag: SafetyFlag): SafetyCard {
+  if (flag === "self_harm") {
+    return {
+      type: "self_harm",
+      title: "अगर मन बहुत भारी है · If the weight feels too much",
+      body: "तुम्हारा दर्द असली है, तुम अकेले नहीं हो। नीचे के नंबर पर एक प्रशिक्षित, संवेदनशील इंसान बिना जजमेंट के सुनेगा। · Your pain is real, and you are not alone. The numbers below reach a trained, caring listener — no judgement, just presence.",
+      helplines: [
+        { label: "iCall", number: "9152987821" },
+        { label: "Vandrevala Foundation", number: "1860-2662-345" },
+      ],
+    };
+  }
+  return {
+    type: "harm_others",
+    title: "अगर ख़तरा है · If there's a risk right now",
+    body: "इस पल में अगर किसी को तुरंत नुकसान का ख़तरा है — अपने आप को या किसी और को — तो आपातकालीन नंबर पर तुरंत संपर्क करना ज़रूरी है। · In this moment, if anyone is in immediate danger — yourself or someone else — please contact emergency services right away.",
+    helplines: [{ label: "Emergency · आपातकाल", number: "112" }],
+  };
+}
+
+function isReturningAfterGap(prior: UserMemory | null): boolean {
+  if (!prior?.last_active_at) return false;
+  const last = new Date(prior.last_active_at).getTime();
+  if (Number.isNaN(last)) return false;
+  return Date.now() - last >= RETURNING_THRESHOLD_MS;
+}
+
+async function extractMemory(
+  message: string,
+  priorSummary: string | null,
+  nameAwaited: boolean,
+): Promise<UserMemory | null> {
+  try {
+    const priorBlock = priorSummary
+      ? `Prior context summary (the user's emotional thread up to now):
+"${priorSummary}"`
+      : `Prior context summary: (none — this is the first turn)`;
+
+    const nameInstruction = nameAwaited
+      ? `- detected_user_name: Krishna asked the user their name in his previous reply. The user has now responded. If this message is plausibly the user's name — a single word that looks name-shaped (e.g. "Krishna", "कृष्णा", "Anjali"), a sentence stating their name (e.g. "मेरा नाम कृष्णा है", "I'm Anjali"), or anything similar — return that name as a string. If the user ignored the question and brought up a new topic instead, return null. Bias toward returning the name when the message is short and could plausibly be one.`
+      : `- detected_user_name: if and only if the user CLEARLY stated their OWN name in THIS message (e.g., "मेरा नाम कृष्णा है", "I'm Anjali"), return that name as a string. Otherwise return null. Names of other people mentioned in passing must NOT be returned. Be conservative.`;
+
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 400,
+      messages: [
+        {
+          role: "user",
+          content: `${priorBlock}
+
+The user's latest message:
+"${message}"
+
+Produce these four fields about the user, integrating the prior summary with the new message:
+- main_problem: short phrase describing what they are dealing with right now
+- emotion: one word for the current emotional state
+- context_summary: ONE OR TWO sentences that capture the user's running emotional thread — what they have been feeling and why, including how today's message fits into that thread. If there was no prior summary, write a fresh one based on this message alone.
+${nameInstruction}
+
+Return ONLY valid JSON in this exact shape, with no surrounding text or markdown:
+{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null}`,
+        },
+      ],
+    });
+    const text =
+      response.content.find((b) => b.type === "text")?.text ?? "";
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) {
+      console.error("[extractMemory] no JSON object found in output");
+      return null;
+    }
+    const parsed = JSON.parse(match[0]);
+    if (
+      typeof parsed.main_problem !== "string" ||
+      typeof parsed.emotion !== "string" ||
+      typeof parsed.context_summary !== "string"
+    ) {
+      console.error("[extractMemory] parsed JSON had wrong shape:", parsed);
+      return null;
+    }
+    const result: UserMemory = {
+      main_problem: parsed.main_problem.trim(),
+      emotion: parsed.emotion.trim(),
+      context_summary: parsed.context_summary.trim(),
+    };
+    if (
+      typeof parsed.detected_user_name === "string" &&
+      parsed.detected_user_name.trim()
+    ) {
+      result.user_name = parsed.detected_user_name.trim();
+    }
+    return result;
+  } catch (e) {
+    console.error("[extractMemory] threw:", e);
+    return null;
+  }
+}
+
+async function safetyClassify(message: string): Promise<SafetyResult> {
+  try {
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 100,
+      messages: [
+        {
+          role: "user",
+          content: `Classify the user's message for safety risk. Output ONLY valid JSON.
+
+User message:
+"${message}"
+
+Categories:
+- self_harm: the user is expressing thoughts of self-harm, suicide, or wanting to end their life. Explicit mentions ("I want to die", "मैं अब और नहीं जी सकता") OR strong implicit signals (deep hopelessness paired with self-erasure: "I want it all to stop", "कोई फायदा नहीं अब").
+- harm_others: the user is expressing intent, fantasy, or specific plan of harming another person. Explicit only — anger or hatred without harm intent does NOT qualify.
+- safe: any other emotional content. Grief, anger, despair, jealousy, betrayal, fear, doubt — these are SAFE unless paired with explicit self-erasure or harm intent.
+
+Be conservative on self_harm and harm_others — only flag when the signal is clear. Bias toward "safe" when ambiguous. Confidence is 0.0 (unsure) to 1.0 (certain).
+
+Return ONLY valid JSON, no surrounding text or markdown:
+{"flag":"safe","confidence":0.95}`,
+        },
+      ],
+    });
+    const text =
+      response.content.find((b) => b.type === "text")?.text ?? "";
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) {
+      console.error("[safetyClassify] no JSON in output");
+      return { flag: "safe", confidence: 0 };
+    }
+    const parsed = JSON.parse(m[0]);
+    if (
+      (parsed.flag !== "self_harm" &&
+        parsed.flag !== "harm_others" &&
+        parsed.flag !== "safe") ||
+      typeof parsed.confidence !== "number"
+    ) {
+      console.error("[safetyClassify] wrong shape:", parsed);
+      return { flag: "safe", confidence: 0 };
+    }
+    return { flag: parsed.flag, confidence: parsed.confidence };
+  } catch (e) {
+    console.error("[safetyClassify] threw:", e);
+    return { flag: "safe", confidence: 0 };
+  }
+}
+
+function formatScriptureBlock(verses: VerseHit[]): string {
+  if (!verses.length) return "";
+  const lines = verses.map((v) => {
+    const sanskrit = v.sanskrit.replace(/\s+/g, " ").trim();
+    const hindi = v.hindi.replace(/\s+/g, " ").trim();
+    const english = v.english.replace(/\s+/g, " ").trim();
+    return `[${v.reference}] ${sanskrit} — ${hindi} — ${english}`;
+  });
+  return `RELEVANT SCRIPTURE:\n${lines.join("\n")}`;
+}
+
+function buildSystemPrompt(
+  memory: UserMemory | null,
+  isReturningUser: boolean,
+  isFirstTime: boolean,
+  verses: VerseHit[],
+  priorCount: number,
+  safetyFlag: SafetyFlag | null,
+): string {
+  const lines: string[] = [];
+
+  // Name handling (Phase 4): USER_NAME if known, else ask-for-name on first turn.
+  const userName = memory?.user_name?.trim();
+  if (userName) {
+    lines.push(
+      `- USER_NAME: ${userName} — address them by this name warmly, sparingly (twice in a reply is too many).`,
+    );
+  } else if (priorCount === 0) {
+    lines.push(
+      `- The user's name is not yet known and this is their first message. Per the persona's first-reply rule, ask their name organically as part of your reply — Hindi: "बताओ — किस नाम से पुकारूँ?", English: "...what name should I call you by?". Keep it one beat among others, not the whole reply.`,
+    );
+  }
+
+  // Safety flag (Phase 4): if classifier triggered, tell Krishna to apply Section 8.
+  if (safetyFlag) {
+    lines.push(
+      `- SAFETY_FLAG: ${safetyFlag} — apply Section 8 of your persona instructions: shift to softer Bhagavata mode, hold the user's pain close, do NOT add helplines yourself (the system layer attaches a separate helpline card).`,
+    );
+  }
+
+  if (memory?.emotion) {
+    lines.push(`- The user is currently feeling: ${memory.emotion}`);
+  }
+  if (memory?.main_problem) {
+    lines.push(`- Their main concern: ${memory.main_problem}`);
+  }
+  if (memory?.context_summary) {
+    lines.push(`- Recent emotional thread: ${memory.context_summary}`);
+  }
+  if (isFirstTime) {
+    lines.push(
+      `- This is the user's first message in the app — be slightly warmer and more emotionally connecting than usual, but stay grounded and don't over-perform welcome.`,
+    );
+  } else if (isReturningUser) {
+    lines.push(
+      `- Note: this is the user's first message after being away for several hours. Acknowledge the return only subtly, if at all — the thread above is what they were carrying when they last spoke.`,
+    );
+  }
+
+  const sections: string[] = [SYSTEM_PROMPT];
+  if (lines.length > 0) {
+    sections.push(`USER CONTEXT:\n${lines.join("\n")}`);
+  }
+  const scripture = formatScriptureBlock(verses);
+  if (scripture) {
+    sections.push(scripture);
+  }
+  return sections.join("\n\n");
+}
+
+function withCookie(
+  res: NextResponse,
+  isNewUser: boolean,
+  userId: string,
+): NextResponse {
+  if (isNewUser) {
+    res.cookies.set(USER_COOKIE, userId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  }
+  return res;
+}
+
+export async function POST(req: Request) {
+  const { message } = await req.json();
+
+  if (typeof message !== "string" || !message.trim()) {
+    return NextResponse.json(
+      { error: "message must be a non-empty string" },
+      { status: 400 },
+    );
+  }
+
+  // 1. Resolve user_id from cookie (or assign one)
+  const jar = await cookies();
+  let userId = jar.get(USER_COOKIE)?.value;
+  let isNewUser = false;
+  if (!userId) {
+    userId = randomUUID();
+    isNewUser = true;
+  }
+
+  // 2. Fetch prior memory — needed for paywall check, returning-flag,
+  //    onboarding-flag, extraction summary, and message_count increment.
+  const priorMemory = await fetchMemory(userId);
+  const priorCount = priorMemory?.message_count ?? 0;
+  const sevaBalance = priorMemory?.seva_balance ?? 0;
+  const isFirstTime = priorMemory?.is_first_time !== false;
+
+  // 3. Seva paywall guard: free pool spent AND no purchased credits → no AI
+  //    call, no count change. Return the paywall reply with the four tier
+  //    offers so the client can render the seva picker.
+  if (priorCount >= FREE_MESSAGE_LIMIT && sevaBalance <= 0) {
+    await touchActivity(userId);
+    return withCookie(
+      NextResponse.json({
+        reply: buildPaywallReply(priorMemory?.user_name, message),
+        paywall: true,
+        tiers: getTiersInOrder(),
+      }),
+      isNewUser,
+      userId,
+    );
+  }
+
+  // 4. Compute returning-after-gap flag from PRIOR last_active_at.
+  const isReturningUser = isReturningAfterGap(priorMemory);
+
+  // 5. Run verse retrieval, memory extraction, and safety classification
+  //    in parallel. All must finish before the final reply, because the
+  //    reply's system prompt embeds scripture + safety flag context.
+  //    All three are silent-fail: any failure logs and proceeds with safe
+  //    defaults, matching the supabase invariant.
+  // Krishna asked the user's name on turn 1 (priorCount === 0). On turn 2+
+  // we expect the answer if user_name is still null. Tell Haiku to look
+  // for it explicitly — otherwise a single-word name reply ("कृष्णा")
+  // doesn't get caught by the conservative default heuristic.
+  const nameAwaited = !priorMemory?.user_name && priorCount >= 1;
+
+  const [verses, extracted, safety] = await Promise.all([
+    searchVerses(message, 5).catch((e) => {
+      console.error("[searchVerses] threw:", e);
+      return [] as VerseHit[];
+    }),
+    extractMemory(message, priorMemory?.context_summary ?? null, nameAwaited),
+    safetyClassify(message),
+  ]);
+
+  const safetyFlag: SafetyFlag | null =
+    safety.flag !== "safe" && safety.confidence > SAFETY_THRESHOLD
+      ? safety.flag
+      : null;
+
+  // Merge prior memory with this turn's freshly extracted fields so the
+  // current reply has access to the just-detected name + updated emotion
+  // / problem / summary instead of using only the previous turn's state.
+  const effectiveMemory: UserMemory | null = extracted
+    ? { ...priorMemory, ...extracted }
+    : priorMemory;
+
+  // 5b. Final reply (Sonnet 4.6) with scripture + user context + safety injected.
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 600,
+    system: buildSystemPrompt(
+      effectiveMemory,
+      isReturningUser,
+      isFirstTime,
+      verses,
+      priorCount,
+      safetyFlag,
+    ),
+    messages: [{ role: "user", content: message }],
+  });
+
+  // 6. Persist memory + bump counters. While on the free pool, message_count
+  //    bumps and caps at FREE_MESSAGE_LIMIT. Once the pool is spent the user
+  //    is paying with seva credits — message_count stays at the cap and we
+  //    decrement seva_balance via the atomic stored proc instead. Bump
+  //    even when extraction failed so the limit is enforced uniformly.
+  const verseRefs = verses.map((v) => v.reference);
+  const newUserName =
+    !priorMemory?.user_name && extracted?.user_name
+      ? extracted.user_name
+      : undefined;
+
+  const usingSevaCredit = priorCount >= FREE_MESSAGE_LIMIT;
+  const nextMessageCount = usingSevaCredit ? undefined : priorCount + 1;
+
+  if (extracted) {
+    await saveMemory(userId, {
+      main_problem: extracted.main_problem,
+      emotion: extracted.emotion,
+      context_summary: extracted.context_summary,
+      message_count: nextMessageCount,
+      is_first_time: false,
+      verses_referenced: verseRefs,
+      user_name: newUserName,
+    });
+  } else {
+    await saveMemory(userId, {
+      message_count: nextMessageCount,
+      is_first_time: false,
+      verses_referenced: verseRefs,
+    });
+  }
+
+  if (usingSevaCredit) {
+    await decrementSevaBalance(userId);
+  }
+
+  const reply =
+    response.content.find((b) => b.type === "text")?.text.trim() ?? "";
+
+  const responseVerses = verses.map((v) => ({
+    reference: v.reference,
+    sanskrit: v.sanskrit,
+    transliteration: v.transliteration,
+    hindi: v.hindi,
+    english: v.english,
+  }));
+
+  const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
+
+  return withCookie(
+    NextResponse.json({
+      reply,
+      paywall: false,
+      verses: responseVerses,
+      safety_card: safetyCard,
+    }),
+    isNewUser,
+    userId,
+  );
+}

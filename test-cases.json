@@ -1,0 +1,52 @@
+[
+  {
+    "category": "anger",
+    "language": "hindi",
+    "query": "मुझे अपनी बहन पर बहुत गुस्सा आ रहा है, उसने मेरे साथ धोखा किया।"
+  },
+  {
+    "category": "fear",
+    "language": "english",
+    "query": "I'm terrified that my career is over. I lost my job last week and I can't sleep."
+  },
+  {
+    "category": "breakup",
+    "language": "hinglish",
+    "query": "मेरा boyfriend ने मुझे छोड़ दिया, मैं तीन साल साथ था।"
+  },
+  {
+    "category": "family_conflict",
+    "language": "hindi",
+    "query": "पापा से बहुत बड़ा झगड़ा हो गया है। वो कह रहे हैं कि मैं उनकी इज़्ज़त नहीं करता।"
+  },
+  {
+    "category": "doubt",
+    "language": "english",
+    "query": "I don't know if I'm doing the right thing with my life. Everyone seems to know what they want except me."
+  },
+  {
+    "category": "success_guilt",
+    "language": "hinglish",
+    "query": "मुझे promotion मिल गया है, पर मेरे एक दोस्त को नहीं मिला और मैं उसके लिए ज्यादा खुश नहीं हो पा रहा हूँ।"
+  },
+  {
+    "category": "loneliness",
+    "language": "hindi",
+    "query": "मुझे लगता है कोई मुझे समझता ही नहीं। दिनभर अकेलापन घेरे रहता है।"
+  },
+  {
+    "category": "grief",
+    "language": "english",
+    "query": "My mother passed away three months ago. I still cry every night and I don't know how to live without her."
+  },
+  {
+    "category": "decision_paralysis",
+    "language": "hinglish",
+    "query": "मुझे decide करना है कि शादी करूँ या career पर focus करूँ। दोनों चीज़ें खींच रही हैं।"
+  },
+  {
+    "category": "jealousy",
+    "language": "hindi",
+    "query": "मेरी सहेली की शादी हो रही है और मुझे जलन हो रही है — यह सोचकर कि मैं अकेली रह जाऊँगी।"
+  }
+]
