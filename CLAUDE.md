@@ -50,7 +50,7 @@ These are foundation decisions. Do not propose alternatives unless the founder e
 9. **Voice / video:** NOT in v1. Text-only. Hindi one-way TTS arrives Phase 10 inside the Krishna Voice tier (₹999/mo); async voice messaging Phase 12; real-time voice call Phase 13 (Krishna Premium ₹2,999/mo). Animated / lip-synced AI video avatars and real-time video calling are explicitly NEVER planned — see "Post-launch pricing ladder" for full rationale.
 10. **Verse citations:** Inline natural mention in Krishna's reply ("as I told Arjuna long ago...") + expandable card showing Sanskrit + Hindi + English. UI surfaces the reference number, not Krishna.
 11. **Pricing (v1):** Pay-as-you-go only. Razorpay one-time UPI checkout — Razorpay Subscriptions module is NOT integrated in v1. Free tier: 10 messages, no expiry. Four one-time seva tiers — Pratham Seva ₹11 / 6 msg, Anjali Seva ₹51 / 30 msg, Bhakti Seva ₹101 / 60 msg, Param Seva ₹501 / 350 msg. All tiers profitable standalone (margins 34–49% after Razorpay 2.36% fees and ~₹0.92/msg API cost). No loss-leaders, no subsidy logic, no time-based unlimited. Subscriptions arrive Phase 9 — see "Post-launch pricing ladder."
-12. **Languages:** Hindi-first, English supported equally, Sanskrit accepted. Krishna replies in whichever language the user wrote in (Hindi → Hindi, English → English, Sanskrit → Sanskrit). Verse cards always show Sanskrit + transliteration + Hindi + English regardless of reply language. Sanskrit input is expected to be rare in practice; the code path stays open but optimization effort goes to Hindi/English.
+12. **Languages:** Hindi-first, English supported equally, Sanskrit accepted. Krishna replies in whichever language the user wrote in: Hindi → Hindi, English → English. Sanskrit input is met with quoted Gita/Mahabharata scripture + a brief Hindi explanation — Krishna does NOT generate original Sanskrit prose. Verse cards always show Sanskrit + transliteration + Hindi + English regardless of reply language. Sanskrit input is expected to be rare in practice; the code path stays open but optimization effort goes to Hindi/English.
 13. **Refusals:** Sexual content, instructions to harm others, anything illegal under Indian law. Refuse in-character with grace; never lecture.
 
 ---
@@ -110,17 +110,56 @@ src/
 scripts/                            (project root, not under src/)
 ├── ingest-gita.ts                  Embed Gita verses into Supabase (Phase 1).
 │                                   npm run ingest:gita / ingest:gita:dry
+├── regenerate-hindi.ts             Regenerate Gita Hindi via Sonnet 4.6 + v3
+│                                   prompt (Phase 1 license remediation,
+│                                   2026-04-28). npm run regen:hindi(:dry).
+├── parse-mahabharata.ts            Parse Ganguli English MBh into chunks
+│                                   (Phase 1.5 parser, 1,844 chunks emitted).
+├── run-mahabharata-corpus.ts       Driver: runs parse across all 23
+│                                   curated parva-section ranges.
+├── regenerate-hindi-mahabharata.ts Regenerate MBh Hindi via Sonnet 4.6 + v3
+│                                   + prose addendum, concurrency 3,
+│                                   resume-safe (Phase 1.5).
+│                                   npm run regen:hindi:mahabharata(:dry).
+├── fix-em-dash-endings.ts          Phase 1.5 post-process: merges pairs
+│                                   where chunk N ends in em-dash and chunk
+│                                   N+1 continues the sentence; strips
+│                                   trailing translator footnotes (— टी.).
+│                                   Reduced 1,844 → 1,704 chunks.
+├── ingest-mahabharata.ts           Embed cleaned MBh chunks into Supabase
+│                                   (Phase 1.5). Retry-on-429 + 500ms
+│                                   inter-call delay + cost tracking.
+│                                   npm run ingest:mahabharata(:dry).
 ├── test-search.ts                  10-query verse retrieval test (Phase 1).
 │                                   npm run test:search
 └── test-prompt.ts                  Run system prompt against test queries
                                     (Phase 3)
 
 data/                               (project root, not under src/)
-└── gita.json                       701-verse Gita corpus (Sanskrit +
-                                    regenerated Hindi + Sivananda English).
-                                    ~730 KB, committed.
-                                    Attribution and license: see "Phase 1
-                                    corpus sources" below.
+├── gita.json                       701-verse Gita corpus (Sanskrit +
+│                                   regenerated Hindi + Sivananda English).
+│                                   ~730 KB, committed.
+│                                   See "Phase 1 corpus sources" below.
+├── mahabharata.json                Phase 1.5 parser output: 1,844 chunks
+│                                   (English + chunkN/wordCount/warnings,
+│                                   no Hindi yet). Preserved as parse
+│                                   baseline.
+├── mahabharata-regenerated.json    1,844 chunks with regenerated Hindi.
+│                                   Output of regenerate-hindi-mahabharata.ts
+│                                   (~₹2,714 total Sonnet 4.6 spend).
+│                                   Preserved as backup.
+├── mahabharata-regenerated-cleaned.json
+│                                   1,704 chunks after em-dash post-process
+│                                   merge (138 sentence-bisect pairs joined,
+│                                   2 translator footnotes stripped). This
+│                                   is the file ingested into Supabase.
+└── mahabharata-raw/                Source ground truth for the MBh parser:
+                                    ganguli/ (Roy/Ganguli English, archive
+                                    .org PD plain-text, 12 vols),
+                                    sanskrit-bori/ (BORI critical edition,
+                                    deferred to Phase 9+ audit),
+                                    sanskrit-kumbakonam/ (Southern recension,
+                                    not used in v1).
 
 docs/
 ├── build-roadmap.md                14-week phase plan
@@ -148,6 +187,16 @@ docs/
 - **Sanskrit:** github.com/gita/gita (verse text only — millennia-old PD; mechanical encoding low copyright bar)
 - **English:** Swami Sivananda translation via github.com/gita/gita (PD in India under life+60 rule; Sivananda d. 1963)
 - **Hindi:** regenerated via Claude Sonnet 4.6 from Sanskrit + English on 2026-04-28 using v3 system prompt (modern Hindi with scriptural dignity, classical Devanagari conjuncts). Original Tejomayananda translation dropped due to active copyright.
+
+---
+
+## Phase 1.5 corpus sources
+
+- **English:** Kisari Mohan Ganguli / Pratap Chandra Roy translation (1883–1896, PD worldwide), via 12-volume plain-text edition on archive.org.
+- **Hindi:** regenerated 2026-04-30 via Claude Sonnet 4.6 from English using v3 system prompt + Mahabharata prose addendum ("Sanskrit may be partial or absent; translate based on English; preserve Sanskrit philosophical terms"). Total Sonnet spend ₹2,714 across 1,844 chunks.
+- **Sanskrit:** intentionally **NOT attached** at this phase. BORI critical edition was downloaded but deferred per `docs/decisions.md` 2026-04-29 decision. All MBh rows in `verses` have `sanskrit = ''` and `sanskrit_source = NULL`. Sanskrit alignment is a Phase 9+ audit.
+- **Curation:** 13 parvas across 23 curated section ranges per `docs/decisions.md` 2026-04-29 audit (rounds 1 + 2). Excludes Sauptika 1–12 (massacre prose, no Krishna), Adi pre-218 (background mythology), Anushasana / Ashramavasika / Mahaprasthanika / Svargarohanika.
+- **Post-process:** `fix-em-dash-endings.ts` merged 138 sentence-bisected pairs (chunker artefact at original Ganguli line endings), reducing 1,844 → 1,704 chunks. 18 mid-word/ellipsis truncation chunks remain — deferred to Phase 2 RAG retuning or future parser improvements.
 
 ---
 
@@ -187,10 +236,12 @@ Note: legacy `is_paid` column from God Messenger era is dropped in Phase 5 in fa
 | `hindi` | text | |
 | `english` | text | |
 | `themes` | text[] | `['fear','duty','action']` |
-| `embedding` | vector(768) | Gemini text-embedding-004 |
+| `embedding` | vector(768) | Gemini `gemini-embedding-001` @ outputDimensionality 768 |
 | `created_at` | timestamptz | |
 
 Index: `ivfflat` on `embedding` using `vector_cosine_ops`.
+
+**Current row counts (2026-04-30):** 701 gita + 1,704 mahabharata = **2,405 total scriptural rows**. Mahabharata rows have `sanskrit = ''` and `sanskrit_source = NULL` per Phase 1.5 Sanskrit deferral.
 
 ### `feedback` (Phase 6+)
 
@@ -273,9 +324,9 @@ Optional Supabase email-OTP auth (Phase 5+) for cross-device sync. When the user
 | Phase | Weeks | Goal |
 |---|---|---|
 | 0 | Day 1 | Decision lock, docs setup |
-| 1 | 1–2 | Bhagavad Gita ingestion (700 verses) |
-| 1.5 | 3–4 | Mahabharata Krishna sections (Udyoga, Sabha, Vana, Bhishma, Drona, Karna, Shanti) |
-| 1.6 | 5–7 | Bhagavata Purana Canto 10 — Krishna lila (Vrindavan childhood, Bal Krishna, gopi episodes, Uddhava arrival) |
+| 1 | 1–2 | Bhagavad Gita ingestion (701 verses) — **COMPLETE** |
+| 1.5 | 3–4 | Mahabharata Krishna sections — 13 parvas, 23 curated ranges, 1,704 chunks — **COMPLETE 2026-04-30** |
+| 1.6 (next) | 5–7 | Bhagavata Purana Canto 10 — Krishna lila (Vrindavan childhood, Bal Krishna, gopi episodes, Uddhava arrival) |
 | 1.7 | 7–8 | Bhagavata Purana Canto 11.6–29 — Uddhava Gita |
 | 2 | 8–9 | RAG retuning with full corpus + verse-card UI + regression-test all retrieval |
 | 3 | 10–11 | Krishna persona prompt iteration with full data; apply held Round 4 edits (mode rotation, Arjuna rate limit, Vrindavan example) |

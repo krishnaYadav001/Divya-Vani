@@ -9,11 +9,15 @@
     "lint": "eslint",
     "ingest:gita": "tsx --env-file=.env.local scripts/ingest-gita.ts",
     "ingest:gita:dry": "tsx --env-file=.env.local scripts/ingest-gita.ts --dry-run",
+    "ingest:mahabharata": "tsx --env-file=.env.local scripts/ingest-mahabharata.ts",
+    "ingest:mahabharata:dry": "tsx --env-file=.env.local scripts/ingest-mahabharata.ts --dry-run",
     "test:search": "tsx --env-file=.env.local scripts/test-search.ts",
     "test:chat": "tsx scripts/test-chat-e2e.ts",
     "test:prompt": "tsx scripts/test-prompt.ts",
     "regen:hindi": "tsx --env-file=.env.local scripts/regenerate-hindi.ts",
-    "regen:hindi:dry": "tsx --env-file=.env.local scripts/regenerate-hindi.ts --dry-run"
+    "regen:hindi:dry": "tsx --env-file=.env.local scripts/regenerate-hindi.ts --dry-run",
+    "regen:hindi:mahabharata": "tsx --env-file=.env.local scripts/regenerate-hindi-mahabharata.ts",
+    "regen:hindi:mahabharata:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-mahabharata.ts --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
@@ -31,6 +35,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "p-limit": "^7.3.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"

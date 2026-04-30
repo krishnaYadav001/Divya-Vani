@@ -1,0 +1,2250 @@
+%@@1
+% File name             : mbhK10.itx
+%--------------------------------------------
+% Text title            : 10 sauptikaparva
+% Author                : Veda Vyasa
+% Language              : sanskrit
+% Subject               : /hindu/philosohphy/religion
+% Description/comments  : Mahabharata - Southern Recension - Kumbhaghonam Edition
+% Based on the `Southern Recension' of the MahAbhArata, edited by Krishnacharya
+% 1906-1914
+% Transliterated by     : Prof. Shrinivasa Varakhedi >worked on this with the
+% support of his research team members, Prof. K. V. Ramakrishnamacharyulu, Prof.
+% Amba Kulakarni, Prof. Prahladachar,  members of MSP Bangalore and many others
+% Proofread by          : 
+% Latest update         : October 13, 2013
+% Send corrections to   : sanskrit at cheerful dot c om
+%
+% Special Instructions  : i1h.hdr,ijag.inc,itrans.sty,multicol.sty,iarticle.sty
+% Transliteration scheme: ITRANS 5.3
+% Site access           : https://sanskritdocuments.org/
+%-----------------------------------------------------
+% The text is prepared by volunteers and is to be used for personal study
+% and research.  The file is not to be copied or reposted for promotion of 
+% any website or individuals or for commercial purpose without permission.
+%        Please help to maintain respect for volunteer spirit.
+%@@1
+%--------------------------------------------------------
+
+\documentstyle[11pt,multicol,itrans]{article}
+#include=ijag.inc
+#endwordvowel=.h
+\portraitwide
+\parindent=50pt                
+\let\usedvng=\Largedvng      % for 1 column     
+\pagenumbering{itrans} 
+\def\engtitle#1{\hrule\medskip\centerline{\LARGE #1}}
+\def\itxtitle#1{\medskip\centerline{\LARGEdvng #1}\medskip\hrule}
+\def\endtitles{\medskip\obeyspaceslines}
+%%
+\begin{document}
+\engtitle{.. 10. sauptikaparva Kumbhaghonam Edition ..}##
+\itxtitle{.. 10\. sauptikaparva ..}##\endtitles ##
+
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 001
+.. shrIH ..
+10\.1\. adhyAyaH 1
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+sa~njayadhR^itarAShTrayoH saMlApaH .. 1 ..
+drauNikR^ipakR^itavarmabhirvanamadhyametya nyagrodhasyAdhastAdupaveshanam
+.. 2 ..
+tatra rAtrau ghUkena bahukAkAvadhadarshinA drauNinA tadvatsvenApi
+pANDavavadhanirdhAraNam .. 3 ..
+tataH kR^ipakR^itavarmANau samudbaudhya svakartavyakathanaprArthanA .. 4 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-1\-0 (63944)
+shrIvedavyAsAya namaH. 10\-1\-0x (5260)
+nArAyaNaM namaskR^itya naraM chaiva narottamam .
+devIM sarasvatIM vyAsaM tato jayamudIrayet .. 10\-1\-1 (63945)
+sa~njaya uvAcha. 10\-1\-1x (5261)
+tataste sahitAH sarve prayAtA dakShiNAmukhAH .
+upAstamayavelAyAM shibirAbhyAshamAgatAH .. 10\-1\-1 (63946)
+vimuchya vAhAMstvaritA bhItAH samanubodhanAt .
+gahanaM deshamAsAdya prachChannA nyavishanta te .. 10\-1\-2 (63947)
+senAniveshamabhito nAtidUramavasthitAH .
+[nikR^ittA nishitaiH shastraiH samantAtkShatavikShatAH.]
+dIrghamuShNaM cha niHshvasya pANDavAnanvachintayan ..  10\-1\-3 (63948)
+shrutvA cha ninadaM ghoraM pANDavAnAM jayaiShiNAm .
+anusArabhayAdbhItAH prA~NmukhAH prAdravanpunaH .. 10\-1\-4 (63949)
+te muhUrtAttato gatvA shrAntavAhA pipAsitAH .
+nAmR^iShyanta maheShvAsAH krodhAmarShavasha~NgatAH .. 10\-1\-5 (63950)
+rAj~no vadhena santaptA muhUrtaM samavasthitAH ..  10\-1\-6 (63951)
+dhR^itarAShTra uvAcha. 10\-1\-7x (5262)
+ashraddheyamidaM karma kR^itaM mImena sa~njaya .
+yatsa nAgAyutaprANaH putro mama nipAtitaH .. 10\-1\-7 (63952)
+avadhyaH sarvabhUtAnAM vajrasaMhanano yuvA .
+pANDavaiH samare putro nihato mama nipAtitaH .. 10\-1\-8 (63953)
+na diShTamabhyatikrAntuM shakyaM gAvalgaNe naraiH .
+yatsametya raNe pArthaiH putro mama nipAtitaH .. 10\-1\-9 (63954)
+adrisAramayaM nUnaM hR^idayaM mama sa~njaya .
+hataM putrashataM shrutvA yanna dIrNaM sahasradhA .. 10\-1\-10 (63955)
+kathaM hi vR^iddhamithunaM hataputraM bhaviShyati .
+na hyahaM pANDuputrasya viShaye vastumutsahe .. 10\-1\-11 (63956)
+kathaM rAj~naH pitA bhUtvA svayaM rAjA cha sa~njaya .
+preShyabhUtaH pravarteyaM pANDaveyasya shAsanAt .. 10\-1\-12 (63957)
+prabhujya pR^ithivIM sarvAM sthitA mUrdhani sa~njaya .
+kathamadya bhaviShyAmi shrotuM shakShyAmi sa~njaya.  10\-1\-13 (63958)
+yena putrashataM pUrNamekena nihataM mama ..
+kR^itaM satyaM vachastasya vidurasya mahAtmanaH.  10\-1\-14 (63959)
+akurvatA vachastasya mama putreNa sa~njaya ..
+adharmeNa hate tAta putre duryodhane mama.  10\-1\-15 (63960)
+kR^itavarmA kR^ipo drauNiH kimakurvata sa~njaya ..  10\-1\-16 (63961)
+sa~njaya uvAcha. 10\-1\-17x (5263)
+gatvA tu tAvakA rAjannAtidUraM manasvinaH .
+apashyanta vanaM ghoraM nAnAdrumalatAvR^itam .. 10\-1\-17 (63962)
+te muhUrtaM tu vishramya labdhatoyairhayottamaiH .
+sUryAstamayavelAyAM kauraveyasya shAsanAt .. 10\-1\-18 (63963)
+nAnAmR^igagaNairjuShTaM nAnApakShibhirAkulam .
+nAnAdrumalatAchChannaM nAnAvyAlaniShevitam .. 10\-1\-19 (63964)
+nAnAtoyasamAkIrNaistaTAkairupashobhitam .
+padminIshatasa~nChannaM nIlotpalasamAyutam .. 10\-1\-20 (63965)
+pravishya tadvanaM ghoraM vIkShamANAH samantataH .
+shAkhAsahasrasa~nChannaM nyagrodhaM dadR^ishustataH .. 10\-1\-21 (63966)
+upetya tu tadA rAjannyagrodhaM te mahArathAH .
+dadR^ishurdvipadAM shreShThAH shreShThaM taM vai vanaspatim .. 10\-1\-22 (63967)
+te.avatIrya rathebhyashcha vipramuchya cha vAjinaH .
+upaspR^ishya yathAnyAyaM sandhyAmanvAsata prabho .. 10\-1\-23 (63968)
+tato.astaM parvatashreShThamanuprApte divAkare .
+sarvasya jagato dhAtrI sharvarI pratyapadyata .. 10\-1\-24 (63969)
+grahanakShatratArAbhiH prakIrNAbhirala~NkR^itam .
+nabhoM.ashukamivAbhAti prekShaNIyaM samantataH .. 10\-1\-25 (63970)
+ichChayA te pravalganti ye satvA rAtrichAriNaH .
+divAcharAshcha ye satvAste nidrAvashamAgatAH .. 10\-1\-26 (63971)
+rAtri~ncharANAM satvAnAM ninAdo.abhUtsudAruNaH .
+kravyAdAshcha pramuditA ghorA prAptA cha sharvarI .. 10\-1\-27 (63972)
+tasminrAtrimukhe ghore duHkhashokasamanvitAH .
+kR^itavarmA kR^ipo drauNirupopavivishuH samam .. 10\-1\-28 (63973)
+upopaviShTAH shochanto nyagrodhasya samIpataH .
+tamevArthamatikrAntaM kurupANDavayoH kShayam .. 10\-1\-29 (63974)
+nidrayA cha parItA~NgA niShedurdharaNItale .
+shrameNa sudR^iDhaM yuktA vikShatA vividhaiH sharaiH .. 10\-1\-30 (63975)
+tato nidrAvashaM prAptau kR^ipabhojau mahAbAlau .
+sukhochitAvaduHkhArhau niShaNNau dharaNItale .. 10\-1\-31 (63976)
+tau tu suptau mahArAja tasmindeshe mahArathau .
+[mahArhashayanopetau bhUmAveva hyanAthavat ..]  10\-1\-32 (63977)
+krodhAmarShavashaM prApto droNaputrastu bhArata .
+na vai sma sa jagAmAtha nidrAM sarpa iva shvasan .. 10\-1\-33 (63978)
+na lebhe sa tu nidrAM vai dahyamAno.atimanyunA .
+vIkShA~nchakre mahAbAhustadvanaM ghoradarshanam .. 10\-1\-34 (63979)
+vIkShamANo vanoddeshaM nAnAsatvairniShevitam .
+apashyata mahAbAhurnyagrodhaM vAyasAvR^itam .. 10\-1\-35 (63980)
+tatra kAkasahasrANi tAM nishAM paryaNAmayan .
+sukhaM svapantaH kauravya pR^ithakpR^ithagupAshrayAH .. 10\-1\-36 (63981)
+supteShu teShu kAkeShu visrabdheShu samantataH .
+so.apashyatsahasA yAntamulUkaM ghoradarshanam .. 10\-1\-37 (63982)
+mahAsvanaM mahAkAyaM haryakShaM babhrupi~Ngalam .
+sutIkShNaghoNAnakharaM suparNamiva vegitam .. 10\-1\-38 (63983)
+so.atha shabdaM mR^iduM kR^itvA lIyamAna ivANDajaH .
+nyagrodhasya tataH sAkhAM pAtayAmAsa bhArata .. 10\-1\-39 (63984)
+sannipatya tu shAkhAyAM nyagrodhasya viha~NgamaH .
+suptA~njaghAna visrabdhAnvAyasAnvAyasAntakaH .. 10\-1\-40 (63985)
+keShA~nchidachChinatpakShA~nshirAMsi cha chakarta ha .
+charaNAMshchaiva keShA~nchidbabha~nja charaNAyudhaH .. 10\-1\-41 (63986)
+kShaNenAghnatsa balavAnye.asya dR^iShTipathe sthitAH ..  10\-1\-42 (63987)
+teShAM sharIrAvayavaiH sharIraishcha vishAmpate .
+nyagrodhamaNDalaM sarvaM sa~nChannaM parvatopamam .. 10\-1\-43 (63988)
+tAMstu hatvA tataH kAkAnkaushiko mudito.abhavat .
+pratikR^itya yathAkAmaM shatrUNAM shatrusUdanaH .. 10\-1\-44 (63989)
+taddR^iShTvA tAdR^ishaM karma kaushikena kR^itaM nishi .
+tadbhAve kR^itasa~Nkalpo drauNireko.anvachintayat .. 10\-1\-45 (63990)
+upadeshaH kR^ito.anena pakShiNA mama saMyuge .
+shatrUNAM kShapaNaM yuktaM prAptaH kAlashcha me mataH .. 10\-1\-46 (63991)
+nAdya shakyaM mayA hantuM pANDavA jitakAshinaH .
+balavantaH kR^itotsAhA labdhalakShAH prahAriNaH .. 10\-1\-47 (63992)
+rAj~naH sakAshe teShAM cha pratij~nAto vadho mayA .
+pata~NgAgnisamAM vR^ittimAsyAyAtmavinAshinIm .. 10\-1\-48 (63993)
+nyAyato yudhyamAnasya prANatyAgo na saMshayaH .
+ChadmanA tu bhavetsidviH shatrUNAM cha kShayo mahAn .. 10\-1\-49 (63994)
+tatra sashayitAdarthAdyo.artho niHsaMshayo bhavet .
+taM janA bahumanyante ye.arthashAstravishAradAH .. 10\-1\-50 (63995)
+yachchApyatra bhavetkAryaM garhitaM lokaninditam .
+kartavyaM tanmanuShyeNa kShatradharmeNa vartatA .. 10\-1\-51 (63996)
+ninditAni cha karmANi kutsitAni padepade .
+sopadhAni kR^itAnyeva pANDavairakR^itAtmabhiH .. 10\-1\-52 (63997)
+asminnarthe purA gItAH shrUyante dharmavittamaiH .
+shlokA nyAyamavekShadbhistattvArthAstattvadarshibhiH .. 10\-1\-53 (63998)
+parishrAnte vidIrNe vA bhu~njAne vA.api shatrubhiH .
+prasthAne vA praveshe vA prahartavyaM riporbalam .. 10\-1\-54 (63999)
+nidrArtamardharAtre cha tathA naShTapraNAyakam .
+bhinnayodhaM balaM yachcha dvidhA yuktaM cha yadbhavet .. 10\-1\-55 (64000)
+ityevaM nishchayaM chakre suptAnAM nishi mAraNe .
+pANDUnAM saha pA~nchAlairdroNaputraH pratApavAn .. 10\-1\-56 (64001)
+sa krUrAM matimAsthAya vinishchitya muhurmuhuH .
+suptau prAbodhayattau tu mAtulaM bhojameva cha .. 10\-1\-57 (64002)
+tau prabuddhau mahAtmAnau kR^ipabhojau mahAbAlau .
+nottaraM pratipadyetAM tatra yuktaM hiyA vR^itau .. 10\-1\-58 (64003)
+sa muhUrtamiva dhyAtvA tAvubhau vAkyamabravIt ..  10\-1\-59 (64004)
+hato duryodhano rAjA ekavIro mabAhalaH .
+yasyArthe vairamasmAbhirAsaktaM pANDavaiH saha .. 10\-1\-60 (64005)
+ekAkI bahubhiH kShudrairAhave shuddhavikramaH .
+pAtito bhImasenena ekAdashachamUpatiH .. 10\-1\-61 (64006)
+vR^ikodareNa kShudreNa sunR^ishaMsamidaM kR^itam .
+mUrdhAbhiShiktasya shiraH pAdena parimR^idgatA .. 10\-1\-62 (64007)
+vinardanti cha pA~nchAlAH kShvelanti cha hasanti cha .
+dhamanti sha~NkhA~nshatasho hR^iShTA ghnanti cha dundubhIn .. 10\-1\-63 (64008)
+vAditraghoShastumulo vimishraH sha~NkhaniHsvanaiH .
+anilenerito ghoro dishaH pUrayatIva ha .. 10\-1\-64 (64009)
+ashvAnAM heShamANAnAM gajAnAM chaiva bR^iMhatAm .
+siMhanAdashcha shUrANAM shrUyate sumahAnayam .. 10\-1\-65 (64010)
+dishaM prAchIM samAshritya hR^iShTAnAM gachChatAM bhR^isham .
+rathanemisvanAshchaiva shrUyante romaharShaNAH .. 10\-1\-66 (64011)
+pANDavairdhArtarAShTrANAM yadidaM kadanaM kR^itam .
+vayameva trayaH shiShTA asminmahati vaishase .. 10\-1\-67 (64012)
+kechinnAgashataprANAH kechitsarvAstrakovidAH .
+nihatAH pANDavairyasminmanye kAlasya paryayam .. 10\-1\-68 (64013)
+evametena bhAvyaM hi nUnaM kAryeNa tattvataH .
+yathA hyasyedR^ishI niShThA kR^ite yatne.api duShkare .. 10\-1\-69 (64014)
+bhavatostu yadi praj~nA na mohAdapachIyate .
+vyasane.asminmahatyarthe yannaH shreyastaduchyatAm .. .. 10\-1\-70 (64015)
+
+iti shrImanmahAbhArate sauptikaparvaNi prathamo.adhyAyaH .. 1 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-1\-1 tataH duryodhanena sainApatye.ashvatthAmno.abhiShekAnantaraM
+te ashvatthAmakR^ipAchAryakR^itavarmANaH ..
+10\-1\-2 shibiranikaTasthaM deshaM AsAdya vAhAnvimuchya nyavishanteti yojanA ..
+10\-1\-4 anusAraH pR^iShThagamanam . prAdravanniti punarvAhAnyojayitveti
+gamyate ..
+10\-1\-6 rAj~no duryodhanasya ..
+10\-1\-20 nAnApuShpopashobhitamiti jha.pAThaH ..
+10\-1\-23 anvAsata upAsitavantaH ..
+10\-1\-25 aMshukaM vastram ..
+10\-1\-32 shayanopetau prAgiti sheShaH ..
+10\-1\-36 paryaNAmayan pariNItavanta Asan ..
+10\-1\-38 haryakShyaM harinmaNinibhalochanam . ShANA nAsA ..
+10\-1\-1 prathamo.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 002
+.. shrIH ..
+10\.2\. adhyAyaH 2
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+kR^ipeNa drauNimprati kartavyopadeshaH .. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-2\-0 (64016)
+kR^ipa uvAcha. 10\-2\-0x (5264)
+shrutaM te vachanaM sarvaM hetuyuktaM mayA vibho .
+mamApi tu vachaH ki~nchichChR^iNuShvAdya mahAbhuja .. 10\-2\-1 (64017)
+AbaddhA mAnuShAH sarve nibaddhAH karmaNordvayoH .
+daive puruShakAre cha paraM tAbhyAM na vidyate .. 10\-2\-2 (64018)
+na hi daivena sidhyanti kAryANyekena sattama .
+na chApi karmaNaikena dvAbhyAM siddhistu yogataH .. 10\-2\-3 (64019)
+tAbhyAmubhAbhyAM sarvArthA nibaddhA adhamottamAH .
+pravR^ittAshchaiva dR^ishyante nivR^ittAshchaiva sarvashaH .. 10\-2\-4 (64020)
+parjanyaH parvate varShankinnu sAdhayate phalam .
+kR^iShTe kShetre tathA varShankiM na sAdhayate phalam .. 10\-2\-5 (64021)
+utthAnaM chApi daivasya hyanutthAnaM cha daivatam .
+vyarthaM bhavati sarvatra pUrvastatra vinishchayaH .. 10\-2\-6 (64022)
+suvR^iShTe cha yathA deve samyak kShetre cha karShite .
+bIjaM mahAguNaM bhUyAttathA siddhirhi mAnuShI .. 10\-2\-7 (64023)
+tayordaivaM tu dushchintyaM svavashenaiva vartate .
+prAj~nAH puruShakAre tu vartante devamAsthitAH .. 10\-2\-8 (64024)
+tAbhyAM sarve hi kAryArthA manuShyANAM nararShabha .
+vicheShTantaH sma dR^ishyante nivR^ittAstu tathaiva cha .. 10\-2\-9 (64025)
+kR^itaH puruShakArashcha so.api daivena sidhyati .
+tathAsya karmaNaH karturabhinirvartate phalam .. 10\-2\-10 (64026)
+utthAnaM cha manuShyANAM dakShANAM daivavarjitam .
+abhalaM dR^ishyate loke samyagapyupapAditam .. 10\-2\-11 (64027)
+tatrAlasA manuShyANAM ye bhavantyamanasvinaH .
+utthAnaM te vigarhanti prAj~nAnAM tanna rochate .. 10\-2\-12 (64028)
+prAyasho hi kR^itaM karma nAphalaM dR^ishyate bhuvi .
+akR^itvA cha punarduHkhaM karma pashyenmahAphalam .. 10\-2\-13 (64029)
+chaShTAmakurvaMllabhate yadi ki~nchidyadR^ichChayA .
+yo vA na labhate kR^itvA durdarshau tAvubhAvapi .. 10\-2\-14 (64030)
+shaknoti jIvituM dakSho nAlasaH sukhamedhate .
+dR^ishyante jIvaloke.asmindakShAH prAyo hitaiShiNaH .. 10\-2\-15 (64031)
+yadi dakShaH samArambhAtkarmaNo nAshnute phalam .
+nAsya vAchyaM bhavetki~nchillabdhavyaM vA.adhigachChati .. 10\-2\-16 (64032)
+nAkR^itvA karma loke hi phalaM vindati karhichit .
+sa tu vaktavyatAM yAti dveShyo bhavati bhUyashaH .. 10\-2\-17 (64033)
+evametadanAdR^itya vartate yastvato.anyathA .
+sa karotyAtmano.anarthAneSha buddhimatAM nayaH .. 10\-2\-18 (64034)
+hInaM puruShakAreNa yadi daivena vA punaH .
+kAraNAbhyAmathaitAbhyAmutthAnamaphalaM bhavet .. 10\-2\-19 (64035)
+hInaM puruShakAreNa karma tviha na sidhyati ..  10\-2\-20 (64036)
+daivatebhyo namaskR^itya yastvarthAnsamyagIhate .
+dakSho dAkShiNyasampanno na sa moghairvihanyate .. 10\-2\-21 (64037)
+samyagIhA punariyaM yA bR^iddhAnupasevate .
+ApR^ichChati cha yachChreyaH karoti cha hitaM vachaH .. 10\-2\-22 (64038)
+utthAyotthAya hi sadA praShTavyA vR^iddhasammatAH .
+te sma yoge paraM mUlaM tanmUlA siddhiruchyate .. 10\-2\-23 (64039)
+vR^iddhAnAM vachanaM shrutvA yo.abhyutthAnaM prayojayet .
+utthAnasya phalaM samyaktadA sa labhate.achirAt .. 10\-2\-24 (64040)
+rAgAtkrodhAdbhayAllobhAdyo.arthAnIheta mAnavaH .
+anIshashchAvamAnI cha sa shIghraM bhrashyate shriyaH .. 10\-2\-25 (64041)
+soyaM duryodhanenArtho lubdhenAdIrghadarshinA .
+asamarthaH samArabdho mUDhatvAdavichinantitaH .. 10\-2\-26 (64042)
+hitabuddhInanAdR^itya sammantryAsAdhubhiH saha .
+vAryamANo.akarodvairaM pANDavairguNavattaraiH .. 10\-2\-27 (64043)
+pUrvamapyatiduHshIlo na dhairyaM kartumarhati .
+tapatyarthe vipanne hi mitrANAM na kR^itaM vachaH .. 10\-2\-28 (64044)
+anuvartAmahe yattu taM vayaM pApapUruSham .
+asmAnapyanayastasmAtprApto.ayaM dAruNo mahAn .. 10\-2\-29 (64045)
+aena tu mamAdyApi vyasanenopatApitA .
+buddhishchintayate ki~nchitsvaM shreyo nAvabudhyate .. 10\-2\-30 (64046)
+muhyatA tu manuShyeNa praShTavyAH suhR^ido janAH .
+tatrAsya buddhirvinayastatra shreyashcha pashyati .. 10\-2\-31 (64047)
+tato.asya mUlaM kAryANAM buddhyA nishchitya vai budhAH'.
+te.atra pR^iShTA yathA brUyustatkartavyaM tathA bhavet .. 10\-2\-32 (64048)
+te vayaM dhR^itarAShTraM cha gAndhArIM cha yashasvinIm .
+upapR^ichChAmahe gatvA viduraM cha mahAmatim .. 10\-2\-33 (64049)
+te pR^iShTAstu vadeyuryachChreyo naH samanantaram .
+tadasmAbhiH punaH kAryamiti me naiShThikI matiH .. 10\-2\-34 (64050)
+anArambhAttu kAryANAM nArthaH sampadyate kvachit ..  10\-2\-35 (64051)
+kR^ite puruShakAre tu yeShAM kAryaM na sidhyati .
+daivenopahatAste tu nAtra kAryA vichAraNA .. .. 10\-2\-36 (64052)
+
+iti shrImanmahAbhArate sauptikaparvaNi dvitIyo.adhyAyaH .. 2 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-2\-2 daive AsamantAt baddhAH puruShakAre nihInatayA baddhAH . tena
+daivaM pradhAnaM puruShakAra upasarjanamityuktaM bhavati. ArambhA mAnuShAH
+sarve iti ka.pAThaH ..
+10\-2\-6 utthAnamiti . daivasya pradhAnasyotthAnaM puruShakAro vyarthaM
+bhavati tathA.anutthAnamutthAnahInaM daivamapi vyarthamiti pakShadvayaM
+sarvatra vyavasyati tatra pUrvaeva pakShaH shreyAnityarthaH ..
+10\-2\-9 vicheShTantaH pravR^ittA dR^ishyante lokadR^iShThyetyarthaH ..
+10\-2\-13 karmAkR^itvA duHkhaM pashyedityApi prAyasho.asti ..
+10\-2\-14 durdarshau durlabhau ..
+10\-2\-16 sparshaM chAsyAdhigachChatIti Cha.pAThaH . tatra asya karmaNaH
+sparshaM lokasya sambandhaM chAdhigachChati lokapriyaH syAdityarthaH ..
+10\-2\-17 akR^itvA karma yo loke phalaM vindati dhiShThita iti jha.pAThaH
+. tatra adakShastu paraprayatnArjitena jIvannapi bhoktumevAyaM samartho
+nArjayitumiti nindyata iti bhAvaH ..
+10\-2\-18 etat daivadAkShyayoH sAhityam . anyathA tayoranyatarAlambanena ..
+10\-2\-23 yoge alabdhalAbhe ..
+10\-2\-25 anIshaH ajitachittaH . avamAnI paramavajAnan ..
+10\-2\-2 dvitIyo.adhyAyaH ..
+
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 003
+.. shrIH ..
+10\.3\. adhyAyaH 3
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+drauNinA kR^ipavachanamanAdR^itya kR^ipakR^itavarmaNoH purataH nishi
+prasuptapANDupA~nchAlahananapratij~nAnam .. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-3\-0 (64053)
+sa~njaya uvAcha. 10\-3\-0x (5265)
+kR^ipasya vachanaM shrutvA dharmArthasahitaM shubham .
+ashvatthAmA mahArAja duHkhashokasamanvitaH .. 10\-3\-1 (64054)
+dahyamAnastu shokena pradIptenAgninA yathA .
+krUraM manastataH kR^itvA tAvabhau pratyabhAShata .. 10\-3\-2 (64055)
+puruShepuruShe buddhiryAyA bhavati shobhanA .
+tuShyanti cha pR^ithaksarve praj~nayA te svayAsvayA .. 10\-3\-3 (64056)
+sarvo hi manyate loka AtmAnaM buddhimattaram .
+sarvasyAtmA bahumataH sarvotmAnaM prashaMsati .. 10\-3\-4 (64057)
+sarvasya hi svakA praj~nA sAdhuvAde pratiShThitA .
+parabuddhiM cha nindanti svAM prashaMsanti chAsakR^it .. 10\-3\-5 (64058)
+kAraNAntarayogena yeShAM saMvadate matiH .
+te.anyonyena cha tuShyanti bahumanyanti chAsakR^it .. 10\-3\-6 (64059)
+tasyaiva tu manuShyasya sAsA buddhistadAtadA .
+kAlayoge viparyAsaM prApyAnyonyaM vipadyate .. 10\-3\-7 (64060)
+anityatvAttu chittAnAM manuShyANAM visheShataH .
+chittavaiklabyamAsAdya sAsA buddhiH prajAyate .. 10\-3\-8 (64061)
+yathA hi vaidyaH kushalo j~nAtvA vyAdhiM yathAvidhi .
+bhaiShajyaM kurute yogAtprashamArthamiti prabho .. 10\-3\-9 (64062)
+evaM kAryasya yogAtprashamArthamiti prabho ..
+praj~nayA cha svayA yuktyA tAM cha gR^ihNanti vai budhAH .. 10\-3\-10 (64063)
+anyayA yauvane bAlye buddhyA bhavati mohitaH .
+madhye.anyayA jarAyAM tu sonyAM rochayate matim .. 10\-3\-11 (64064)
+vyasana vA mahAghoraM samR^iddhiM chApi tAdR^ishIm .
+avApya puruSho bhoja kurute buddhivaikR^itam .. 10\-3\-12 (64065)
+ekasminneva puruShe sAsA buddhistadAtadA .
+bhavatyanityA praj~nA hi sA tasyaiva na rochate .. 10\-3\-13 (64066)
+nishchitya tu yathApraj~naM yAM matiM sAdhu pashyati .
+tayA prakurute bhAvaM sA tasyodyogakArikA .. 10\-3\-14 (64067)
+sarvo hi puruSho bhoja sAdhvetaditi nishchitaH .
+kartumArabhate prItiM maraNAdiShu karmasu .. 10\-3\-15 (64068)
+sarve hi yuktAM vij~nAya praj~nAM vApi svakAM narAH .
+cheShTante vividhAM cheShTAM hitamityeva jAnate .. 10\-3\-16 (64069)
+upajAtA vyasanajA yeyamadya matirmama .
+yuvayostAM pravakShyAmi sarveShAM shokanAshinIm .. 10\-3\-17 (64070)
+prajApatiH prajAH sR^iShTvA karma tAsu vidhAya cha .
+varNevarNe samAdhatta hyekaikaM guNavattaram .. 10\-3\-18 (64071)
+brAhmaNe vedamagryaM tu kShatriye teja uttamam .
+dAkShyaM vaishye cha shUdre cha sarvavarNAnukUlatAm .. 10\-3\-19 (64072)
+adAnto brAhmaNo.asAdhurnistejAH kShatriyo mR^itaH .
+adakSho nindyate vaishyaH shUdrashcha pratikUlavAn .. 10\-3\-20 (64073)
+so.asmi jAtaH kule shreShThe brAhmaNairabhipUjite .
+mandabhAgyatayA.asmyetaM kShatradharmamanuShThitaH .. 10\-3\-21 (64074)
+kShatradharmaM viditvA.ahaM yadi brAhmaNyamAshritaH .
+prakariShye mahatkarma na me tatsAdhusammatam .. 10\-3\-22 (64075)
+dhArayitvA dhanurdivyaM divyAnyastrANi chAhave .
+pitaraM nihataM dR^iShTvA kinnu vakShyAmi saMsadi .. 10\-3\-23 (64076)
+so.ahamadya yathAkAmaM kShatradharmamavApya cha .
+gantA.asmi padavIM rAj~naH pitushchApi mahAtmanaH .. 10\-3\-24 (64077)
+adya svapsyanti pA~nchAlA vishvastA jitakAshinaH .
+vimuktayugyakavachA harSheNa cha samanvitAH .
+vayaM jitA matAshchaiShAM shrAntA vyAyAmakarshitAH ..  10\-3\-25 (64078)
+teShAM nishi prasuptAnAM susthAnAM shibire svake .
+avaskandaM kariShyAmi shibirasyAdya duShkaram .. 10\-3\-26 (64079)
+tAnavaskandya shibire pretabhUtAnachetasaH .
+sUdayiShyAmi vikramya maghavAniva dAnavAn .. 10\-3\-27 (64080)
+adya tAnsahitAnsarvAndhR^iShTadyumnapurogamAn .
+sUdayiShyAmi vikramya kakShaM dIpta ivAnalaH .. 10\-3\-28 (64081)
+nihatya chaiva pA~nchAlA~nshAntiM labdhA.asmi sattama ..  10\-3\-29 (64082)
+pA~nchAleShu chariShyAmi sUdayannadya saMyuge .
+pinAkapANiH sa~NkruddhaH svayaM rudraH pashuShviva .. 10\-3\-30 (64083)
+adyAhaM sarvapA~nchAlAnnikR^ityA cha nikR^iShya cha .
+ardayiShyAmi saMhR^iShTo raNe pANDusutAMstathA .
+`sUdayiShyAmi sa~NkruddhaH pashUniva pinAkadhR^it'..  10\-3\-31 (64084)
+adyAhaM sarvapA~nchAlaiH kR^itvA bhUmiM sharIriNIm .
+prahR^ityaikena shastreNa bhaviShyAmyanR^iNaH pituH .. 10\-3\-32 (64085)
+duryodhanasya karNasya bhIShmasaindhavayorapi .
+gamiShyAmi nishAvelAM padavImadya durgamAm .. 10\-3\-33 (64086)
+adya pA~nchAlarAjasya dhR^iShTadyumnasya vai nishi .
+virAtre pramathiShyAmi pashoriva shiro balAt .. 10\-3\-34 (64087)
+adya pA~nchAlapANDUnAM shayitAnAM shiro nishi .
+kha~Ngena nishitenAjau pramathiShyAmi gautama .. 10\-3\-35 (64088)
+adya pA~nchAlasenAM tAM nihatya nishi sauptike .
+kR^itakR^ityaH sukhI chaiva bhaviShyAmi mahAmate .. .. 10\-3\-36 (64089)
+
+iti shrImanmahAbhArate sauptikaparvaNi tR^itIyo.adhyAyaH .. 3 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-3\-4 sarvotmAnamityatra sarva AtmAnamiti chChedaH . sandhirArShaH ..
+10\-3\-6 yoge yeShAM samA gatiriti jha.pAThaH . tatra yoge samudAye ityarthaH ..
+10\-3\-10 tAM cha nindanti mAnavA iti jha.pAThaH ..
+10\-3\-12 he bhoja he kR^itavarman . ekameva sambodhayan kR^ipasya
+vachasi anAdaraM sUchayati ..
+10\-3\-13 bhavatyakR^itavuddhitvAditi jha.pAThaH . tatra akR^itadharmatvAt
+avasarAnurodhAt. idAnIM mama shAntibuddhirna rochate ityarthaH ..
+10\-3\-20 kShatriyo.adhama iti jha.pAThaH ..
+10\-3\-22 viditvA Ashritya ..
+10\-3\-24 gantAsmi gamiShyAmi . padavIM AnR^iNyam ..
+10\-3\-33 gamayiShyAmi pA~nchAlAnpadavImadya durgamAmiti jha.pAThaH ..
+10\-3\-3 tR^itIyo.adhyAyaH ..
+
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 004
+.. shrIH ..
+10\.4\. adhyAyaH 4
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+drauNikR^ipayoH saMvAdaH .. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-4\-0 (64090)
+kR^ipa uvAcha. 10\-4\-0x (5266)
+diShTyA te pratikartavye matirjAteyamachyuta .
+na tvAM vArayituM shakto vajrapANirapi svayam .. 10\-4\-1 (64091)
+anuyAsyAvahe tvAM tu prabhAte sahitAvubhau .
+adya rAtrau vishramasva vimuktakavachadhvajaH .. 10\-4\-2 (64092)
+ahaM tvAmanuyAsyAmi kR^itavarmA cha sAtvataH .
+parAnabhimukhaM yAntaM rathAvAsthAya daMshitau .. 10\-4\-3 (64093)
+AvAbhyAM sahitaH shatrU~nshvo nihantA samAgame .
+vikramya rathinAM shreShTha pA~nchAlAnsapadAnugAn .. 10\-4\-4 (64094)
+shaktastvamasi vikramya vishramasva nishAmimAm .
+chiraM te jAgratastAta svapa tAvannishAmimAm .. 10\-4\-5 (64095)
+vishrAntashcha vinidrashcha svasthachittashcha mAnada .
+sametya samare shatrUnvadhiShyasi na saMshayaH .. 10\-4\-6 (64096)
+na hi tvAM rathinAM shreShThaM pragR^ihItavarAyudham .
+jetumutsahate kashchidapi deveShu pAvakiH .. 10\-4\-7 (64097)
+kR^ipeNa sahitaM yAntaM guptaM cha kR^itavarmaNA .
+ko drauNiM yudhi saMrabdhaM yodhayedapi devarAT .. 10\-4\-8 (64098)
+te vayaM nishi vishrAntA vinidrA vigatajvarAH .
+prabhAtAyAM rajanyAM vai nihaniShyAma shAtravAn .. 10\-4\-9 (64099)
+tava hyastrANi divyAni mama chaiva na saMshayaH .
+sAtvatopi maheShvAso nityaM yuddheShu kovidaH .. 10\-4\-10 (64100)
+te vayaM sahitAstAta sarvA~nshatrUnsamAgatAn .
+prasahya samare hatvA prItiM prApsyAma puShkalAm .. 10\-4\-11 (64101)
+vishramasva tvamavyagraH svapa chemAM nishAM sukham .
+ahaM cha kR^itavarmA cha prabhAte tvAM narottamam .. 10\-4\-12 (64102)
+anuyAsyAva sahitau dhanvinau paratApanau .
+rathinaM tvarayA yAntaM rathamAsthAya daMshitau .. 10\-4\-13 (64103)
+sa gatvA shibiraM teShAM nAma vishrAvya chAhave .
+tataH kartA.asi shatrUNAM yudhyatAM kadanaM mahat .. 10\-4\-14 (64104)
+kR^itvA cha kadanaM teShAM prabhAte vimale.ahani .
+viharasva yathA shakraH sUdayitvA mahAsurAn .. 10\-4\-15 (64105)
+tvaM hi shakto raNe jetuM pA~nchAlAnAM varUthinIm .
+daityasenAmiva kruddhaH sarvadAnavasUdanaH .. 10\-4\-16 (64106)
+mayA tvAM sahitaM sa~Nkhye guptaM cha kR^itavarmaNA .
+na saheta vibhuH sAkShAdvajrapANirapi svayam .. 10\-4\-17 (64107)
+na chAhaM samare tAta kR^itavarmA na chaiva hi .
+anirjitya raNe pANDUnapayAsyAmi karhichit .. 10\-4\-18 (64108)
+hatvA cha samare kShudrAnpA~nchAlAnpANDubhiH saha .
+nivartiShyAmahe sarve hatA vA svargagA vayam .. 10\-4\-19 (64109)
+sarvopAyaiH sahAyAste prabhAte vayamAhave .
+satyametanmahAbAho prabravImi tavAnagha .. 10\-4\-20 (64110)
+evamuktastato drauNikramAtulena hitaM vachaH .
+abravInmAtulaM rAjankrodhAdudvR^itya lochane .. 10\-4\-21 (64111)
+Aturasya kuto nidrA narasyAmarShitasya cha .
+arthAMshchintayatashchApi kAmayAnasya vA punaH .. 10\-4\-22 (64112)
+tadidaM samanuprAptaM pashya me.adya chatuShTayam .
+yasya bhAgashchaturtho me svapnamahnAya nAshayet .. 10\-4\-23 (64113)
+kiM nAma duHkhaM loke.asminpiturvadhamanusmaran .
+hR^idayaM nirdahanme.adya rAtryahAni na shAmyati .. 10\-4\-24 (64114)
+yathA cha nihataH pApaiH pitA mama visheShataH .
+pratyakShamapi te sarvaM tanme marmANi kR^intati .. 10\-4\-25 (64115)
+kathaM hi mAdR^isho loke muhUrtamapi jIvati .
+droNahanteti yadvAchaH pA~nchAlAnAM shR^iNomyaham .. 10\-4\-26 (64116)
+dhR^iShTadyumnamahatvA tu nAdaM jIvitumutsahe .
+sa me piturvadhAdvadhyaH pA~nchAlA ye cha sa~NgatAH .. 10\-4\-27 (64117)
+vilApo bhagnasakthasya yastu rAj~no mayA shrutaH .
+sa punarhR^idayaM kasya krUrasyApi na nirdahet .. 10\-4\-28 (64118)
+kasya hyakaruNasyApi netrAbhyAmashru nAvrajet .
+nR^ipaterbhagnasakthasya shrutvA tAdR^igvachaH punaH .. 10\-4\-29 (64119)
+yashchAyaM mitrapakSho me mayi jIvati nirjitaH .
+shokaM me vardhayatyeSha vArivega ivArNavam .. 10\-4\-30 (64120)
+ekAgnamanaso me.adya kuto nidrA kutaH sukham ..  10\-4\-31 (64121)
+vAsudevArjunAbhyAM cha tAnahaM parirakShitAn .
+aviShahyatamAnmanye mahendreNApi sattama .. 10\-4\-32 (64122)
+na chApi shaktaH saMyantumasmAtkAryAtkatha~nchana .
+taM na pashyAmi loke.asminyo mAM kopAnnivartayet .. 10\-4\-33 (64123)
+iti me nishchitA buddhireShA sAdhumatA mama ..  10\-4\-34 (64124)
+vAdikaiH kathyamAnastu mitrANAM me parAbhavaH .
+pANDavAnAM cha vijayaTo hR^idayaM dahatIva me .. 10\-4\-35 (64125)
+ahaM tu kadanaM kR^itvA shatrUNAmadya sauptike .
+tato vishramitA chaiva svaptA cha vigatajvaraH .. .. 10\-4\-36 (64126)
+
+iti shrImanmahAbhArate sauptikaparvaNi chaturtho.adhyAyaH .. 4 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-4\-4 nihantA nihaniShyasi ..
+10\-4\-23 chaturtha AturAdInAM chaturNAM madhye eko bhAgaH amarShaH . me
+mama svapnaM ahvAya jhaTiti nAshayet. tasmAt svapetyuktaM tanna yujyate ..
+23 ..
+10\-4\-24 anusmaran anusmarataH . na shAmyati amarSha ityarthaH ..
+10\-4\-36 svaptA svapsyAmi ..
+10\-4\-4 chaturtho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 005
+.. shrIH ..
+10\.5\. adhyAyaH 5
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+kR^ipeNa prasuptamAraNasyAdhArmikatvakathanena pratiShedhane.api
+pitR^ivadhAmarShiNA drauNinA jighAMsayA ripushiviradvAragamanam .. 1 ..
+kR^ipakR^itavarmashyAmapi sauhArdAttadanugamanam .. 2 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-5\-0 (64127)
+kR^ipa uvAcha. 10\-5\-0x (5267)
+shushrUShurapi durmedhAH puruSho.aniyatendriyaH .
+nAlaM vedayituM kR^itsnau dharmArthAviti me matiH .. 10\-5\-1 (64128)
+tathaiva tAvanmedhAvI vinayaM yo na shikShate .
+na cha ki~nchana jAnAti so.api dharmArthanishchayam .. 10\-5\-2 (64129)
+[chiraM hyapi jaDaH shUraH paNDitaM paryupAsya ha .
+na sa dharmAnvijAnAti darvI sUparasAniva .. 10\-5\-3 (64130)
+muhUrtamapi taM prAj~naH paNDitaM paryupAsya hi .
+kShipraM dharmAnvijAnAti jihvA sUparasAniva .. 10\-5\-4 (64131)
+shushrUShustveva medhAvI puruSho niyatendriyaH .
+jAnIyAdAgamAnsarvAngrAhyaM cha na virodhayet .. 10\-5\-5 (64132)
+anayastvavamAnI yo durAtmA pApapUruShaH .
+diShTamutsR^ijya kalyANaM karoti bahupAtakam .. 10\-5\-6 (64133)
+nAthavantaM tu suhR^idaH pratiShedhanti pAtakAt .
+nivartate tu lakShmIvAnnAlakShmIvAnnivartate .. 10\-5\-7 (64134)
+yathA hyuchchAvachairvAkyaiH kShiptachitto niyamyate .
+tathaiva suhR^idA shakyo nashakyastvavasIdati .. 10\-5\-8 (64135)
+tathaiva suhR^ido.aprAj~nAnkurvANAnkarma pApakam .
+prAj~nAH sampratiShedhanti yathAshakti punaHpunaH .. 10\-5\-9 (64136)
+sa kalyANe manaH kR^itvA niyamyAtmAnamAtmanA .
+kuru me vachanaM tAta yena pashchAnna tapsyase .. 10\-5\-10 (64137)
+na vadhaH pUjyate loke suptAnAmiha dharmataH .
+tathaiva nyastashastrANAM vimuktarathavAjinAm .. 10\-5\-11 (64138)
+ye va brUyustavAsmIti ye cha syuH sharaNAgatAH .
+vimuktamUrdhajA ye cha ye chApi hatavAhanAH .. 10\-5\-12 (64139)
+adya svapsyanti pA~nchAlA vimuktakavachA vibho .
+vishvastA rajanIM sarve pretA iva vichetasaH .. 10\-5\-13 (64140)
+yasteShAM tadavasthAnAM druhyeta puruSho.anR^ijuH .
+vyaktaM sa narake majjedagAdhe vipule.apluve .. 10\-5\-14 (64141)
+sarvAstraviduShAM loke shreShThastvamasi vishrutaH .
+na cha te jAtu loke.asminsusUkShmamapi kilbiSham .. 10\-5\-15 (64142)
+tvaM punaH sUryasa~NkAshaH shvobhUta udite ravau .
+prakAshe sarvabhUtAnAM vijetA yudhi shAtravAn .. 10\-5\-16 (64143)
+asambhAvitarUpaM hi tvayi karma vigarhitam .
+shukle raktamiva nyastaM bhavediti matirmama .. 10\-5\-17 (64144)
+ashvatthAmovAcha. 10\-5\-18x (5268)
+evameva yathA.a.attha tvamanushAsasi mAtula .
+taistu pUrvamayaM setuH samantAdvihvalIkR^itaH .. 10\-5\-18 (64145)
+pratyakShaM bhUmipAlAnAM bhavatAM chApi sannidhau .
+nyastashastro mama pitA dhR^iShTadyumnena pAtitaH .. 10\-5\-19 (64146)
+karNashcha patite chakre utthAsyanrathinAM varaH .
+uttame vyasane magno hato gANDIvadhanvanA .. 10\-5\-20 (64147)
+tathA shAntanavo bhIShmo nyastashastro nirAyudhaH .
+shikhaNDinaM puraskR^itya hato gANDIvadhanvanA .. 10\-5\-21 (64148)
+bhUrishravA maheShvAsastathA prAyagato raNe .
+kroshatAM bUmipAlAnAM yuyudhAnena pAtitaH .. 10\-5\-22 (64149)
+duryodhanashcha bhImena sametya gadayA mR^idhe .
+pashyatAM bhUmipAlAnAmadharmeNa nipAtitaH .. 10\-5\-23 (64150)
+ekAkI bahubhistatra parivArya mahArathaiH .
+adharmeNa naravyAghro bhImasenena pAtitaH .. 10\-5\-24 (64151)
+vilApo bhagnasakthasya yo me rAj~naH parishrutaH .
+vAdikAnAM kathayatAM sa me marmANi kR^intati .. 10\-5\-25 (64152)
+evaM chAdhArmikAH pApAH pA~nchAlA bhinnasatavaH .
+tAnevaM bhinnamaryAdAnkiM bhavAnna vigarhati .. 10\-5\-26 (64153)
+pitR^ihantR^InahaM hatvA pA~nchAlAnnishi sauptike .
+kAmaM kITaH pata~Ngo vA janma prApya bhavAmi vai .. 10\-5\-27 (64154)
+tvare chAhamanenAdya yadidaM me chikIrShitam .
+tasya me tvaramANasya kuto nidrA kutaH sukham .. 10\-5\-28 (64155)
+na sa jAtaH pumA.Nlloke kashchinna sa bhaviShyati .
+yo me vyAvartayedetAM vadhe teShAM kR^itAM matim .. 10\-5\-29 (64156)
+sa~njaya uvAcha. 10\-5\-30x (5269)
+evamuktvA mahArAja droNaputraH pratApavAn .
+ekAnte yojayitvA.ashvAnprAyAdabhimukhaH parAn .. 10\-5\-30 (64157)
+tamabrUtAM mahAtmAnau bhojashAradvatAvubhau .
+kimayaM syandano yuktaH kiM cha kAryaM chikIrShitam .. 10\-5\-31 (64158)
+ekasAmarthaprayAtau svastvayA saha nararShabha .
+samaduHkhasukhau chApi tasmAchChaMsitumarhasi .. 10\-5\-32 (64159)
+ashvatthAmA tuM sa~NkruddhaH piturvadhamanusmaran .
+tAbhyAM tathyaM tathA.a.achakhyau yadasyAtmachikIrShitam .. 10\-5\-33 (64160)
+hatvA shatasahasrANi yodhAnAM nishitaiH sharaiH .
+nyastashastro mama pitA dhR^iShTadyumnena pAtitaH .. 10\-5\-34 (64161)
+taM tathaiva vadhiShyAmi nyastavarmANamadya vai .
+putraM pA~nchAlarAjasya pApaM pApena karmaNA .. 10\-5\-35 (64162)
+tathA vinihataH pApaH pA~nchAlyaH pashuvanmayA .
+shastreNa vijitA.NllokAnnApnuyAditi me matiH .. 10\-5\-36 (64163)
+kShipraM sannadvakavachau sakha~NgAvAttakArmukau .
+mAmevAdya pratIkShetAM rathavaryau parantapau .. 10\-5\-37 (64164)
+ityuktvA rathamAsthAya prAyAdabhimukhaH parAn .
+tamanvagAtkR^ipo rAjankR^itavarmA cha sAtvataH .. 10\-5\-38 (64165)
+te prayAtA vyarochanta parAnabhimukhAstrayaH .
+hUyamAnA yathA yaj~ne samiddhA havyavAhanAH .. 10\-5\-39 (64166)
+yayushcha shibiraM teShAM samprasuptajanaM vibho .
+dvAradeshamanuprApya drauNistasthau mahArathaH .. .. 10\-5\-40 (64167)
+
+iti shrImanmahAbhArate sauptikaparvaNi pa~nchamo.adhyAyaH .. 5 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-5\-1 ashushrUShUH sudurmedhA iti ~Na.pAThaH . durmedhAH
+mUDhaH. aniyatetichChedaH ..
+10\-5\-6 aneya iti jha.pAThaH . tatra aneyaH sanmArgaM
+netumashakyaH. diShTamupadiShTam ..
+10\-5\-8 uchchAvachaiH sargairiti ka.Cha.pAThaH ..
+10\-5\-14 aplave iti chChedaH ..
+10\-5\-23 adharmeNa nAbheradhastAtprahAreNa ..
+10\-5\-32 nAvAM sha~NkitumarhasIti jha.pAThaH ..
+10\-5\-36 shastrAgnivarjitA.NllokAnprApruyAditi me matiH iti ~Na.pAThaH ..
+10\-5\-5 pa~nchamo.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 006
+.. shrIH ..
+10\.6\. adhyAyaH 6
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+ashvatthAmnaH shibiradvArasthamahAbhUtadarshanam .. 1 ..
+bhUtajigIShayA drauNivisR^iShTAnAmastrashastrANAM bhUtena grasanam .. 2 ..
+tatashchiMtAtAntashcha drauNermahAdevopAsanAdhyavasAyaH .. 3 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-6\-0 (64168)
+dhR^itarAShTra uvAcha. 10\-6\-0x (5270)
+dvAradeshe tato drauNimavasthitamavekShya tau .
+akurvatAM bhojakR^ipau kiM sa~njaya vadasva me .. 10\-6\-1 (64169)
+sa~njaya uvAcha. 10\-6\-2x (5271)
+kR^itavarmANamAmantrya kR^ipaM cha sa mahArathaH .
+drauNirmanyuparItAtmA shibiradvAramAsadat .. 10\-6\-2 (64170)
+tatra bhUtaM mahAkAyaM chandrArkasadR^ishadyutim .
+so.apashyaddvAramAvR^itya tiShThantaM romaharShaNam .. 10\-6\-3 (64171)
+vasAnaM charma vaiyAghraM vasArudhiravisravam .
+kR^iShNAjinottarAsa~NgaM nAgayaj~nopavItinam .. 10\-6\-4 (64172)
+bAhubhiH svAyatairbhImairnAnApraharaNodyataiH .
+baddhA~NgadamahAsarpaM jvAlAmAlAkulAnanam .. 10\-6\-5 (64173)
+daMShTrAkarAlavadanaM vyAditAsyaM bhayAnakam .
+nayanAnAM sahasraishcha vichitrairabhibhUShitam .. 10\-6\-6 (64174)
+naiva tasya vapuH shakyaM pravaktuM veSha eva cha .
+sarvathA tu tadAlakShya sphuTeyurapi parvatAH .. 10\-6\-7 (64175)
+tasyAsyanAsikAbhyAM cha shravaNAbhyAM cha sarvashaH .
+tebhyashchAkShisahasrebhyaH prAdurAsanmahArchiShaH .. 10\-6\-8 (64176)
+tathA tejomarIchibhyaH sha~NkhachakragadAdharAH .
+prAdurAsanhR^iShIkeshAH shatasho.atha sahasrashaH .. 10\-6\-9 (64177)
+tadatyadbhutamAlokya bhUtaM lokabhaya~Nkaram .
+drauNiravyathito divyairastravarShairavAkirat .. 10\-6\-10 (64178)
+drauNimuktA~nCharAMstAMstu tadbhUtaM mahadagrasat .
+udadheriva vAryoghAnpAvako baDabAmukhaH .. 10\-6\-11 (64179)
+ashvatthAmA tu samprekShya sharaughAMstAnnirarthakAn .
+rathashaktiM mumochAsmai dIptAmagnishikhAmiva .. 10\-6\-12 (64180)
+sA tamAhatya dIptAgrA rathashaktiradIryata .
+yugAnte sUryamAhatya maholkeva divashchyutA .. 10\-6\-13 (64181)
+atha hematsaruM divyaM kha~NgamAkAshavarchasam ..
+koshAtsamudbabarhAshu bilAddIptamivoragam .. 10\-6\-14 (64182)
+tataH kha~NgavaraM dhImAnbhUtAya prAhiNottadA .
+sa tadAsAdya bhUtaM vai vilayaM tUlavadyayau .. 10\-6\-15 (64183)
+tataH sa kupito drauNirindraketunibhAM gadAm .
+jvalantIM prAhiNottasmai bhUtaM tAmapi chAgrasat .. 10\-6\-16 (64184)
+tataH sarvAyudhAbhAve vIkShamANastatastataH .
+apashyatkR^itamAkAshamanAkAshaM janArdanaiH .. 10\-6\-17 (64185)
+tadadbhutatamaM dR^iShTvA droNaputro nirAyudhaH .
+achintayatsusantrastaH kR^ipabhojavachaH smaran .. 10\-6\-18 (64186)
+bruvatAmapriyaM pathyaM suhR^idAM na shR^imoti yaH .
+sa shochatyApadaM prApya thA.ahamavamatya tau .. 10\-6\-19 (64187)
+shAstradR^iShTAnavidvAnyaH samatItya jighAMsati .
+sa pathaH prachyuto dharmyAtkupathe pratihanyate .. 10\-6\-20 (64188)
+gobrAhmaNanR^ipastrIShu sakhyurmAturgurostathA .
+vR^iddhabAlajaDAndheShu suptabhItotthiteShu cha .. 10\-6\-21 (64189)
+mattonmattapramatteShu na shastrANi cha mAtayet .
+ityevaM gurubhiH pUrvamupadiShTaM nR^iNAM sadA .. 10\-6\-22 (64190)
+so.ahamutkramya panthAnaM shAstradR^iShTaM sanAtanam .
+amArgeNaivamArabhya ghorAmApadamAgataH .. 10\-6\-23 (64191)
+tAM chApadaM ghoratarAM pravadanti manIShiNaH .
+yadudyamya mahatkR^ityaM bhayAdapi nivartate .. 10\-6\-24 (64192)
+ashakyaM chaiva kaH kartuM shaktaH shaktibalAdiha .
+na hi daivAdgarIyo vai mAnuShyaM ki~nchidiShyate .. 10\-6\-25 (64193)
+mAnuShyaM kurvataH karma yadi daivAnna sidhyati .
+sa pathaH prachyuto dharmyAdvipadaM pratipadyate .. 10\-6\-26 (64194)
+pratij~nAnaM hyavij~nAnaM pravadanti manIShiNaH .
+yadArabhya kriyAM kA~nchidbhayAdiha nivartate .. 10\-6\-27 (64195)
+tadidaM duShpraNItena bhayaM mA samupasthitam .
+na hi droNasutaH sa~Nkhye nivarteta katha~nchana .. 10\-6\-28 (64196)
+idaM cha sumahadbhUtaM daivadaNDamivodyatam .
+na chaitadabhijAnAmi chintayannapi sarvathA .. 10\-6\-29 (64197)
+dhruvaM yeyamadharmeNa prahitA kaluShA matiH .
+tasyAH phalamidaM ghoraM pratighAtAya kalpate .. 10\-6\-30 (64198)
+tadidaM daivavihitaM mama sa~Nkhye nivartanam .
+nAnyatra daivAdudyantumiha shakyaM katha~nchana .. 10\-6\-31 (64199)
+so.ahamadya mahAdevaM prapadye sharaNaM vibhum .
+daivadaNDamimaM ghoraM sa hi me nAshayiShyati .. 10\-6\-32 (64200)
+kapardinaM prapadye.ahaM devadevamumApatim .
+kapAlamAlinaM rudraM bhaganetraharaM haram .. 10\-6\-33 (64201)
+sa hi devo.atyagAddevAMstapasA vikrameNa cha .
+tasmAchCharaNamabhyeShye girishaM shUlapANinam .. .. 10\-6\-34 (64202)
+
+iti shrImanmahAbhArate sauptikaparvaNi ShaShTho.adhyAyaH .. 6 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-6\-12 rathashaktiM chakram ..
+10\-6\-13 yugmAnte sUryamiti jha.pAThaH tatra yugmAnte mithunarAsherante
+atidIptaM ityarthaH ..
+10\-6\-15 vilaM nakulavadyayau iti jha.pAThaH ..
+10\-6\-17 anAkAshaM niravakAsham ..
+10\-6\-6 ShaShTho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 007
+.. shrIH ..
+10\.7\. adhyAyaH 7
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+drauNinA shivastutiH .. 1 ..
+drauNeH purataH kA~nchanavedyAmagnyudbhavaH .. 2 ..
+drauNeH samIpe nAnAvidhabhIShaNabhUtagaNAnAmAgamanam .. 3 ..
+shivena Atmano haviShTvakalpanapUrvakamagnau praviShTAya drauNaye
+kha~NgadAnapUrvakaM tachCharIrapraveshaH .. 4 ..
+punarashvatthAmnaH shibiragamanam .. 5 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-7\-0 (64203)
+sa~njaya uvAcha. 10\-7\-0x (5272)
+evaM sa~nchintayitvA tu droNaputro vishAmpate .
+avatIrya rathopasthAddadhyau sa prayataH sthitaH .. 10\-7\-1 (64204)
+drauNiruvAcha. 10\-7\-2x (5273)
+ugraM sthANuM shivaM rudraM sharvamIshAnamIshvaram .
+girishaM varadaM devaM bhavabhAvanamavyayam .. 10\-7\-2 (64205)
+shitikaNThamajaM rudraM dakShakratuharaM haram .
+vishvarUpaM virUpAkShaM bahurUpamumApatim .. 10\-7\-3 (64206)
+shmashAnavAsinaM dR^iptaM mahAgaNapatiM vibhum .
+khaTvA~NgadhAriNaM muNDaM jaTilaM brahmachAriNam .. 10\-7\-4 (64207)
+manasA hyanuchintyainaM duShkareNAlpachetasA .
+adya bhUtopahAreNa yakShye tripurAghAtinam .. 10\-7\-5 (64208)
+xxtutaM stutyaM stUyamAnamamoghaM kR^ittivAsasam .
+vilohitaM nIlakaNThamasahyaM durnivAraNam .. 10\-7\-6 (64209)
+shukraM vishvasR^ijaM brahma brahmachAriNameva cha .
+vratavantaM taponiShThamanantaM tapatAM gatim .. 10\-7\-7 (64210)
+bahurUpaM gaNAdhyakShaM tryakShaM pAriShadapriyam .
+dhanAdhyakShapriyasakhaM gaurIhR^idayavallabham .. 10\-7\-8 (64211)
+kumArapitaraM pi~NgaM govR^iShottamavAhanam .
+kuttivAsasamatyugramAtoShaNatatparam .. 10\-7\-9 (64212)
+paraM parebhyaH paramaM paraM yasmAnna vidyate .
+iShvastrottamabhartAraM digantaM desharakShiNam .. 10\-7\-10 (64213)
+hiraNyakavachaM devaM chandramaulivibhUShaNam .
+prapadye sharaNaM devaM parameNa samAdhinA .. 10\-7\-11 (64214)
+imAM chedApadaM ghorAM tarAmyadya sudustarAm .
+sarvabhUtopahAreNa yakShye.ahaM shuchinA shuchim .. 10\-7\-12 (64215)
+iti tasya vyavasitaM j~nAtvA yogAtsukarmaNaH .
+purastAtkA~nchanI vedI prAdurAsInmahAtmanaH .. 10\-7\-13 (64216)
+tasyAM vedyAM tadA rAjaMshchitrabhAnurajAyata .
+sa disho vidishaH khaM cha jvAlAbhiriva pUrayan .. 10\-7\-14 (64217)
+dIptAsyanayanAshchAtra naikapAdashirodharAH .
+[ratnachitrA~NgadadharAH samudyatakarAstathAH ..]  10\-7\-15 (64218)
+dvipAH shailapratIkAshAH prAdurAsanmahAgaNAH .
+shvavarAhoShTrarUpAshcha hayagomAyugomukhAH .. 10\-7\-16 (64219)
+R^ikShamArjAravadanA vyAghradvIpimukhAstathA .
+kAkavaktrAH pluvamukhAH shukavaktrAstathaiva cha .. 10\-7\-17 (64220)
+mahAjagaravaktrAshcha haMsavaktrAH shitaprabhAH .
+dArvAghATamukhAshchApi chAShavaktrAshcha bhArata .. 10\-7\-18 (64221)
+kUrmanakramukhAshchaiva shiMshumAramukhAstathA .
+mahAmakaravaktrAshcha timivaktrAstathaiva cha .. 10\-7\-19 (64222)
+harivaktrAH krau~nchamukhAH kapotAbhamukhAstathA .
+pArAvatamukhAshchaiva madguvaktrAstathaiva cha .. 10\-7\-20 (64223)
+pANikarNAH sahasrAkShAstathaiva cha mahodarAH .
+nirmAMsAH kAkavaktrAshcha shyenavaktrAshcha bhArata .. 10\-7\-21 (64224)
+tathaivAshiraso rAjannR^ikShavaktrAshcha bhIShaNAH .
+pradIptanetrajihvAshcha jvAlAvarNAstathaiva cha .. 10\-7\-22 (64225)
+jvAlAkeshAshcha rAjendra jvaladromachaturbhujAH .
+meShavaktrAstathaivAnye tathA ChAgamukhA nR^ipa .. 10\-7\-23 (64226)
+sha~NkhAbhAH sha~NkhavaktrAshcha sha~NkhavarNAstathaiva cha .
+sha~NkhamAlAparikarAH shahkhadhvanisamasvanAH .. 10\-7\-24 (64227)
+jaTAdharAH pa~nchashikhAstathA muNDAH kR^ishodarAH .
+chaturdaMShTrAshchaturjihvAH sha~NkukarNAH kirITinaH .. 10\-7\-25 (64228)
+mau~njIdharAshcha rAjendra tathA ku~nchitamUrdhajAH .
+uShNIShiNaH kuNDalinashchAruvaktrAH svala~NkR^itAH .. 10\-7\-26 (64229)
+padmotpalApIDadharAstathA mukuTadhAriNaH .
+mahAtmyena cha saMyuktAH shatasho.atha sahasrashaH .. 10\-7\-27 (64230)
+shataghnIchakrahastAshcha tathA musalapANayaH .
+bhushuNDIpAshahastAshcha daNDahastAshcha bhArata .. 10\-7\-28 (64231)
+pR^iShTheShu baddheShudhayashchitrabANotkaTAstathA .
+sadhvajAH sapatAkAshcha saghaNTAH saparashvathAH .. 10\-7\-29 (64232)
+mahApAshodyatakarAstathA laguDapANayaH .
+sthUNAhastAH kha~NgahastAH sarpochChritakirITinaH .. 10\-7\-30 (64233)
+mahAsarpA~NgadadharAshchitrAbharaNadhAriNaH .
+rajodhvajAH pa~NkadigdhAH sarve chitrAmbarasrajaH .
+nIlA~NgAH pi~NgalA~NgAshcha muNDavaktAstathaiva cha ..  10\-7\-31 (64234)
+bherIsha~NkhamR^ida~NgAMshcha jharjharAnakagomukhAn .
+avAdayanpAriShadAH prahR^iShTAH kanakaprabhAH .. 10\-7\-32 (64235)
+gAyamAnAstathaivAnye saMhR^iShTAH puruSharShabhAH .
+la~NghayantaH pluvantashcha valgantashcha mahArathAH .. 10\-7\-33 (64236)
+dhAvanto javanAshchaNDAH pAvakodvUtamUrdhajAH .
+mattA iva mahAnAgA vinadanto muhurmuhuH .. 10\-7\-34 (64237)
+subhImA ghorarUpAshcha shUlapaTTasapANayaH .
+nAnAvirAgavasanAshchitramAlyAnulepanAH .. 10\-7\-35 (64238)
+ratnachitrA~NgadadharAH samudyatakarAstathA .
+hantAro dviShatAM shUrAH prasahyAsahyavikramAH .. 10\-7\-36 (64239)
+pAtAro.asR^igvasAjyAnAM mAMsAntrakR^itabhojanAH .
+chUDAlAH karNikArAshcha prahR^iShTAH piTharodarAH .. 10\-7\-37 (64240)
+atihasvAtidIrghAshcha pralambAshchAtibhairavAH .
+vikaTAH kAlalaMboShThA bR^ihachChephANDapiNDikAH .. 10\-7\-38 (64241)
+mahArhanAnAvikaTA muNDAshcha jaTilAH pare .
+sArkendugrahanakShatrAM dyAM kuryuste mahItale .. 10\-7\-39 (64242)
+utsaheraMshcha ye hantuM bhUtagrAmaM chaturvidham .
+ye cha vItabhayA nityaM harasya bhrukuTIsahAH .. 10\-7\-40 (64243)
+kAmakArakarA nityaM trailokyasyeshvareshvarAH .
+nityAnandapramuditA vAgIshA vItamatsarAH .. 10\-7\-41 (64244)
+prApyAShTaguNamaishvaryaM ye na yAsyanti vai smayam .
+yeShAM vismayate nityaM bhagavAnkarmabhirharaH .. 10\-7\-42 (64245)
+manovAkkarmabhiryuktairnityamArAdhitashcha yaiH .
+manovAkkarmabhirbhaktAnpAti putrAnivaurasAn .. 10\-7\-43 (64246)
+pibanto.asR^igvasAshchAnye kruddhA brahmadviShAM sadA .
+chaturvidhAtmakaM somaM ye pibanti cha sarvadA .. 10\-7\-44 (64247)
+shrutena brahmacharyeNa tapasA cha damena cha .
+ye samArAdhya shUlA~NkaM bhavasAyujyamAgatAH .. 10\-7\-45 (64248)
+yairAtmabhUtairbhagavAnpArvatyA cha maheshvaraH .
+mahAbhUtagaNairbhu~Nkte bhUtabhavyabhavatprabhuH .. 10\-7\-46 (64249)
+nAnAvAditrahasitakShveDitotkR^iShTagarjitaiH .
+santrAsayantaste vishvamashvatthAmAnamabhyayuH .. 10\-7\-47 (64250)
+saMstuvanto mahAdevaM bhAH kurvANAH suvarchasaH .
+vivardhayiShavo drauNermahimAnaM mahAtmanaH .. 10\-7\-48 (64251)
+jij~nAsamAnAstattejaH sauptikaM cha didR^ikShavaH .
+bhImograparighAlAtashUlapaTTasapANayaH .
+ghorarUpAH samAjagmurbhUtasa~NghAH sahasrashaH ..  10\-7\-49 (64252)
+janayeyurbhayaM ye sma trailokyasyApi darshanAt .
+na cha tAnprekShamANo.api vyathAmupajagAma ha .. 10\-7\-50 (64253)
+atha drauNirdhanuShpANirbaddhagodhA~NgulitravAn .
+svayamevAtmanAtmAnamupahAramupAharat .. 10\-7\-51 (64254)
+dhanUMShi samidhastatra pavitrANi sitAH sharAH .
+havirAtmavatashchAtmA tasminbhArata karmaNi .. 10\-7\-52 (64255)
+tataH saumyena mantreNa droNaputraH pratApavAn .
+upahAraM mahAmanyurathAtmAnamupAharat .. 10\-7\-53 (64256)
+taM rudraM raudrakarmANaM raudraiH karmabhirachyutam .
+abhiShTutya mahAtmAnamityuvAcha kR^itA~njaliH .. 10\-7\-54 (64257)
+drauNiruvAcha. 10\-7\-55x (5274)
+imamAtmAnamadyAhaM jAtamA~Ngirase kule .
+svagnau juhomi bhagavanpratigR^ihNIShva mAM balim .. 10\-7\-55 (64258)
+bhavadbhaktyA mahAdeva pasmeNa samAdhinA .
+asyAmApadi vishvAtmannupAkurmI tavAgrataH .. 10\-7\-56 (64259)
+tvayi sarvANi bhUtAni sarvabhUteShu chAsi vai .
+guNAnAM hi pradhAnAnAM kaivalyaM tvayi tiShThati .. 10\-7\-57 (64260)
+sarvabhUtAshraya vibho havirbhUtamavasthitam .
+pratigR^ihANa mAM deva yadyashakyAH pare mayA .. 10\-7\-58 (64261)
+ityuktvA drauNirAsthAya tAM devIM dIptapAvakAm .
+santyajyAtmAnamAruhya kR^iShNavartmanyupAvishat .. 10\-7\-59 (64262)
+tamUrdhvabAhuM nishcheShTaM dR^iShTvA havirupasthitam .
+abravIdbhagavAnsAkShAnmahAdevo hasanniva .. 10\-7\-60 (64263)
+satyashauchArjavatyAgaistapasA niyamena cha .
+kShAntyA bhaktyA cha dhR^ityA cha karmaNA manasA girA .. 10\-7\-61 (64264)
+yathAvadahamArAdvaH kR^iShNenAkliShTakarmaNA .
+tasmAdiShTatamaH kR^iShNAdanyo mama na vidyate .. 10\-7\-62 (64265)
+kurvatA tAta sammAnaM tvAM cha jij~nAsatA mayA .
+pA~nchAlAH sarvadA guptA mAyAshcha bahushaH kR^itAH .. 10\-7\-63 (64266)
+kR^itastasyaiva sammAnaM pA~nchAlAnrakShatA mayA .
+abhibhUtAstu kAlena naiShAmadyAsti jIvitam .. 10\-7\-64 (64267)
+evamuktvA mahAtmAnaM bhagavAnAtmanastanum .
+Avivesha dadau chAsmai vimalaM kha~Ngamuttamam .. 10\-7\-65 (64268)
+athAviShTo bhagavatA bhUyo jajvAla tejasA .
+vegavAMshchAbhavadyuddhe devasR^iShTena tejasA .. 10\-7\-66 (64269)
+taM dR^iShTvA tAni bhUtAni rakShAMsi cha samAdravan .
+abhitaH shibiraM yAntaM droNaputraM mahAratham .
+devadevaM haraM sthAuM yAntaM sAkShAdiveshvaram .. ..  10\-7\-67 (64270)
+
+iti shrImanmahAbhArate sauptikaparvaNi saptamo.adhyAyaH .. 7 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-7\-1 rathopasthAddadhyau sa prayataH sthitaH iti ka.pAThaH ..
+10\-7\-5 so.ahamAtmopahAreNeti jha.pAThaH ..
+10\-7\-9 umAbhUShaNatatparamiti jha.pAThaH ..
+10\-7\-11 hiraNyadaNDakavachaM chArumaulivibhUShaNamiti ka.pAThaH ..
+10\-7\-17 pluvamukhAH maNDUkavaktAH ..
+10\-7\-18 dArvAghATaH pakShivisheShaH . mahAgajasavakAshcheti ka.pAThaH ..
+10\-7\-38 piNDikA jAnunoradhaH\-\-\-pashchAdbhAgaH ..
+10\-7\-53 saumyena somadaivatyena mantreNa ..
+10\-7\-7 saptamo.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 008
+.. shrIH ..
+10\.8\. adhyAyaH 8
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+shibiradvAre kR^ipakR^itavarmANau saMsthApyAntaH praviShTena drauNinA
+dhR^iShTadyumnAdipA~nchAlAnAM draupadeyAdInAM cha vadhaH .. 1 ..
+bhayAdvahirniShkrAntAnAM kR^ipakR^itavarmakShyAM vadhaH .. 2 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-8\-0 (64271)
+dhR^itarAShTra uvAcha. 10\-8\-0x (5275)
+tathA prayAte shibiraM droNaputre mahArathe .
+kachchitkR^ipashcha bhojashcha bhayArtau na vyavartatAm .. 10\-8\-1 (64272)
+kachchinna vAritau kShudrau rakShibhirnopalakShitau .
+asahyamiti manvAnau na nivR^ittau mahArathau .. 10\-8\-2 (64273)
+kachchidunmathya shibiraM hatvA somakapANDavAn .
+`kR^itA pratij~nA saphalA kachchitsa~njaya sA nishi'.. 10\-8\-3 (64274)
+duryodhanasya padavIM kachchitparamikAM raNe .
+`gatvAtiShThadasau drauNiH kR^itvA karma suduShkaram .. 10\-8\-4 (64275)
+dhR^iShTadyumnashikhaNDibhyAM draupadyAshcha sutaiH kila .
+sa~nChannA medinI suptairnihataiH pANDusainikaiH .. 10\-8\-5 (64276)
+pA~nchAlairvA vinihataiH shayAnai rudhirokShitaiH .
+kachchinmahItalaM ChannaM tanmamAchakShva sa~njaya'.. 10\-8\-6 (64277)
+[pA~nchAlairnihatau vIrau kachchittu svapatAM kShitau .
+kachchittAbhyAM kR^itaM karma tanmamAchakShva sa~njaya ..]  10\-8\-7 (64278)
+sa~njaya uvAcha. 10\-8\-8x (5276)
+tasminprayAte shibiraM droNaputre mahAtmani .
+kR^ipashcha kR^itavarmA cha drauNimevAbhyavartatAm .. 10\-8\-8 (64279)
+ashvatthAmA tu tau dR^iShTvA yatnavantau mahArathau .
+prahR^iShTaH shanakai rAjannidaM vachanamabravIt .. 10\-8\-9 (64280)
+yattau bhavantau paryAptau sarvakShatrasya nAshane .
+kimpunaryodhasheShasya prasuptasya visheShataH .. 10\-8\-10 (64281)
+ahaM pravekShye shibiraM chariShyAmi cha kAlavat .
+yathA na kashchidapi vAM jIvanmuchyeta mAnavaH .
+tathA bhavaddhyAM kAryaM syAditi me nishchitA matiH ..  10\-8\-11 (64282)
+ityuktvA prAvishaddrauNiH pArthAnAM shibiraM mahat .
+advAreNAbhyavaskandya vihAya bhayamAtmanaH .. 10\-8\-12 (64283)
+sa pravishya mahAbAhuruddeshaj~nashcha tasya ha .
+`drauNiH paramasa~NkruddhastejasA prajvalanniva .
+tataH paryacharatsarvaM samprasuptaM janaM nishi'..  10\-8\-13 (64284)
+dhR^iShTadyumnasya nilayaM shanakairabhyupAgamat ..  10\-8\-14 (64285)
+te tu kR^itvA mahatkarma shrAntAshcha balavadraNe .
+prasuptA vai suvishvastAH svasainyaparivAritAH .. 10\-8\-15 (64286)
+atha pravishya tadveshma dhR^iShTadyumnasya bhArata .
+pA~nchAlyaM shayane drauNirapashyatsuptamantikAt .. 10\-8\-16 (64287)
+kShaumAvadAte mahati spardvyAstaraNasaMvR^ite .
+mAlyapravarasaMyukte dhUpaishchUrNaishcha vAsite .. 10\-8\-17 (64288)
+taM shayAnaM mahAtmAnaM visrabdhamakutobhayam .
+apothayata pAdena shayanasthaM mahIpate .. 10\-8\-18 (64289)
+sambudhya charaNasparshAdutthAya raNadurmadaH .
+abhyajAnAdameyAtmA droNaputraM mahAratham .. 10\-8\-19 (64290)
+tamutpatantaM shayanAdashvatthAmA mahAbalaH .
+kesheShvAlabhya pANibhyAM niShpipeSha mahItale .. 10\-8\-20 (64291)
+sa balAttena niShpiShTaH sAdhvasena cha bhArata .
+abhyAkrAntashcha nidrAndho nAshakachcheShTituM tadA .. 10\-8\-21 (64292)
+`niShpiShya tu tato bhUmau pA~nchAlyaM drauNira~njasA .
+dhanuSho jyAM vimuchyAshu krUrabuddhiramarShaNaH .. 10\-8\-22 (64293)
+tasya kaNThe.atha baddhvA tAM tvaritaH krodhamUrchChitaH.'
+drauNiH krUraM manaH kR^itvA pA~nchAlyamavadhIttadA ..  10\-8\-23 (64294)
+tamAkramya padA rAjankaNThe chorasi pAdayoH .
+tadantaM visphurantaM cha pashumAramamArayat .. 10\-8\-24 (64295)
+`sa vAryamANastarasA balAdbalavatA balI'.
+tudannakhaistu sa drauNiM nAtivyaktamudAharat .. 10\-8\-25 (64296)
+AchAryaputra shastreNa jahi mAM mA chiraM kR^ithAH .
+tvatkR^ite sukR^itAM lokAngachCheyaM dvipadAMvara .. 10\-8\-26 (64297)
+evamuktvA tu vachanaM virarAma parantapaH .
+sutaH pA~nchAlarAjasya AkrAnto balinA bhR^isham .. 10\-8\-27 (64298)
+tasyAvyaktAM tu tAM vachaM saMshrutya drauNirabravIt .
+AchAryaghAtinAM lokA na santi kulapAMsana .
+tasmAchChastreNa nidhanaM na tvamarhasi durmate ..  10\-8\-28 (64299)
+`nR^ishaMsenAtivR^ittena tvayA me nihataH pitA .
+tasmAttvamapi vadhyashcha nR^ishaMsena nR^ishaMsakR^it ..'  10\-8\-29 (64300)
+evaM bruvANastaM vIraM siMho mattamiva dvipam .
+marmasvabhyavadhItkruddhaH pAdaghAtaiH sudAruNaiH .. 10\-8\-30 (64301)
+tasya vIrasya shabdena mAryamANasya veshmani .
+abudhyanta mahArAja striyo ye chAsya rakShiNaH .. 10\-8\-31 (64302)
+te dR^iShTvA dharShayantaM tamatimAnuShavikramam .
+bhUtamityadhyavasyanto na sma pravyAharanbhayAt .. 10\-8\-32 (64303)
+taM tu tenAbhyupAyena gamayitvA yamakShayam .
+adhyatiShThata tejasvI rathaM prApya sudarshanam .. 10\-8\-33 (64304)
+sa tasya bhavanAdrAjanniShkramyAnAdayandishaH .
+rathena shibiraM prAyAjjighAMsurdviShato balI .. 10\-8\-34 (64305)
+apakrAnte tatastasmindroNaputre mahArathe .
+sahitaiH rakShibhiH sarvaiH prANeduryoShitastadA .. 10\-8\-35 (64306)
+rAjAnaM nihataM dR^iShTvA bhR^ishaM shokaparAyaNAH .
+vyAkroshankShatriyAH sarve dhR^iShTadyumnasya bhArata .. 10\-8\-36 (64307)
+tAsAM tu tena shabdena samIpe kShatriyarShabhAH .
+sambhrAntAH samanahyanta kimetaditi chAbruvan .. 10\-8\-37 (64308)
+striyastu rAjanvitrastA bhAradvAjaM nirIkShya tAH .
+abrundInakaNThena kShipramAdravateti vai .. 10\-8\-38 (64309)
+rAkShaso vA manuShyo vA nainaM jAnIma konvayam .
+hatvA pA~nchAlarAjAnaM rathamAruhya tiShThati .. 10\-8\-39 (64310)
+tataste yodhamukhyAstaM sahasA paryavArayan .
+sa tAnApatataH sarvAnrudrAstreNa vyapothayat .. 10\-8\-40 (64311)
+dhR^iShTadyumnaM cha hatvA sa tAMshchaivAsya padAnugAn .
+apashyachChayane suptamuttamaujasamantike .. 10\-8\-41 (64312)
+tamapyAkramya pAdena kaNThe chorasi tejasA .
+tathaiva mArayAmAsa vinardantamarindamam .. 10\-8\-42 (64313)
+yudhAmanyushcha vikrAnto matvA taM rAkShasaM sma saH .
+gadAmudyamya vegena hR^idi drauNimatADayat .. 10\-8\-43 (64314)
+`gadAprahArAbhihato nAchaladdrauNirAhave'.
+tamabhidrutya vegena kShitau chainamapAtayat .. 10\-8\-44 (64315)
+visphurantaM cha pashuvattathaivainamamArayat .
+tathA sa vIro hatvA taM tato.anyAnsamupAdravat .. 10\-8\-45 (64316)
+saMsuptAneva rAjendra tatra tatra mahArathAn .
+pA~nchAlavIrAnAkramya kruddho nyahanadantike .
+sphurato vepamAnAMshcha shamiteva pashUnmakhe ..  10\-8\-46 (64317)
+tato nistriMshamAdAya jaghAnAnyAnpR^ithakpR^ithak .
+bhAgasho vicharanmArgAnasiyudvavishAradaH .. 10\-8\-47 (64318)
+tathaiva gulme samprekShya shayAnAnmadhyagaulmikAn .
+shrAntAnvyastAyudhAnsarvAnasinaiva vyapothayat .. 10\-8\-48 (64319)
+yodhAnashvAndvipAMshchaiva prAchChinatsa varAsinA .
+rudhirokShitasarvA~NgaH kAlasR^iShTa ivAntakaH .. 10\-8\-49 (64320)
+visphuradbhishcha tairdrauNirnistriMshasyodyamena cha .
+avakShepeNa chaivAsestridhA raktokShito.abhavat .. 10\-8\-50 (64321)
+tasya lohitaraktasya dIptakha~Ngasya yudhyataH .
+amAnuSha ivAkAro babhau paramabhIShaNaH .. 10\-8\-51 (64322)
+ye tvajAgranta kauravya te.api shabdena mohitAH .
+vIkShamANAstu te tatra drauNiM dR^iShTvA pravivyathuH .. 10\-8\-52 (64323)
+tadrUpaM tasya te dR^iShTvA kShatriyAH shatrukarshanam .
+rAkShasaM manyamAnAstaM nayanAni nyamIlayan .. 10\-8\-53 (64324)
+sa ghorarUpo vyacharatkAlavachChibire tadA .
+apashyaddraupadIputrAnavashiShTAMshcha somakAn .. 10\-8\-54 (64325)
+tena shabdena vitrastA dhanurhastA mahArathAH .
+dhR^iShTadyumnaM hataM shrutvA draupadeyA vishAmpate .
+avAkira~nsharavrAtairbhAradvAjamabhItavat ..  10\-8\-55 (64326)
+tatastena ninAdena samprabuddhAH prabhadrakAH .
+shilImukhaiH shikhaNDI cha droNaputraM samArdayan .. 10\-8\-56 (64327)
+bhAradvAjaH sa tAndR^iShTvA sharavarShANi varShataH .
+nanAda balavannAdaM jighAMsustAnmahArathAn .. 10\-8\-57 (64328)
+tataH paramasa~NkruddhaH piturvadhamanusmaran .
+avaruhya rathopasthAttvaramANo.abhidudruve .. 10\-8\-58 (64329)
+sahasrachandravimalaM gR^ihItvA charma saMyuge .
+kha~NgaM cha vimalaM divyaM jAtarUpapariShkR^itam .
+draupadeyAnabhidrutya kha~Ngena vyadhamadbalI ..  10\-8\-59 (64330)
+tataH sa narashArdUlaH prativindhyaM mahAhave .
+kukShideshe.avadhIdrAjansa hato nyapatadbhuvi .. 10\-8\-60 (64331)
+prAsena viddhvA drauNiM tu sutasomaH pratApavAn .
+punashchAsiM samudyamya droNaputramupAdravat .. 10\-8\-61 (64332)
+sutasomasya sAsiM taM bAhuM ChittvA nararShabha .
+punarapyAhanatpArshve sa bhinnahR^idayo.apatat .. 10\-8\-62 (64333)
+nAkulistu shatAnIko rathachakreNa vIryavAn .
+dorbhyAmutkShipya vegena vakShasyenamatADayat .. 10\-8\-63 (64334)
+atADayachChatAnIkaM muktachakraM dvijastu saH .
+sa vihvalo yayau bhUmiM tato.asyApAharachChiraH .. 10\-8\-64 (64335)
+shrutakarmA tu parighaM ghoraM gR^ihya durAsadam .
+atADayatsamudyamya vegena drauNimutsmayan .. 10\-8\-65 (64336)
+sa tu taM shrutakarmANamAsye jaghne varAsinA .
+sa hato nyapatadbhUmau vimUrdhA vikR^itAnanaH .. 10\-8\-66 (64337)
+tena shabdena vIrastu shrutakIrtirabudhyata .
+ashvatthAmAnamAsAdya sharavarShairavAkirat .. 10\-8\-67 (64338)
+`sharairAchChAditastena droNaputro mahArathaH .
+adR^ishyata mahArAja shvAvichChalalato yathA ..'  10\-8\-68 (64339)
+tasyApi sharavarShANi charmaNA prativArya saH .
+sakuNDalaM shiraH kAyAdvAjamAnamapAharat .. 10\-8\-69 (64340)
+tato bhIShmanihantAraM saha sarvaiH prabhadrakaiH .
+Ahanatsarvato vIraM nAnApraharaNairbalAt .. 10\-8\-70 (64341)
+shilImukhena chApyenaM bhruvormadhye samArpayat ..  10\-8\-71 (64342)
+sa tu krodhasamAviShTo droNaputro mahAbalaH .
+shikhaNDinaM samAsAdya dvidhA chichCheda sosinA .. 10\-8\-72 (64343)
+shikhaNDinaM tato hatvA krodhAviShTaH parantapaH .
+prabhadrakagaNAnsarvAnabhidudrAva vegavAn .. 10\-8\-73 (64344)
+yachcha shiShTaM virATasya balaM tu bhR^ishamAdravat .
+drupadasya cha putrANAM pautrANAM suhR^idAmapi .
+chakAra kadanaM ghoraM dR^iShTvA tatra mahAbalaH ..  10\-8\-74 (64345)
+anyAnanyAMshcha puruShAnabhisR^ityAbhisR^itya cha .
+nyakR^intadasinA drauNirasimArgavishAradaH .. 10\-8\-75 (64346)
+kAlIM raktAsyanayanAM raktamAlyAnulepanAm .
+raktAmbaradharAM ghorAM pAshahastAM kuTumbinIm .. 10\-8\-76 (64347)
+dadR^ishuH kAlarAtriM te smayamAnAmiva sthitAm .
+narAshvaku~njarAnpAshairbaddhA ghoraiH pratasthuShIm .. 10\-8\-77 (64348)
+vahantIM vividhAnpretAnpAshabadvAnvimUrdhajAn .
+tathaiva cha sadA rAjannyastashastrAnmahArathAn .. 10\-8\-78 (64349)
+svapne suptAnnayantIM tAM rAtriShvanyAsu mAriSha .
+dadR^ishuryodhamukhyAste ghnantaM drauNiM cha nityadA .. 10\-8\-79 (64350)
+yataH prabhR^iti sa~NgrAmaH kurupANDavasenayoH .
+tataH prabhR^iti tAM kanyAmapashyandrauNimeva cha .. 10\-8\-80 (64351)
+tAMstu daivahatAnpUrvaM pashchAddrauNirvyapAtayat .
+trAsayansarvabhUtAni vinadanbhairavAnravAn .. 10\-8\-81 (64352)
+tadanusmR^itya te vIrA darshanaM pUrvakAlikam .
+idaM tadityamanyanta daivenopanipIDitAH .. 10\-8\-82 (64353)
+tatastena ninAdena pratyabudhyanta dhanvinaH .
+shibire pANDaveyAnAM shatasho.atha sahasrashaH .. 10\-8\-83 (64354)
+so.achChinatkasyachitpadau jaghanaM chaiva kasyachit .
+kAMshchidbibhedapArshveShu kAlasR^iShTa ivAntakaH .. 10\-8\-84 (64355)
+atyugrapratipiShTaishcha nadadbhishcha bhR^ishotkaTaiH .
+gajAshvamathitaishchAnyairmahI kIrNA.abhavatprabho .. 10\-8\-85 (64356)
+kroshatAM kimidaM ko.ayaM kaH shabdaH kinnu kiM kR^itam .
+pA~nchAlAnAM tathA drauNirantakaH samapadyata .. 10\-8\-86 (64357)
+apetashastrasannAhAnsannadvAnpANDusR^i~njayAn .
+prAhiNonmR^ityulokAya drauNiH praharatAM varaH .. 10\-8\-87 (64358)
+tatastachChastravitrastA bhayAdabhyapatannarAH .
+nidrAndhA naShTasaMj~nAshcha tatratatra nipetire .. 10\-8\-88 (64359)
+UrustambhagR^ihItAshcha kashmalAbhihataujasaH .
+vinadanto bhR^ishaM trastA niraikShanta parasparam .. 10\-8\-89 (64360)
+tato rathaM punardrauNirAsthito bhImadarshanaH .
+dhanuShpANiH sharairanyAnpraiShayadvai yamakShayam .. 10\-8\-90 (64361)
+punarutpatatashchApi dUrAdapi narottamAn .
+shUrAnsampatatashchAnyAnkAlarAtryai nyavedayat .. 10\-8\-91 (64362)
+tathaiva syandanAgreNa pramathansa vyarochata .
+sharavarShaishcha vividhairavarShachChAtravAMstataH .. 10\-8\-92 (64363)
+punashcha suvichitreNa shatachandreNa charmaNA .
+tena chAkAshavarNena tathAcharata so.asinA .. 10\-8\-93 (64364)
+tathA sa shibiraM teShAM drauNirAhavadurmadaH .
+vyakShobhayata rAjendra mahAhdamiva dvipaH .. 10\-8\-94 (64365)
+utpetustena shabdena yodhA rAjanvichetasaH .
+nidrArtAshcha bhayArtAshcha vyadhAvanta tatastataH .. 10\-8\-95 (64366)
+visvaraM chukrushushchAnye bahvabadvaM tathA.avadan .
+na cha sma pratyapadyanta shastrANi vasanAni cha .. 10\-8\-96 (64367)
+vimuktakeshAshchApyanye nAbhyajAnanparasparam .
+utpatanto.apata~nshrAntAH kechittatrAbhramaMstadA .
+purIShamasR^ijankechitkechinmUtraM prasusruvuH ..  10\-8\-97 (64368)
+bandhanAni cha rAjendra sa~nChidya turagA dvipAH .
+samaM paryapataMshchAnye kurvanto mahadAkulam .. 10\-8\-98 (64369)
+tatra kechinnarA bhItA vyalIyanta mahItale .
+tathaiva tAnnipatitAnapiMShangajavAjinaH .. 10\-8\-99 (64370)
+tasmiMstathA vartamAne rakShAMsi puruSharShabha .
+hR^iShTAni vyanadannuchchairmudA yuktAni sattama .. 10\-8\-100 (64371)
+sa shabdaH prerito rAjanbhUtasa~NghairmudA yutaiH .
+apUrayaddishaH sarvA divaM chAtimahAnsvanaH .. 10\-8\-101 (64372)
+teShAmArtaravaM shrutvA vitrastA gajavAjinaH .
+muktAH paryapatanrAjanmR^idgantaH shibire janam .. 10\-8\-102 (64373)
+taistatra paridhAvadbhishcharaNodIritaM rajaH .
+akarochChibire teShAM rajanyAM dviguNaM tamaH .. 10\-8\-103 (64374)
+tasmiMstamasi sa~njAte pramUDhAH sarvato janAH .
+nAjAnanpitaraH putrAnbhrAtR^InbhrAtara eva cha .. 10\-8\-104 (64375)
+gajo rAjAnatikramya nirmanuShyA hayA hayAn .
+atADayaMstathA.abha~njaMstathA.amR^idgaMshcha bhArata .. 10\-8\-105 (64376)
+te bhagnAH prapatanti sma mR^idrantashcha parasparam .
+nyapAtayaMstathA chAnyAnpAtayitvA tadA.apiShan .. 10\-8\-106 (64377)
+vichetasaH sanidrAshcha tamasA chAvR^itA narAH .
+jaghruH svAneva tatrAtha kAlenaiva prachoditAH .. 10\-8\-107 (64378)
+tyaktvAdvArANi cha dvAsthAstathAgulmAnigaulmikAH .
+prAdravanta yathAshakti kAMdishIkA vichetasaH .. 10\-8\-108 (64379)
+vipranaShTAshcha te.anyonyaM nAjAnantastathA vibho .
+kroshantastAta putreti daivopahatachetasaH .. 10\-8\-109 (64380)
+palAyatAM dishasteShAM svAnapyutsR^ijya bAndhavAn .
+gotranAmabhiranyonyamAkrandanta tato janAH .. 10\-8\-110 (64381)
+hAhAkAraM cha kurvANAH pR^ithivyAM sherate pare .
+tAnbuddhA raNamadhye.asau droNaputro vyapothayat .. 10\-8\-111 (64382)
+tatrApare vadhyamAnA muhurmahurachetasaH .
+shibirAnniShpatanti sma kShatriyA bhayapIDitAH .. 10\-8\-112 (64383)
+tAMstu niShpatitAMstrastA~nshibirAjjIvitaiShiNaH .
+kR^itavarmA kR^ipashchaiva dvAradeshe nijaghnatuH .. 10\-8\-113 (64384)
+visastayantrakavachAnmuktakeshAnkR^itA~njalIn .
+vepamAnAnkShitau bhItAntraiva kAMshchidamuchyatAm .. 10\-8\-114 (64385)
+nAmuchyata tayoH kashchinniShkrAntaH shibirAdbahiH ..
+kR^ipashchaiva mahArAja hArdikyashchaiva durmatiH.  10\-8\-115 (64386)
+bhUyashchaiva chikIrShantau drauNaputrasya tau priyam .
+triShu desheShu dadatuH shibirasya hutAshanam .. 10\-8\-116 (64387)
+tataH prakAshe shibire kha~Ngena pitR^inandanaH .
+ashvatthAmA mahArAja vyacharatkR^itahastavat .. 10\-8\-117 (64388)
+kAMshchidApatato vIrAnaparAMshchaiva dhAvataH .
+vyayojayata kha~Ngena prANairdvijavarottamaH .. 10\-8\-118 (64389)
+kAMshchidyodhAnsa kha~Ngena madhye sa~nChidya vIryavAn .
+ashAtayaddroNaputraH saMrabdhastilakANDavat .. 10\-8\-119 (64390)
+ninadadbhirbhR^ishAyastairnarAshvadviradottamaiH .
+patitairabhavatkIrNA medinI bharatarShabha .. 10\-8\-120 (64391)
+mAnuShANAM sahasreShu hateShu patiteShu cha .
+udatiShThankabandhAni bahUnyutthAya chApatan .. 10\-8\-121 (64392)
+sAyudhAnsA~NgadAnbAhUnvichakarta shirAMsi cha .
+hastihastopamAnUrUnhastAnpAdAMshcha bhArata .. 10\-8\-122 (64393)
+pR^iShThachChinnAnpArshvachChinnA~nshirashChinnAMstathAparAn .
+sa mahAtmAkaroddrauNiH kAMshchichchApi parA~NmukhAn .. 10\-8\-123 (64394)
+madhyadeshe narAnanyAMshchichChedAnyAMshcha karNataH .
+aMsadeshe nihatyAnyAnkAye prAveshayachChiraH .. 10\-8\-124 (64395)
+evaM hi bahubhiH shastrairghnato.api balavattarAn .
+tamasA rajanI ghorA babhau dAruNadarshanA .. 10\-8\-125 (64396)
+ki~nchitprANaishcha puruShairhataishchAnyaiH sahasrashaH .
+bahunA cha gajAshvena bhUtabhUdbhImadarshanA .. 10\-8\-126 (64397)
+yakSharakShaHsamAkIrNe rathAshvadvipadAruNe .
+kruddhena droNaputreNa sa~nChinnAH prApatanbhuvi .
+bhrAtR^Inanye pitR^Inanye putrAnanye vichukrushuH ..  10\-8\-127 (64398)
+kechidUchurna tatkruddhairdhArtarAShTraiH kR^itaM raNe .
+yatkR^itaM naH prasuptAnAM rakShobhiH krUgkarmabhiH .
+asAnnidhyAdvi pArthAnAmidaM vaH kadanaM kR^itam ..  10\-8\-128 (64399)
+na chAsurairna gandharvairna yakShairna cha rAkShasaiH .
+shakyo vijetuM kaunteyo netA yasya janArdanaH .
+brahmaNyaH matyavAgdAntaH sarvabhUtAnukampakaH ..  10\-8\-129 (64400)
+na cha suptaM pramattaM vA nyastashastraM kR^itA~njalim .
+dhAvantaM muktakeshaM vA hanti pArtho dhana~njayaH .. 10\-8\-130 (64401)
+tadidaM naH kR^itaM ghoraM rakShobhiH krUrakarmabhiH .
+iti lAlapyamAnAH sma sherate bahavo janAH .. 10\-8\-131 (64402)
+stanatAM cha manuShyANAmapareShAM cha kUjatAm .
+tato muhUrtAtprAshAmyatsa shabdastumulo mahAn .. 10\-8\-132 (64403)
+shoNitavyatiShiktAyAM vasudhAyAM cha bhUmipa .
+tadrajastumulaM ghoraM kShaNenAntaradhIyata .. 10\-8\-133 (64404)
+sa cheShTamAnAnudvignAnnirutsAhAnsahasrashaH .
+nyapAtayannarAnkrudvaH pashUnpashupatiryathA .. 10\-8\-134 (64405)
+anyonyaM sampariShvajya shayAnA~njIvato.aparAn .
+saMlInAnyudhyamAnAMshcha sarvAndrauNirapothayat .. 10\-8\-135 (64406)
+brahmamAnA hutAshena vadhyamAnAshcha tena te .
+parasparaM tadA yodhAnanayadyamasAdanam .. 10\-8\-136 (64407)
+tasyA rajanyAstvardhena pANDavAnAM mahadbalam .
+gamayAmAsa rAjendra drauNiryamaniveshanam .. 10\-8\-137 (64408)
+nishAcharANAM satvAnAM rAtriH sA harShavardhinI .
+AsInnaragajAshvAnAM raudrI kShayakarI bhR^isham .. 10\-8\-138 (64409)
+tatrAdR^ishyanta rakShAMsi pishAchAshcha pR^ithagvidhAH .
+khAdanto naramAMsAni pibantaH shoNitAni cha .. 10\-8\-139 (64410)
+karAlAH pi~NgalA raudrAH shailadantA rajasvalAH .
+jaTilA bhImavaktrAshcha pa~nchapAdA mahodarAH .. 10\-8\-140 (64411)
+pa~nchAda~Ngulayo rUkShA virUpA bhairavasvanAH .
+gajAnanAshcha hasvAshcha nIlavarNA bibhIShaNAH .. 10\-8\-141 (64412)
+saputradArAH sukrUrAH sudurdarshAH sunirghR^iNAH .
+vividhAni cha rUpANi tatrAdR^ishyanta rakShasAm .. 10\-8\-142 (64413)
+pItvA cha shoNitaM hR^iShTAH prAnR^ityangaNasho.apare .
+idaM paramidaM medhyamidaM svAdviti chAbruvan .. 10\-8\-143 (64414)
+medomajjAsthiraktAnAM mAMsAnAM cha bhR^ishAshitAH .
+pare mAMsAni khAdantaH kravyAdA mAMsajIvinaH .. 10\-8\-144 (64415)
+vasAshchaivApare pItvA paryadhAvanvikukShikAH .
+nAnAvaktrAstathA raudrAH kravyAdAH pishitAshanAH .. 10\-8\-145 (64416)
+ayutAni cha tatrAsanprayutAnyarbudAni cha .
+rakShasAM ghorarUpANAM mahatAM krurakarmaNAm .. 10\-8\-146 (64417)
+muditAnAM vitR^iptAnAM tasminmahati vaishase .
+sametAni bahUnyAsanbhUtAni cha janAdhipa.  10\-8\-147 (64418)
+evaMvidhA hi sA rAtriH somakAnAM janakShaye .
+prasuptAnAM pramattAnAmAsItsubhR^ishadAruNA .. 10\-8\-148 (64419)
+asaMshayaM hi kAlasya paryAyo duratikramaH .
+tAdR^ishA nihatA yatra kR^itvA.asmAkaM janakShayam .. 10\-8\-149 (64420)
+dhR^itarAShTra uvAcha. 10\-8\-150x (5277)
+prAgeva sumahatkarma drauNiretanmahArathaH .
+nAkarodIdR^ishaM kasmAnmatputravijaye dhR^itaH .. 10\-8\-150 (64421)
+atha kasmAdvate kShatre karmedaM kR^itavAnasau .
+droNaputro mahAtmA sa tanme shaMsitumarhasi .. 10\-8\-151 (64422)
+sa~njaya uvAcha. 10\-8\-152x (5278)
+teShAM nUnaM bhayAnnAsau kR^itavAnkurunandana .
+asAnnidhyAddhi pArthAnAM keshavasya cha dhImataH .
+sAtyakeshchApi karmedaM dromaputreNa sAdhitam ..  10\-8\-152 (64423)
+ko hi teShAM samakShaM tAnhanyAdapi marutpatiH .
+etadIdR^ishakaM vR^ittaM rAjansuptajane vibho .. 10\-8\-153 (64424)
+tato janakShayaM kR^itvA pANDavAnAM mahAtyayam .
+pratyUShakAle shibirAtpratigantumiyeSha saH .. 10\-8\-154 (64425)
+nR^ishoNitAvasiktasya drauNerAsIdasitsaruH .
+pANinA saha saMshliShTa ekIbhUta iva prabho .. 10\-8\-155 (64426)
+sa niHsheShAnarInkR^itvA virarAma nishAkShaye .
+yugAnte sarvabhUtAni bhasma kR^itveva pAvakaH .. 10\-8\-156 (64427)
+yathApratij~naM tatkarma kR^itvA drauNAyaniH prabho .
+durgamAM padavIM gachChanpiturAsIdgatajvaraH .. 10\-8\-157 (64428)
+yathaiva saMsuptajane shibire prAvishannishi .
+tathaiva hatvA niHshabdo nishchakrAma nararShabhaH .. 10\-8\-158 (64429)
+niShkramya shibirAttasmAttAbhyAM sa~Ngamya vIryavAn .
+Achakhyau karma tatsarvaM hR^iShTaH saMharShayanvibho .. 10\-8\-159 (64430)
+tAvathAchakhyatustasmai priyaM priyakarau tadA .
+pA~nchAlAnsR^i~njayAMshchaiva vinikR^ittAnsahasrashaH .. 10\-8\-160 (64431)
+prItyA chochchairudrakroshaMstathaivAsphoTayaMstalAn .
+diShTyAdiShTyeti chAnyonyaM sametyochurmahArathAH .. 10\-8\-161 (64432)
+paryaShvajattato drauNistAbhyAM sampratinanditaH .
+idaM harShAttu sumahadAdade vAkyamuttamam .. 10\-8\-162 (64433)
+pA~nchAlA nihatAH sarve draupadeyAshcha sarvashaH .
+somakA matsyasheShAshcha sarve vinihatA mayA .. 10\-8\-163 (64434)
+idAnIM kR^itakR^ityAH sma yAma tatraiva mA chiram .
+yadi jIvati no rAjA tasmai shaMsAmahe priyam .. .. 10\-8\-164 (64435)
+
+iti shrImanmahAbhArate sauptikaparvaNi aShTamo.adhyAyaH .. 8 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-8\-7 pA~nchAlaiH pUrvaM nihatau santau svapatAM kachchit kopAt
+svapatAM pA~nchAlAnAM karma vadhAkhyaM tAbhyAM kachchitkR^itamiti
+sambandhaH ..
+10\-8\-8 shibiradvAryatiShThatAmiti jha.pAThaH ..
+10\-8\-11 vAM yuvAM prApyeti sheShaH ..
+10\-8\-13 uddeshaj~naH dhR^iShTadyumnasthalaj~naH ..
+10\-8\-30 pAdAShThIlairiti jha.pAThaH . tatra pAdAShThIlaiH
+pAdagranthibhiH. pArShNighAtairityarthaH ..
+10\-8\-50 taishChinnagAtrairvisphuradbhisteShAM sharIrAduchchaladbhI
+raktabindubhirityarthaH ..
+10\-8\-87 pANDusR^i~njayAn pANDavasambandhinaH sR^i~njayAn
+. pANDorgotrApatyAni sR^i~njayAshcha tAnvA ..
+10\-8\-105 abha~njan gAtrANyanamayan . amR^idran parasparaM marditavantaH ..
+10\-8\-106 apiShan apiMShan ..
+10\-8\-144 bhR^ishAshitAH bhR^ishaM saMntarpitAH ..
+10\-8\-145 vikukShikAH vipulakukShayaH ..
+10\-8\-8 aShTamo.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 009
+.. shrIH ..
+10\.9\. adhyAyaH 9
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+drauNikR^ipakR^itavarmabhirduryodhanametya shochanam .. 1 ..
+duryodhanamprati drauNinA suptajavadhakathanam .. 2 ..
+duryodhanena prANatyAgaH .. 3 ..
+drauNyAdInAM nagaragamanam .. 4 ..
+sa~njayasya vyAsAnugrahaprAptadivyaj~nAnanAshaH .. 5 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-9\-0 (64436)
+sa~njaya uvAcha. 10\-9\-0x (5279)
+te hatvA sarvapA~nchAlAndraupadeyAMshcha sarvashaH .
+AgachChansahitAstatra yatra duryodhano hataH .. 10\-9\-1 (64437)
+gatvA chainamapashyanta ki~nchitprANaM janAdhipam .
+tato rathebhyaH praskandya parivavrustavAtmajam .. 10\-9\-2 (64438)
+taM bhagrasakthaM rAjendra kR^ichChraprANamachetasam .
+vamantaM rudhiraM vaktrAdapashyanvasudhAtale .. 10\-9\-3 (64439)
+vR^itaM samantAdbahubhiH shvApadairghoradarshanaiH .
+sAlAvR^ikagaNaishchaiva bhakShayiShyadbhirantikAt .. 10\-9\-4 (64440)
+nirAyantaM kR^ichChrAttA~nshvApadAMshcha chikhAdiShUn .
+viveShTamAnamurubhyAM subhR^ishaM gADhavedanam .. 10\-9\-5 (64441)
+taM shayAnaM tathA dR^iShTvA bhUmau surudhirokShitam .
+hatashiShTAstrayo vIrAH shokArtAH paryadevayan .
+ashvatthAmA kR^ipashchaiva kR^itavarmA cha sAtvataH ..  10\-9\-6 (64442)
+taistribhiH shoNitAdigdhaurniH shvasadbhirmahArathaiH .
+shushubhe sa vR^ito rAjA vedI tribhirivAgnibhiH .. 10\-9\-7 (64443)
+te taM shayAnaM samprekShya rAjAnamatathochitam .
+aviShahyena duHkhena tataste rurudustrayaH .. 10\-9\-8 (64444)
+tatastu rudhiraM hastairmukhAnnirmR^ijya tasya hi .
+raNe rAj~naH shayAnasya kR^ipaH samparyadevayat .. 10\-9\-9 (64445)
+kR^ipa uvAcha. 10\-9\-10x (5280)
+na daivasyAtibhAro.asti yadayaM rudhirokShitaH .
+ekAdashachamUbhartA shete duryodhano hataH .. 10\-9\-10 (64446)
+pashya chAmIkarAbhasya chAmIkaravibhUShitAm .
+gadAM gadApriyasyemAM samIpe patitAM bhuvi .. 10\-9\-11 (64447)
+iyamenaM gadA shUraM na jahAti raNeraNe .
+svargAyApi vrajantaM hi na jahAti yashasvinam .. 10\-9\-12 (64448)
+pashyemAM saha vIreNa jAmbUnadavibhUShitAm .
+shayAnAM shayane harmye bhAryAM prItimatImiva .. 10\-9\-13 (64449)
+yo.ayaM mUrdhAbhiShiktAnAmagre yAti parantapaH .
+sa hato grasate pAMsUnpashya kAlasaya paryayam .. 10\-9\-14 (64450)
+yenAjau nihatA bhUmau sherate kShatriyarShabhAH .
+sa bhUmau nihataH shete kururAjaH parairayam .. 10\-9\-15 (64451)
+bhayAnnamanti rAjAno yasya sma shatasa~NghashaH .
+sa vIrashayane shete kravyAdbhiH parivAritaH .. 10\-9\-16 (64452)
+yamupAsannR^ipAH pUrvamarthahetormahIpatim .
+upAtpate cha taM hyadya kravyAdA mAMsagR^iddhinaH .. 10\-9\-17 (64453)
+sa~njaya uvAcha. 10\-9\-18x (5281)
+taM shayAnaM kurushreShThaM tato bharatasattamam .
+ashvatthAmA samAli~Ngya karuNaM paryadevayat .. 10\-9\-18 (64454)
+AhustvAM rAjashArdUla mukhyaM sarvadhanuShmatAm .
+dhanAdhyakShopamaM yuddhe shiShyaM sa~NkarShaNasya cha .. 10\-9\-19 (64455)
+kathaM vivaramadrAkShIdbhImasenastavAnagha .
+balinaM kR^itino nityaM sUdaH pApAtmavAnnR^ipa .. 10\-9\-20 (64456)
+kAlo nUnaM mahArAja loke.asminbalavattaraH .
+pashyAmo nihataM tvAM cha bhImasenena saMyuge .. 10\-9\-21 (64457)
+kathaM tvAM sarvadharmaj~naM kShudraH pApo vR^ikodaraH .
+nikR^ityA hatavAnmando nUna kAlo duratyayaH .. 10\-9\-22 (64458)
+dvandvayuddhe hyadharmeNa samAhUyaujasA mR^idhe .
+gadayA bhImasenena nirbhagne sakthinI tava .. 10\-9\-23 (64459)
+adharmeNa hatasyAjau mR^idyamAnaM padA shiraH .
+ya upekShitavAnkShudraM dhiktamastu\-\-yudhiShThiram .. 10\-9\-24 (64460)
+yuddheShvapavadiShyanti yodhA nUnaM vR^ikodaram .
+yAvatsthAsyanti bhUtAni nikR^ityA hyasi pAtitaH .. 10\-9\-25 (64461)
+nanu rAmo.abravIdrAjaMstvAM sadA yadunandanaH .
+duryodhanasamo nAsti gadAyAmiti vIryavAn .. 10\-9\-26 (64462)
+shlAghate tvAM hi vArShNeyo rAjansaMsatsu bhArata .
+sa shiShyo mama kauravyo gadAyuddha iti prabho .. 10\-9\-27 (64463)
+yAM gatiM kShatriyasyAhuH prashastAM paramarShayaH .
+hatasyAbhimukhasyAjau prAptastvamasi tAM gatim .. 10\-9\-28 (64464)
+duryodhana na shochAmi tvAmahaM puruSharShabha .
+hataputrau tu shochAmi gAndhArIM piraM cha te .. 10\-9\-29 (64465)
+dvAvanAthau kR^itau vIra tvayA nAthena vardhitau .
+bhikShukau vichariShyete shochantau pR^ithivImimAm .. 10\-9\-30 (64466)
+ghigastu kR^iShNaM vArShNeyamarjunaM chApi durmatim .
+dharmaj~namAnimau yau tvAM vadhyamAnamupekShatAm .. 10\-9\-31 (64467)
+pANDavAshchApi te sarve kiM vakShyanti narAdhipa .
+kathaM duryodhano.asmAbhirhata ityanapatrapAH .. 10\-9\-32 (64468)
+dhanyastvamasi gAndhAre yasvamAyodhane hataH .
+prayAto.abhimukhaH shatrUndharmeNa puruSharShabha .. 10\-9\-33 (64469)
+hataputrA hi gAndhArI nihataj~nAtibAndhavA .
+praj~nAchakShushcha durdharShaH kAM dashAM pratipatsyate .. 10\-9\-34 (64470)
+dhigastu kR^itavarmANaM mAM kR^ipaM cha mahAratham .
+ye vayaM na gatAH svargaM tvAM puraskR^itya pArthivam .. 10\-9\-35 (64471)
+dAtAraM sarvakAmAnAM rakShitAraM prajAhitam .
+yadvayaM nAnugachChAma tvAM dhigasmAnnarAdhamAn .. 10\-9\-36 (64472)
+kR^ipasya tava vIryeNa mama chaiva pitushcha me .
+sabhR^ityAnAM naravyAghra ratnavanti gR^ihANi cha .. 10\-9\-37 (64473)
+tava prasAdAdasmAbhiH samitraiH saha bAndhavaiH .
+avAptAH kratavo mukhyA bahavo bhUridakShiNAH .. 10\-9\-38 (64474)
+kutashchApIdR^ishaM pApAH pravartiShyAmahe vayam .
+yAdR^ishena puraskR^itya tvaM gataH sarvapArthivAn .. 10\-9\-39 (64475)
+vayameva trayo rAjangachChantaM paramAM gatim .
+yadvai tvAM nAnugachChAbhastena tapsyAmahe vayam.  10\-9\-40 (64476)
+tatsvargahInA hInArthAH smarantaH sukR^itasya te .
+kiM nAma tadbhavetkarma yena tvAM na vrajAma vai .. 10\-9\-41 (64477)
+duHkhaM nUna kurushreShTha chariShyAma mahImimAm .
+hInAnAM nastvayA rAjankutaH shAntiH kutaH sukhaM .. 10\-9\-42 (64478)
+gatvaiva tu mahArAja sametya cha mahArathAn .
+yathAjyeShThaM yathAshreShThaM pUjayervachanAnmama .. 10\-9\-43 (64479)
+AchAryaM pUjayitvA cha ketuM sarvadhanuShmatAm .
+hataM mayA.adya shaMshethA dR^iShTadyumnaM narAdhipa .. 10\-9\-44 (64480)
+pariShvajethA rAjAnaM bAhlikaM sumahAratham .
+saindhavaM somadattaM cha bhUrishravasameva cha .. 10\-9\-45 (64481)
+tathA pUrvagatAnanyAnsvarge pArthivasatmAn .
+asmadvAkyAtpariShvajya sampR^ichChesvamanAmayam .. 10\-9\-46 (64482)
+sa~njaya uvAcha. 10\-9\-47x (5282)
+ityevamukvA rAjAnaM bhagnasakthamachetasam .
+ashvatthAmA laghuprANaM punarvachanamabravIt .. 10\-9\-47 (64483)
+duryodhana jIvasi chedvAkyaM shrotramukhaM shR^iNu .
+sap pANDavataH shiShTA dhArtarAShTrAstrayo vayam .. 10\-9\-48 (64484)
+te chaiva bhrAtaraH pa~ncha vAsudevo.atha sAtyakiH .
+ahaM cha kR^itavarmA cha kR^ipaH shAradvatastathA .. 10\-9\-49 (64485)
+draupadeyA hatAH sarve dhR^iShTadyumnasya chAtmajAH .
+pa~nchAlA nihatAH sarve matsyasheShaM cha bhArata .. 10\-9\-50 (64486)
+kR^ite pratikR^itaM pashya hataputrA hi pANDavAH .
+sauptike shibiraM teShAM hataM sanaravAhanam .. 10\-9\-51 (64487)
+mayA cha pApakarmA.asau dhR^iShTadyumno mahIpate .
+pravishya shibiraM rAtrau pashumAreNa mAritaH .. 10\-9\-52 (64488)
+duryodhanastu tAM vAchaM nishamya manasaH priyAm .
+pratilabhya punashcheta idaM vachanamabravIt .. 10\-9\-53 (64489)
+na me.akarotdgA~Ngeyo na karNo na cha te pitA .
+yattvayA kR^ipabhojAbhyAM sahitenAdya me kR^itam .. 10\-9\-54 (64490)
+sa cha senApatiH kShudro hataH sArdhaM shikhaNDinA .
+tena manye maghavatA samamAtmAnamadya vai .. 10\-9\-55 (64491)
+svasti prApnuta bhadraM vaH svarge naH sa~NgamaH punaH .
+ityevamuktvA putraste kururAjo mahAmanAH .. 10\-9\-56 (64492)
+prANAnupAsR^ijadvIraH suhR^idAM duHkhamAdadhat .
+apAkrAmaddivaM puNyAM sharIraM kShitimAvishat .. 10\-9\-57 (64493)
+evaM te nidhanaM yAtaH putro duryodhano nR^ipa .
+agre yAtvA raNe shUraH pashrAdvinihataH paraiH .. 10\-9\-58 (64494)
+tathaiva te pariShvaktAH pariShvajya cha te nR^ipam .
+punaH punaH prekShamANAH svakAnAruruhU rathAn .. 10\-9\-59 (64495)
+ityevaM droNaputrasya nishamya karuNAM giram .
+pratyUShakAle shokArtAH prAdravannagaraM prati .. 10\-9\-60 (64496)
+evameSha kShayo vR^ittaH kurupANDavasenayoH .
+ghoro vishasano raudro rAjandurmantrite tava .. 10\-9\-61 (64497)
+tava putre gate svargaM shokArsya mamAnagha .
+R^iShidattaM pranaShTaM taddivyadarshitvamadya vai .. 10\-9\-62 (64498)
+vaishampAyana uvAcha. 10\-9\-63x (5283)
+iti shrutvA sa nR^ipatirj~nAtiputravadhaM tadA .
+niHshvasya dIrghamuShNaM cha tatashchintAparo.abhavat .. .. 10\-9\-63 (64499)
+
+iti shrImanmahAbhArate sauptikaparvaNi navamo.adhyAyaH .. 9 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-9\-17 upAsata dvijAH pUrvamarthahetoryamIshvaramiti jha.pAThaH ..
+10\-9\-23 dharmayuddhe hyadharmeNeti jha.pAThaH ..
+10\-9\-9 navamo.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 010
+.. shrIH ..
+10\.10\. adhyAyaH 10
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+daivAdurvaritena dR^iShTadyumnasArathinA yudhiShThirAya rAtrau
+vR^ittashibiravR^ittAntavinedanam .. 1 ..
+tachChravaNena draupadyAnayanAya nakulabhAdishya shibirabhuvamupAgatavatA
+yudhiShThireNa gR^itanijajanAvalokanena paridevanam .. 2 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-10\-0 (64500)
+vaishampAyana uvAcha. 10\-10\-0x (5284)
+tasyAM rAtryAM vyatItAyAM dhR^iShTadyumnasya sArathiH .
+gatvA shashaMsa pANDubhyaH sauptike kadanaM kR^itam .. 10\-10\-1 (64501)
+sUta uvAcha. 10\-10\-2x (5285)
+draupadeyA hatA rAjandrupadasvAtmajaiH saha .
+pramattA nishi vishvastAH svapantaH shibire svake .. 10\-10\-2 (64502)
+gautamena nR^ishaMsena bhojena kR^itavarmaNA .
+ashvatthAnnA cha pApena hataM vaH shibiraM nishi .. 10\-10\-3 (64503)
+etairnaragajAshvAnAM prAsashaktiparashvayaiH .
+sahasrAmi vikR^indbhirniH sheShaM shibiraM kR^itam .. 10\-10\-4 (64504)
+`##xxxxxx##vihagaphalabhAranatasya ha.'
+##xxxxxxx##mahato vanasyeva parashvathaiH .
+##xxxxxxxx## sumahA~nshabdo balasya tava bhArata ..  10\-10\-5 (64505)
+mahameko.abashiShTastu tasmAtsainyAmahIpate .
+muktaH katha~nchiddharmAtmanvyagrAchcha kR^itavarmaNaH .. 10\-10\-6 (64506)
+tachChrutvA vAkyamashivaM kuntIputro yudhiShThiraH .
+papAta mahyAM dharmAtmA putrashokasamanvitaH .. 10\-10\-7 (64507)
+patantaM tamatikramya parijagrAha sAtyakiH .
+bhImaseno.arjunashchaiva mAdrIputrau cha pANDavau .. 10\-10\-8 (64508)
+labdhachetAstu kaunteyaH shokavihvalayA girA .
+jitvA shatrU~njitaH pashchAtparyadevayadArtavat .. 10\-10\-9 (64509)
+`agamyA gatirarthAnAM karmaNAmIshvarasya cha'.
+durvidA gatirarthAnAmapi ye divyachakShuShaH .
+jIyamAnA jayantyanye jayamAnA vayaM jitAH ..  10\-10\-10 (64510)
+hatvA bhrAtR^InvayasyAMshcha pitR^InputrAnsuhR^idgaNAn .
+bandhUnamAtyAnpautrAMshcha jitvA sarvA~njitA vayam .. 10\-10\-11 (64511)
+anartho hyarthasa~NkAshastathA.anartho.arthadarshanaH .
+jayo.ayamajayAkAro jayastasmAtparAjayaH .. 10\-10\-12 (64512)
+yajjitvA tapyate pashchAdApanna iva durmatiH .
+kathaM manyeta vijayaM tato jitataraH paraiH .. 10\-10\-13 (64513)
+yeShAmarthAya pApaM syAdvijayasya suhR^idvadhaiH .
+nirjitairapramattairhi vijitA jitakAshinaH .. 10\-10\-14 (64514)
+karNinAlIkadaMShTrasya sva~Ngajihvasya saMyuge .
+chApavyAttAsyaraudrasya jyAtalasvananAdinaH .. 10\-10\-15 (64515)
+kruddhasya narasiMhasya sa~NgrAmeShvapalAyinaH .
+ye vyamu~nchanta karNasya pramAdAtta ime hatAH .. 10\-10\-16 (64516)
+rathahadaM sharavarShormimantaM
+ratnAchitaM vAhanayodhabR^indam .
+shaktyR^iShTimInadhvajanAganakraM
+sharAsanAvartamaheShuphenam ..  10\-10\-17 (64517)
+sa~NgrAmachandrodayavegavelaM
+droNArNavaM jyAtalanemighoSham .
+ye teruruchchAvachashastranaubhi\-\-
+ste rAjaputrA nihatAH pramAdAt ..  10\-10\-18 (64518)
+na hi pramAdAtparamasti kashcha\-\-
+dvadho narANAmiha jIvaloke .
+pramattamarthA hi naraM samantA\-\-
+ttyajantyanarthAshcha samAvishanti ..  10\-10\-19 (64519)
+dhvajottamAgrochChritadhUmaketuM
+sharArchiShaM dIptamahApatAkam .
+mahAdhanurjyAtalanemighoShaM
+tanutranAnAvidhashastrahomam ..  10\-10\-20 (64520)
+mahAchamUkakShadavAbhipannaM
+mahAhave bhIShmamahAdavAgnim .
+ye teruruchchAvachashastravegai\-\-
+ste rAjaputrA nihatAH pramAdAt ..  10\-10\-21 (64521)
+na hi pramattena nareNa shakya\-\-
+mAptuM vasu shrIrvipulaM yasho vA .
+pashyApramAdena nihatya shatrU\-\-
+nsarvAnmahendraM sukhamedhamAnam ..  10\-10\-22 (64522)
+indropamAnpArthivaputrapautrA\-\-
+npashyAvisheSheNa hatAnpramAdAt .
+tIrtvA samudraM jaNijaH samR^idvA .
+magnAH kunadyAmiva sIdamAnAH ..  10\-10\-23 (64523)
+amarShitairye nihatA narendrA
+niHsaMshayaM te tridivaM prapannAH .
+kR^iShNAM tu shochAmi kathaM nu sAdhvI
+shokArNavaM sA viShahiShyatIti ..  10\-10\-24 (64524)
+bhAtR^iMshcha putrAMshcha hatAnnishamya
+pA~nchAlasarAjaM pitaraM cha vR^idvam .
+dhruvaM visa~nj~nA patitA pR^ithivyAM
+sA shoShyate shokakR^ishA~NgayaShTiH ..  10\-10\-25 (64525)
+tachChokajaM duHkhamapArayantI
+kathaM bhaviShyatyuchitA sukhAnAm .
+rorUyate j~nAtivadhAbhitaptA
+pradahvamAneva hutAshanena ..  10\-10\-26 (64526)
+ityevamArtaH paridevayansa
+rAjAja kurUNAM nakulaM babhAShe .
+gachChAnyainAmiha mandabhAgyAM
+samAtR^ipakShAmiti rAjaputrIm ..  10\-10\-27 (64527)
+mAdrIsutastatparigR^ihya vAkyaM
+dharmeNa dharmaprathamasya rAj~naH .
+yayau rathenAlayamAshudevyAH
+pA~nchAlarAjasya cha yatra dArAH ..  10\-10\-28 (64528)
+prasthApya mAdrIsutamAjamIDhaH
+shokArditastaiH sahitaH suhR^idbhiH .
+rorUyamANaH prayayau sutAnA\-\-
+mAyodhanaM bhUtagaNAnukIrNam ..  10\-10\-29 (64529)
+sa tatpravishyAshivamugrarUpaM
+dadarsha putrAnsuhR^idaH sakhIMshcha .
+bhUmau shayAnAnrudhirArdragAtrA\-\-
+nvibhinnadehAnprahR^itottamA~NgAn ..  10\-10\-30 (64530)
+sa tAMstu dR^iShTvA bhR^ishamArtarUpo
+yudhiShThiro dharmabhR^itAM variShThaH .
+uchchaiH prachukrosha cha kauravAgryaH
+papAta chorvyAM sagaNo visaMj~naH .. ..  10\-10\-31 (64531)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi dashamo.adhyAyaH .. 10 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-10\-8 ##xxxxxxxx##tyaktvA patantam ..
+10\-10\-10 anye shatravaH . jayamAnAH jayantaH. jitAnAM jayo jayatAM
+parAjayaH phalato.abhUditi mahadAshcharyamityarthaH ..
+10\-10\-13 pashchAtsa pApa iva durmatiriti ka.pAThaH ..
+10\-10\-16 vyamu~nchanta muktAH . karNasya
+karNAt. pramAdAdasmatkR^itAdasAnnidhyAt ..
+10\-10\-17 vAhanavAjiyuktamiti jha.pAThaH ..
+10\-10\-20 tanutrANi nAnAShidhAni shaskarANi cha teShAM homaH prakShepo
+yatra taM tanutranAnAvidhashastrahomam ..
+10\-10\-21 bhIShmamayaM bhIShmapradhAnaM agnidAham . bhIShmarUpeNa agninA
+dAhamityarthaH ..
+10\-10\-24 nihatAH shayAnA iti jha.pAThaH ..
+10\-10\-10 dashamo.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 011
+.. shrIH ..
+10\.11\. adhyAyaH 11
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+makulena yudhiShThirasamoShaM prati draupathAnayanam .. 1 ..
+draupadyA drauNimastakamaNiharaNachoditena bhImena nakulasArathinA
+rathena drauNivabhrAya prasthAnam .. 2 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-11\-0 (64532)
+vaishampAyana uvAcha. 10\-11\-0x (5286)
+sa dR^iShTvA nihatAnsa~Nkhye putrAnpAtraunsakhIMstathA .
+mahAduHkhaparItAtmA babhUva janamejaya .. 10\-11\-1 (64533)
+tatastasya mahA~nshokaH prAdurAsInmahAtmanaH .
+smarataH putrapautrAMstAnbhrAtR^InsuhR^ida eva cha .. 10\-11\-2 (64534)
+tamashruparipUrNAkShaM vepamAnamachetasam .
+suhR^ido bhR^ishasaMvignAH sAMtvayA~nchakrire tadA .. 10\-11\-3 (64535)
+`kR^itvA tu vidhivatteShAM putrANAmamitaujasAm .
+pretakAryANi sarveShAM babhUva bhR^ishaduHkhitaH'.. 10\-11\-4 (64536)
+tasminmuhUrte javanairvAjibhirhemamAlibhiH .
+nakulaH kR^iShNayA sArdhamupAyAtparamArtayA .. 10\-11\-5 (64537)
+upaplAvyaM gatA sA tu shrutvA sumahadapriyam .
+tadA vinAshaM sarveShAM putrANAM vyathitendriyA .. 10\-11\-6 (64538)
+kampamAneva kadalI vAtenAbhisamIritA .
+kR^iShNA rAjAnamAsAdya shokArtA nyapatadbhuvi .. 10\-11\-7 (64539)
+na babhau vadanaM tasyA rudantyAH shokakarshitam .
+phullapadmapalAshAkShyA meghAvR^ita ivoDurAT .. 10\-11\-8 (64540)
+tatastAM patitAM dR^iShTvA saMrambhI satyavikramaH .
+vAhubhyAM parijagrAha samutpatya vR^ikodaraH .. 10\-11\-9 (64541)
+sA samAshvAsitA tena bhImasenena bhAminI .
+rudatI pANDavajyeShThamidaM vachanamabravIt .. 10\-11\-10 (64542)
+diShTyA rAjannavApyemAmakhilAM bhokShyase mahIm .
+AtmajAnkShatradharmeNa sampradAya yamAya vai .. 10\-11\-11 (64543)
+diShTyA sarvAstrakushalaM mattamAta~NgAminam .
+avApya pR^ithivIM kR^itsnAM saubhadraM na smariShyasi .. 10\-11\-12 (64544)
+AtmajAnkShatradharmeNa shrutvA shUrAnnipAtitAn .
+sthito rAjye mayA sArdhaM viharanna smariShyasi .. 10\-11\-13 (64545)
+prasuptAnAM vadhaM shrutvA drauNinA pApakarmaNA .
+shoko mAM dahate gADho hutAshana ivAshrayam .. 10\-11\-14 (64546)
+tasya pApakR^ito drauNerna chedadya durAtmanaH .
+hiyate sAnubandhasya yudhi vikramya jIvitam .. 10\-11\-15 (64547)
+ihaiva prAyamAsiShye tannibodhata pANDavAH .
+na chetphalamavApnoti drauNiH pApasya karmaNaH .. 10\-11\-16 (64548)
+evamaktvA tataH kR^iShNA pANDavaM pratyupAvishat .
+yudhiShThiraM yAj~nasenI dharmarAjaM yashasvinI .. 10\-11\-17 (64549)
+dR^iShTvopaviShTAM rAjA tu pANDavo mahiShIM priyAm .
+pratyuvAcha sa dharmAtmA draupadIM chArudarshanAm .. 10\-11\-18 (64550)
+kShatradharmeNa dharmaj~ne prAptAste nidhanaM shubhe .
+putrAste bhrAtarashchaiva tAnna shochitumarhasi .. 10\-11\-19 (64551)
+sa kalyANi vanaM durgaM dUraM drauNirito gataH .
+tasya tvaM pAtanaM sa~Nkhye kathaM j~nAsyasi shobhane .. 10\-11\-20 (64552)
+draupadyuvAcha. 10\-11\-21x (5287)
+droNaputrasya sahajo maNiH shirasi me shrutaH .
+nihatya sa~Nkhye taM pApaM pashyeyaM maNimAhR^itam .
+drauNeH shirasa utkR^itya jIveyamiti me matiH ..  10\-11\-21 (64553)
+ityuktvA pANDavaM kR^iShNA rAjAnaM chArudarshanA .
+bhImasenakare spR^iShTvA kupitA vAkyamabravIt .. 10\-11\-22 (64554)
+trAtumarhasi mAM bhIma kShatradharmamanusmaran .
+jahi taM pApakarmANaM shambaraM saghavAniva .. 10\-11\-23 (64555)
+na hi te vikrame tulyaH pumAnastIha kashchana .
+shrutaM tatsarvalokeShu paramavyasane tathA .. 10\-11\-24 (64556)
+dvIpo.abhUstvaM hi pArthAnAM nagare vAraNAvate .
+hiDimbadarshane chaiva tathAM tvamabhavo gatiH .. 10\-11\-25 (64557)
+tathA virATanagare kIchakena bhR^ishArditAm .
+mAmapyudvR^itavAnkR^ichChrAtpaulomIM maghavAniva .. 10\-11\-26 (64558)
+yathaitAnyakR^ithAH pArtha mahAkarmANi vai purA .
+tathA drauNimamitraghna vinihatya sukhI bhava .. 10\-11\-27 (64559)
+vaishampAyana uvAcha. 10\-11\-28x (5288)
+tasyA bahuvidhaM duHkhaM nishamya paridevitam .
+na chAmarShata kaunteyo bhImaseno mahAbalaH .. 10\-11\-28 (64560)
+sa kA~nchanavichitrA~NgamAruroha mahAratham .
+AdAya ruchiraM chitraM samArgaNaguNaM dhanuH .. 10\-11\-29 (64561)
+nakulaM sArathiM kR^itvA droNaputravadhe dhR^itaH .
+visphArya sasharaM chApaM tUrNamashvAnachodayat .. 10\-11\-30 (64562)
+te hayAH puruShavyAghra dIpyamAnAH svatejasA .
+vahantaH sahasA jagmurharayaH shIghragAminaH .. 10\-11\-31 (64563)
+shibirAtsvAdgR^ihItvA sa rathasya padamachyutaH .
+`droNaputragatenAshu yayau mArgeNa bhArata'.. .. 10\-11\-32 (64564)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi ekAdasho.adhyAyaH .. 11 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-11\-11 diShThyeti . putranAshApekShayA rAjyaprAptisukhaM tava
+mahadityadhikShepaH ..
+10\-11\-11 ekAdasho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 012
+.. shrIH ..
+10\.12\. adhyAyaH 12
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+drauNijighAMsayA bhIme pratigate kR^iShNena yudhiShThiramprati
+drauNidaushshIlyAdikathanapUrvakaM bhImasya tato rakShaNIyatvakathanam
+.. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-12\-0 (64565)
+vaishampAyana uvAcha. 10\-12\-0x (5289)
+tasminprayAte durdharShe yadUnAmR^iShabhastataH .
+abravItpuNDarIkAkShaH kuntIputraM yudhiShThiram .. 10\-12\-1 (64566)
+eSha pANDave te bhrAtA putrashokaparAyaNaH .
+jighAMsurdrauNimAkrande eka evAbhidhAvati .. 10\-12\-2 (64567)
+bhImaH priyaste sarvebhyo bhrAtR^ibhyo bharatarShabha .
+taM kR^ichChragatamadya tvaM kasmAnnAbhyupapadyase .. 10\-12\-3 (64568)
+yattadAchaShTa putrAya droNaH parapura~njayaH .
+astraM brahmashiro nAma daheta pR^ithivImapi .. 10\-12\-4 (64569)
+tanmahAtmA mahAbhAgaH ketuH sarvadhanuShmatAm .
+pratyapAyadAchAryaH prIyamANo dhana~njayam .. 10\-12\-5 (64570)
+taM putro.apyeka evainamanvayAchadamarShaNaH .
+tataH provAcha putrAya nAtihR^iShTamanA iva .. 10\-12\-6 (64571)
+viditaM chApalaM hyAsIdAtmajasya durAtmanaH .
+sarvadharmavidAchAryaH so.anvashAsatsutaM tataH .. 10\-12\-7 (64572)
+paramApadgatenApi na sma tAta tvayA raNe .
+idamastraM prayoktavyaM mAnuSheShu visheShataH .. 10\-12\-8 (64573)
+ityuktvAnguruH putraM droNaH pashchAthoktavAn .
+na tvaM jAtu satAM mArge sthAteti puruSharShabha .. 10\-12\-9 (64574)
+sa tadAj~nAya duShTAtmA piturvachanamapriyam .
+nirAshaH sarvakalyANaiH shokAtparyacharanmahIm .. 10\-12\-10 (64575)
+tatastadA kurushreShTha vanasthe tvayi bhArata .
+avasaddvArakAmetya vR^iShNibhiH paramArchitaH .. 10\-12\-11 (64576)
+sa kadAchitsamudrAnte vasandvAravatImanu .
+eka ekaM samAgamya mAmuvAcha hasanniva .. 10\-12\-12 (64577)
+yattadugraM tapaH kR^iShNa charannamitavikramaH .
+agastyAdbhAratAchAryaH pratyapadyata me pitA .. 10\-12\-13 (64578)
+astraM brahmashiro nAma devagandharvapUjitam .
+tadadya mayi dAshArha yathA pitari me tathA .. 10\-12\-14 (64579)
+asmattasdupAdAya divyamastraM yadUttama .
+mamApyasraM prayachCha tvaM chakraM ripuhaNaM raNe .. 10\-12\-15 (64580)
+sa rAjanprIyamANena mayApyuktaH kR^itA~njaliH .
+yAchamAnaH prayatnena matto.astraM bharatarShabha .. 10\-12\-16 (64581)
+devadAnavagandharvamanuShyapatagoragAH .
+na samA mama vIryasya shatAMshenApi piNDitAH .. 10\-12\-17 (64582)
+idaM dhanuriyaM shaktiridaM chakramiyaM gadA .
+yadyadichChasi chedasraM mattastattaddadAmi te .. 10\-12\-18 (64583)
+yachChaknoShi samudyantuM prayoktumapi vA raNe .
+tadgR^ihANa vinA.astreNa yanme dAtumabhIpsasi .. 10\-12\-19 (64584)
+sa sunAbhaM sahasrAraM vajranAbhamayasmayam .
+vavre chakraM mahAbhAgo mattaH spardhanmayA saha .. 10\-12\-20 (64585)
+gR^ihANa chakramityukto mayA tu tadanantaram .
+jagrAhotpatya sahasA chakraM savyena pANinA .. 10\-12\-21 (64586)
+na chainamashakatsthAnAtsa~nchAlayitumapyuta .
+athainaM dakShiNenApi grahItumupachakrame .. 10\-12\-22 (64587)
+sarvayatnena tenApi gR^ihya nainamakampayat ..  10\-12\-23 (64588)
+tataH sarvabalenApi yadainaM na shashAka ha .
+udyantuM vA chAlayituM drauNiH paramadurmanAH .
+kR^itvA yatnaM parishrAntaH sa nyavartata bhArata ..  10\-12\-24 (64589)
+nivR^itmanasaM tasmAdabhiprAyAdvichetasam .
+ahamAmantrya saMvignamashvatthAmAnamabruvam .. 10\-12\-25 (64590)
+yaH sa daivamanuShyeShu pramANaM paramaM gataH .
+gANDIvadhanvA shvetAshchaH kapipravaraketanaH .. 10\-12\-26 (64591)
+yaH sAkShAddevadeveshaM shitikaNThamumApatim .
+dvandvayuddhe purA jiShNustoShayAmAsa sha~Nkaram .. 10\-12\-27 (64592)
+yasmAtpriyataro nAsti mamAnyaH puruSho bhuvi .
+nAdeyaM yasya me ki~nchidapi prANAnmahAtmanaH .. 10\-12\-28 (64593)
+tenApi suhR^idA brahmanpArthenAkliShTakarmaNA .
+nokpUrvamidaM vAkyaM yastvaM mAmabhibhAShase .. 10\-12\-29 (64594)
+brahmacharyaM mahaddhoraM tIrvA dvAdashavArShikam .
+himavatpArshvamAsthAya yo mayA tapasA.a.arjitaH .. 10\-12\-30 (64595)
+samAnavratachAriNyAM rukmiNyAM yo.anvajAyata .
+sanatkumArastejasvI pradyumno nAma me sutaH .. 10\-12\-31 (64596)
+tenApyetanmahaddivyaM chakramapratimaM raNe .
+na prArthitamabhUnmUDha taditaM prArthitaM tvayA .. 10\-12\-32 (64597)
+rAmeNAtibalenaitannoktapUrvaM kadAchana .
+na gadena sAmbena yadidaM prArthitaM tvayA .. 10\-12\-33 (64598)
+dvArakAvAsibhishchAnyairvR^iShNyandhakamahArathaiH .
+noktapUrvamidaM kShudraM tadidaM prArthitaM tvayA .. 10\-12\-34 (64599)
+bhAratAchAryaputrastvaM mAnitaH sarvayAdavaiH .
+chakreNa rathinAM shreShTha kaM nu tAta yuyutsase .. 10\-12\-35 (64600)
+evamukto mayA drauNirmAmidaM pratyuvAcha ha .
+prayujya bhavate pUjAM yotsye kR^iShNa tvayA saha .. 10\-12\-36 (64601)
+prArthitaM te mayA chakraM devadAnavapUjitam .
+ajeyaH syAmiti vibho satyamedbravImi te .. 10\-12\-37 (64602)
+so.ahaM taddurlabhaM chakramanavApyaiva keshava .
+pratiyAsyAmi govinda shivenAbhivadasva mAm .. 10\-12\-38 (64603)
+etatsunAbhaM bhojAnAmR^iShabheNa tvayA dhR^itam .
+chakramapratichakreNa bhuvi nAnyo.abhipadyate .. 10\-12\-39 (64604)
+etAvaduktvA drauNirmAM yugyAnashvAndhanAni cha .
+AdAyopayayau kAle ratnAni vavidhAni cha .. 10\-12\-40 (64605)
+sa saMrambhI durAtmA cha chapalaH krUra eva cha .
+veda chAsraM brahmashirastasmAdrakShyo vR^ikodaraH .. .. 10\-12\-41 (64606)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi dvAsho.adhyAyaH .. 12 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-12\-11 me mahyaM dAtumichChasi tena vinApi gR^ihANa . tvadIye.astre
+mamechChA nAstIti bhAvaH ..
+10\-12\-12 dvAdasho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 013
+.. shrIH ..
+10\.13\. adhyAyaH 13
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+kR^iShNAdibhirbhAgIrathItIre vyAsasamIpasamAsInadrauNidarshanam .. 1 ..
+taddarshinA drauNinA apANDavahetorbrahmashirostraprayogaH .. 2 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-13\-0 (64607)
+vaishampAyana uvAcha. 10\-13\-0x (5290)
+evamuktvA kurushreShThaM sarvayAdavanandanaH .
+sarvAyudhavaropetamAruroha rathottamam .. 10\-13\-1 (64608)
+yuktaM paramakAmbhojaisturagairhemamAlibhiH .
+uditAdityasa~NkAshaM sarvaratnavibhUShitam .. 10\-13\-2 (64609)
+dakShiNe hyAvahachChaibyaH sugrIvaH savyato dhuram .
+NarShNivAhau tu tasyAstAM meghapuShpabalAhakau .. 10\-13\-3 (64610)
+vishvakarmakR^itA divyA ratnadhAtuvibhUShitA .
+uchChritA cha rathe tasmindhvajayaShTiradR^ishyata .. 10\-13\-4 (64611)
+vainateyaH sthitastasyAM prabhAmaNDalarashmivAn ..
+tasya satyavataH keturbhujagAriradR^ishyata .. 10\-13\-5 (64612)
+athArohaddhR^iShIkeshaH ketuH sarvadhanuShmatAm .
+arjunaH sa cha dharmAtmA kururAjo yudhiShThiraH .. 10\-13\-6 (64613)
+ashobhetAM mahAtmAnau dAshArhamabhitaH sthitau .
+rathasthaM shAr~NgadhanvAnamashvinAviva vAsavam .. 10\-13\-7 (64614)
+ubhAvAropya dAshArhaH syandanaM lokapUjitam .
+pratodena javopetAnparamAshvAnachodayat .. 10\-13\-8 (64615)
+te hayAH sahasotpeturgR^ihItvA syandanottamam .
+AsthitaM pANDaveyAbhyAM yadUnAmR^iShabheNa cha .. 10\-13\-9 (64616)
+vahatAM shAr~NgadhanvAnamashvAnAM shIghragAminAm .
+prAdurAsInmahA~nshabdaH pakShiNAM patatAmiva .. 10\-13\-10 (64617)
+te samarthA mahAbAhuM kShaNena bharatarShabha .
+bhImasenaM maheShvAsamanusasruH suvegitAH .. 10\-13\-11 (64618)
+krodhadIptaM tu kaunteyaM dviShadarthe samudyatam .
+nAshaknuvanvArayituM sametyApi mahArathAH .. 10\-13\-12 (64619)
+sa teShAmagrataH shUraH shrImatAM dR^iDhadhanvinAm .
+yayau bhAgIrathItIraM haribhirbhR^ishavegitaiH .
+yatra sa shrUyate drauNiH putrahantA durAtmavAn ..  10\-13\-13 (64620)
+sa dadarsha mahAtmAnamudakAnte yashasvinam .
+kR^iShNadvaipAyanaM vyAsamAsInamR^iShibhiH saha .. 10\-13\-14 (64621)
+taM chaiva krUrakarmANaM ghR^itAktaM kushachIriNam .
+rajasA dhvastamAsInaM dadarsha drauNimantike .. 10\-13\-15 (64622)
+tamabhyadhAvatkaunteyaH pragR^ihya sasharaM dhanuH .
+bhImaseno mahAbAhustiShThatiShTheti chAbravIt .. 10\-13\-16 (64623)
+taM dR^iShTvA bhImakarmANaM pragR^ihItasharAsanam .
+bhrAtarau pR^iShThatashchAsya janArdanarathe sthitau .
+vyathitAtmA.abhavaddrauNiH prAptaM chedamamanyata ..  10\-13\-17 (64624)
+sa taddivyamadInAtmA paramAsramachintayat .
+jagrAha cha sharaiShIkAM drauNiH savyena pANinA .. 10\-13\-18 (64625)
+sa tAmApadamAsAdya divyamastramudairayat .
+amR^iShyamANastA~nChUrAndivyAyudhadharAnsthitAn .
+apANDavAyeti ruShA vAchamutsR^ijya dAruNam ..  10\-13\-19 (64626)
+ityuktvA rAjashArdUla droNaputraH pratApavAn .
+sarvalokapramohArthaM tadasraM pramumocha ha .. 10\-13\-20 (64627)
+tatastasyAmiShIkAyAM pAvakaH samajAyata .
+pradhakShyanniva lokAMstrInkAlAnkayamopamaH .. .. 10\-13\-21 (64628)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi trayodhasho.adhyAyaH
+.. 13 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-13\-19 apANDavAya pANDavAnAmabhAvAya ..
+10\-13\-13 trayodasho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 014
+.. shrIH ..
+10\.14\. adhyAyaH 14
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+arjunena kR^iShNAj~nayA drauNyastrapratyastraprayogaH .. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-14\-0 (64629)
+vaishampAyana uvAcha. 10\-14\-0x (5291)
+i~Ngitenaiva dAshArhastasyAbhiprAyamAditaH .
+drauNerbuddhA mahAbAhurarjunaM pratyabhAShata .. 10\-14\-1 (64630)
+arjunArjuna yaddivyamastraM te hR^idi vartate .
+droNopadiShTaM tasyAyaM kAlaH samprati pANDava .. 10\-14\-2 (64631)
+bhrAtR^INAmAtmanashchaiva paritrANAya bhArata .
+visR^ijaitattvamapyAjAvastramastranivAraNam .. 10\-14\-3 (64632)
+keshavenaivamukto.atha pANDavaH paravIrahA .
+avAtaradrathAttUrNaM pragR^ihya sasharaM dhanuH .. 10\-14\-4 (64633)
+pUrvamAchAryaputrAya tato.anantaramAtmane .
+bhrAtR^ibhyashchaiva sarvebhyaH svastItyuktvA parantapaH .. 10\-14\-5 (64634)
+devatAbhyo namaskR^itya gurubhyashchaiva sarvashaH .
+utsasarja shivaM dhyAyannastramastreNa shAmyatAm .. 10\-14\-6 (64635)
+tatastadasraM sahasA sR^iShTaM gANDIvadhanvanA .
+prajajvAla mahArchiShmadyugAntAnalasannibham .. 10\-14\-7 (64636)
+tathaiva droNaputrasya tadastraM tigmatejasaH .
+prajajvAla mahAjvAlaM tejomaNDalasaMvR^itam .. 10\-14\-8 (64637)
+nirghAtA bahavashchAsanpeturulkAH sahasrashaH .
+mahadbhayaM cha bhUtAnAM sarveShAM samajAyata .. 10\-14\-9 (64638)
+sashabdamabhavadvyoma jvAlAmAlAkulaM bhR^isham .
+chachAla cha mahI kR^itsnA saparvatavanadrumA .. 10\-14\-10 (64639)
+tAvastratejasA lokAMstrAsayantau tataH sthitau .
+maharShI sahitau tatra darshayAmAsatustadA .. 10\-14\-11 (64640)
+nAradaH sarvadharmAtmA bharatAnAM pitAmahaH .
+ubhau shamayituM vIrau bhAradvAjadhana~njayau .. 10\-14\-12 (64641)
+tau munI sarvadharmaj~nau sarvabhUtahitaipiNau .
+dIptayorasrayormadhye sthitau paramatejasau .. 10\-14\-13 (64642)
+tadantaramanAdhR^iShyAvupagamya yashasvinau .
+AstAmR^iShivarau tatra jvalitAviva pAvakau .. 10\-14\-14 (64643)
+prANabhR^idbhiranAdhR^iShyau devadAnavasammatau .
+astratejaH shamayituM lokAnAM hitakAmyayA .. 10\-14\-15 (64644)
+R^iShI UchatuH. 10\-14\-16x (5292)
+mahAstraviduShaH pUrve ye.apyatItA mahArathAH .
+naitadasraM manuShyeShu taiH prayuktaM katha~nchana .
+kimidaM sAhasaM vIrau kR^itavantau mahAtyayam .. ..  10\-14\-16 (64645)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvami chaturdasho.adhyAyaH
+.. 14 ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 015
+.. shrIH ..
+10\.15\. adhyAyaH 15
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+arjunena vyAsanAradabhAvAnurodhena svaprayuktabrahmashirostrapratisaMhAraH
+.. 1 ..
+kR^iShNenAshvatthAmAnaM prati uttarAgarbhe aiShIkAstrapAte.api
+mR^itashishoH svena samujjIvanapratij~nA .. 2 ..
+brahmacharyAbhAvAdasrapratisaMhArAsamarthena drauNinA
+vyAsakR^iShNAvanAdR^isya pANvagarbheShvaiShIkAstrotsarjanam .. 3 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-15\-0 (64646)
+vaishampAyana uvAcha. 10\-15\-0x (5293)
+dR^iShTaiva munishArdUlau tAvagnisamatejasau .
+`gANDIvadhanvA sa~nchintya prAptakAlaM mahArathaH.'
+sa~njahAra sharaM divyaM tvaramANo dhana~njayaH ..  10\-15\-1 (64647)
+uvAcha vachanaM shreShThastAvR^iShI prA~njalistadA .
+pramuktamastramastreNa shAmyatAmiti vai mayA .. 10\-15\-2 (64648)
+saMhR^ite paramAstre.asminsarvAnasmAnasheShataH .
+pApakarmA dhruvaM drauNiH pradhakShyatyastratejasA .. 10\-15\-3 (64649)
+yadatra hitamasmAkaM lokAnAM chaiva sarvathA .
+bhavantau devasa~NkAshau tathA sammantumarhataH .. 10\-15\-4 (64650)
+ityuktvA sa~njahArAstraM punareva dhana~njayaH .
+saMhAro duShkarassya devairapi hi saMyuge .. 10\-15\-5 (64651)
+visR^iShTasya raNe tasya paramAstrasya sa~Ngrahe .
+ashaktaH pANDavAdanyaH sAkShAdapi shatakratuH .. 10\-15\-6 (64652)
+brahmatejodbhavaM taddhi visR^iShTamakR^itAtmanA .
+na shakyamAvartayituM brahmacharyavratAdR^ite .. 10\-15\-7 (64653)
+achIrNabrahmacharyo yaH sR^iShTvA.a.avaryate punaH .
+tadastraM sAnubandhasya mUrdhAnaM tasya kR^intati .. 10\-15\-8 (64654)
+brahmachArI vratI chApi duravApamavApya tat .
+paramavyasanArto.api nArjuno.astraM vyamu~nchata .. 10\-15\-9 (64655)
+satyavratadharaH shUro brahmachArI cha pANDavaH .
+guruvartI cha tenAstraM sa~njahArArjunaH punaH .. 10\-15\-10 (64656)
+drauNirapyatha samprebhya so.antarA tAvR^iShI sthitau .
+na shashAka punarghoramastraM saMhartumojasA .. 10\-15\-11 (64657)
+ashaktaH pratisaMhAre paramAstrasya saMyuge .
+drauNirdInamanA rAjandvaipAyanamabhAShata .. 10\-15\-12 (64658)
+uttamavyasanArtena prANatrANamabhIpsunA .
+mayaitadastramutsR^iShTaM bhImasenabhayAnmune .. 10\-15\-13 (64659)
+adharmashcha kR^ito.anena dhArtarAShTraM jighAMsatA .
+mithyAchAreNa bhagavanbhImasenena saMyuge .. 10\-15\-14 (64660)
+ataH sR^iShTamidaM brahmanmayA.astramakR^itAtmanA .
+tasya bhUyo.api saMhAraM kartuM nAhamihotsahe .. 10\-15\-15 (64661)
+nisR^iShTaM hi mayA divyametadastraM durAsadam .
+apANDavAyeti mune vahnitejo.anumantrya vai .. 10\-15\-16 (64662)
+tadidaM pANDaveyAnAmantAyaivAbhisaMhitam .
+adya pANDusutAnsarvA~njIvitAdvaMshayiShyati .. 10\-15\-17 (64663)
+kR^itaM pApamidaM brahmanroShAviShTena chetasA .
+vadhamAshAsya pArthAnAM mayAstraM sR^ijatA raNe .. 10\-15\-18 (64664)
+vyAsa uvAcha.  10\-15\-19 (64665)
+astraM brahmashirastAta vidvAnpArtho dhana~njayaH .
+utsR^iShTavAnahiMsArthaM na roSheNa tavAhave .. 10\-15\-19 (64666)
+astramastreNa tu rame tava saMshamayiShyatA .
+visR^iShTamarjunenedaM punashcha pratisaMhR^itam .. 10\-15\-20 (64667)
+brahmAstramapyavApyaitadupadeshAtpitustava .
+kShatradharmAnmahAbAhurnAkampata dhana~njayaH .. 10\-15\-21 (64668)
+evaM dhR^itimataH sAdhoH sarvAstraviduShaH sataH .
+sabhrAtR^ibandhoH kasmAttvaM vadhamasya chikIrShasi .. 10\-15\-22 (64669)
+astraM brahmashiro yatra paramAstreNa vadhyate .
+samA dvAdasha parjanyastadrAShTraM nAbhivarShati .. 10\-15\-23 (64670)
+etadarthaM mahAbAhuH shaktimAnapi pANDavaH .
+na vihanyAttadastraM tu prajAhitachikIrShayA .. 10\-15\-24 (64671)
+pANDavAstvaM cha rAShTraM cha sadA saMrakShyameva naH .
+tasmAtsaMhara divyaM tvamastramenmahAbhuja .. 10\-15\-25 (64672)
+aroShastava chaivAstu pArthAH santu nirAmayAH .
+na hyadharmeNa rAjarShiH pANDavo jetumichChati.  10\-15\-26 (64673)
+maNiM chaiva prayachChAdya yaste shirasi tiShThati .
+etadAdAya te prAmAnpratidAsyanti pANDavAH .. 10\-15\-27 (64674)
+drauNiruvAcha. 10\-15\-28x (5294)
+pANDavairyAni ratnAni yachchAnyatkauravairdhanam .
+avAptamiha tebhyo.ayaM maNirmama vishiShyate .. 10\-15\-28 (64675)
+yamAbadhya bhayaM nAsti shastravyAdhikShudhAshrayam .
+devebhyo dAnavebhyo vA nAgebhyo vA katha~nchana .. 10\-15\-29 (64676)
+na cha rakShogaNabhayaM na taskarabhayaM tathA .
+evaMvIryo maNirayaM na me tyAjyaH katha~nchana .. 10\-15\-30 (64677)
+yattu me bhagavAnAha tanme kAryamanantaram .
+ayaM maNirayaM chAhamiShIkA tu patiShyati .
+garbheShu pANDuputrANAmutrAyAstathodare ..  10\-15\-31 (64678)
+vaishampAyana uvAcha. 10\-15\-32x (5295)
+prAha droNasutaM tatra vyAsaH paramadurmanAH ..  10\-15\-32 (64679)
+evaM kuru na chAnyatra buddhiH kAryA katha~nchana .
+garbheShu pANDaveyAnAM visR^ijyaitadupArama .. 10\-15\-33 (64680)
+`tamuvAcha hR^iShIkeshaH pANDavAnAM hite mataH .
+bhaviShyamekamutsR^ijya garbheShvastraM nipAtyatAm .. 10\-15\-34 (64681)
+ahamenaM dadAmyeShAM piNDadaM kIrtivardhanam .
+rAjarShiM puNyakarmANamanekakratuyAjinam .. 10\-15\-35 (64682)
+evaM kuru na chAnyA te buddhiH kAryA katha~nchana .
+AgarbhAtpANDaveyAnAM kR^itvA pAtaM vina~NkShyati'.. 10\-15\-36 (64683)
+evaM bruvANaM govindaM vR^iShabhaM sarvasAtvatAm .
+drauNiH paramasa~NkruddhaH pratyuvAchedamuttaram .. 10\-15\-37 (64684)
+naitadevaM yadAttha tvaM pakShapAtena keshava .
+vachanAtpuNDarIkAkSha tava madvAkyamanyathA .. 10\-15\-38 (64685)
+patiShyatyetadastraM vai garbhe tasyA mayodyatam .
+virATaduhituH kR^iShNa yaM tvaM rakShitumarhasi .. 10\-15\-39 (64686)
+vAsudeva uvAcha. 10\-15\-40x (5296)
+amoghaH paramAstrasya pAtastvadya bhaviShyati .
+`abhimanyoH sR^ijaiShIkAM garbhasthaH shAmyatAM shishuH .. 10\-15\-40 (64687)
+ahamenaM mR^itaM jAtaM jIvayiShyAmi bAlakam'.
+sa tu garbho mR^ito jAto dIrghamAyuravApsyati .. 10\-15\-41 (64688)
+`ityuktaH pratyuvAchainaM droNaputraH smayanniva .
+yadyastradagdhaM govinda jIvayasyevamastviti'.. 10\-15\-42 (64689)
+tataH paramamastraM tu drauNirudyatamAhave .
+dvaipAyanamanAdR^itya garbheShu pramumocha ha .. .. 10\-15\-43 (64690)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi
+pa~nchadasho.adhyAyaH .. 15 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-15\-8 Avartayate upasaMharati ..
+10\-15\-27 evaM jIvitamAdAya tava yAsyanti pANDavAH . iti ka.pAThaH ..
+10\-15\-29 mama vadhyamayaM nAstIti ka.pAThaH ..
+10\-15\-15 pa~nchadasho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 016
+.. shrIH ..
+10\.16\. adhyAyaH 16
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+kR^iShNena svavachanolla~NghanenAstraprayokturashvatthAmnaH shApadAnAM
+vyAsena tadanumodanaM cha .. 1 ..
+bhImena drauNimastakamaNidA nena draupadIsamAshvAsanam .. 2 ..
+yudhiShThireNa draupadIvachanAtsvamastake tanmaNidhAraNam .. 3 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-16\-0 (64691)
+vaishampAyana uvAcha. 10\-16\-0x (5297)
+tadAj~nAya hR^iShIkesho vikR^iShTaM pApakarmaNA .
+hR^iShyamANa idaM vAkyaM drauNiM pratyabravIttadA .. 10\-16\-1 (64692)
+virATasya sutAM pUrvaM snuShAM gANDIvadhanvanaH .
+upaplAvyagatAM dR^iShTvA R^itavAgbrahmaNo.abravIt .. 10\-16\-2 (64693)
+parikShINeShu kuruShu putrastava bhaviShyati .
+etadasya parikShittvaM garbhasthasya bhaviShyati .. 10\-16\-3 (64694)
+tasya tadvachanaM sAdhoH satyamedbhaviShyati .
+parikShidbhavitA hyeShAM punarvaMshakaraH sutaH .. 10\-16\-4 (64695)
+tvAM tu kApuruShaM pApaM viMduH sarve manIShiNaH .
+asakR^itpApakarmANaM bAlajIvitaghAtakam .. 10\-16\-5 (64696)
+tasmAttvamasya pApasya karmaNaH phalamApnuhi .
+trINi varShasahasrANi chariShyasi mahImimAm .. 10\-16\-6 (64697)
+aprApnuvankvachitkA~nchitsaMvidaM jAtu kenachit .
+nirjanAnasahAyastvaM deshAnpravichariShyasi .. 10\-16\-7 (64698)
+bhavitrI na hi te kShudra janamadhyeShu saMsthitiH .
+pUyashoNigandhI cha durgakAntArasaMshrayaH.  10\-16\-8 (64699)
+vichariShyasi pApAtmaMshchirameko vasundharAm ..
+vayaH prApya parikShittuM devavratamavApya cha.  10\-16\-9 (64700)
+kR^ipAchChAradvatAchChUraH sarvAstrANyupapatsyate ..
+viditvA paramAstrANi kShatradharmavrate sthitaH.  10\-16\-10 (64701)
+ShaShTiM varShAmi dharmAtmA vasudhAM pAlayiShyati ..
+itashchordhvaM mahAbAhuH kururAjo bhaviShyati.  10\-16\-11 (64702)
+parikShinnAma nR^ipatirmiShataste sudurmate ..
+[ahaM taM jIvayiShyAmi dagdhaM shastrAgnitejasA].  10\-16\-12 (64703)
+pashya me tapaso vIryaM satyasya cha narAdhama ..  10\-16\-13 (64704)
+vyAsa uvAcha .
+yasmAdanAdR^itya kR^itaM tvayA.asmAnkarma dAruNam .
+brAhmaNasya satashchedaM vR^ittamanyAyavartinaH ..  10\-16\-13x (5298)
+tasmAdyaddevakIputra ukvAnuttamaM vachaH .
+AlokAttava tadbhAvi kShudrakarmanvrajeti ha .. 10\-16\-14 (64705)
+ashvatthAmovAcha. 10\-16\-15x (5299)
+sahaiva bhavatA brahmansthAsyAmi puruSheShviha .
+satyavAgastu bhagavAnayaM cha puruShottamaH .. 10\-16\-15 (64706)
+vaishampAyana uvAcha. 10\-16\-16x (5300)
+pradAyAtha maNiM drauNiH pANDavAnAM mahAtmanAm .
+jagAma vimanAsteShAM sarveShAM pashyatAM vanam .. 10\-16\-16 (64707)
+pANDavAshcha sadAshArhAstAnR^iShInabhivAdya cha .
+kR^iShNadvaipAyanaM chaiva nAradaM chaiva parvatam .. 10\-16\-17 (64708)
+droNaputrasya sahajaM maNimAdAya satvarAH .
+draupadImabhyadhAvanta prAyopetAM manasvinIm .. 10\-16\-18 (64709)
+vaishampayana uvAcha. 10\-16\-19x (5301)
+tataste puruShavyAghrAH sadashvairanilopamaiH .
+abhyayuH sahadAshArhAH shibiraM punareva hi .. 10\-16\-19 (64710)
+avatIrya rathebhyastu tvaramANA mahArathAH .
+dadR^ishurdraupadIM hR^iShTAmArtAmArtatarAH svayam .. 10\-16\-20 (64711)
+tAmupetya nirAnandAM duHkhashokasamanvitAm .
+parivArya vyatiShThanta pANDavAH sahakeshavAH .. 10\-16\-21 (64712)
+tato rAj~nA.abhyanuj~nAto bhImaseno mahAbalaH .
+pradadau taM maNiM divyaM vachanaM chedamabravIt .. 10\-16\-22 (64713)
+ayaM bhadre tava maNiH putrahantA jitashcha te .
+uttiShTha shokamutsR^ijya kShAtradharmamanusmara .. 10\-16\-23 (64714)
+prayANe vAsudevasya shamArthavasitekShaNe .
+yAnyuktAni tvayA bhIru vAkyAni madhughAtini .. 10\-16\-24 (64715)
+naiva me patayaH santi na putrA bhrAtaro na cha .
+na vai tvamiti govinda shamamichChati rAjani .. 10\-16\-25 (64716)
+uktavatyasi tIvrANi vAkyAni puruShottamam .
+kShatradharmAnurUpANi tAni saMsmartumarhasi .. 10\-16\-26 (64717)
+hato duryodhanaH pApo rAjyasya paripanthikaH .
+duHshAsanasya rudhiraM pItaM visphurato mayA .. 10\-16\-27 (64718)
+vairasya gatamAnR^iNyaM na sma vAchyA vivakShatAm .
+jitvA mukto droNaputro brAhmaNyAdgauraveNa cha .. 10\-16\-28 (64719)
+yasho.asya patitaM devi sharIraM tvavasheShitam .
+viyojitashcha maNinA bhraMshitashchAyudhaM bhuvi .. 10\-16\-29 (64720)
+draupadyuvAcha. 10\-16\-30x (5302)
+kevalAnR^iNyamAptA.asmi guruputro gururmama .
+shirasyetaM maNiM rAjA grahItumanagho.arhati .. 10\-16\-30 (64721)
+taM gR^ihItvA tato rAjA shirasyevAkarottadA .
+guroruchCheShamityeva draupadyA vachanAdapi .. 10\-16\-31 (64722)
+tato divyaM maNivaraM shirasA dhArayanprabhuH .
+shushubhe sa tadA rAjA sachandra iva parvataH .. 10\-16\-32 (64723)
+uttasthau putrashokArtA tataH kR^iShNA manasvinI .
+kR^iShNaM chApi mahAbAhuH paripaprachCha dharmarAT .. .. 10\-16\-33 (64724)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi ShoDasho.adhyAyaH .. 16 ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-16\-7 saMvidaM saMlApam ..
+10\-16\-18 prAyopetAM maraNArthaM yo niyamastenopetAm ..
+10\-16\-20 hR^iShTAmashvatthAmnaH parAbhavena . ArtAM putrAdeH shokena ..
+10\-16\-24 madhughAtini madhudaityahantarI ..
+10\-16\-28 vivakShatAM vaktumichChatAM vAchyAH nindyAH naiva sma ..
+10\-16\-16 ShoDasho.adhyAyaH ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 017
+.. shrIH ..
+10\.17\. adhyAyaH 17
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+yudhiShThireNa drauNerekasya bahumAraNashaktiprashne kR^iShNena
+rudraprasAdAdityuktvA rudramahimakathanam .. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-17\-0 (64725)
+vaishampAyana uvAcha. 10\-17\-0x (5303)
+hateShu sarvasainyeShu sauptikai tai rathaistribhiH .
+shochanyudhiShThiro rAjA dAshArhamidamabravIt .. 10\-17\-1 (64726)
+kathaM nu kR^iShNa pApena kShudreNa shaThabuddhinA .
+drauNinA nihatAH sarve mama putrA mahArathAH .. 10\-17\-2 (64727)
+tathA kR^itAsravikrAntAH sa~NgrAmeShvapalAyinaH .
+drupadasyAtmajAshchaiva droNaputreNa pAtitAH .. 10\-17\-3 (64728)
+yasya droNo maheShvAso na prAdAdAhave mukham .
+nijaghne rathinAM shreShThaM dhR^iShTadyumnaM kathaM nu saH .. 10\-17\-4 (64729)
+kinnu tena kR^itaM karma tathAyuktaM nararShabha .
+yadekaH samare sarvAnavadhInno guroH sutaH .. 10\-17\-5 (64730)
+shrIbhagavAnuvAcha. 10\-17\-6x (5304)
+nUnaM sa devadevAnAmIshvareshvaramavyayam .
+jagAma sharaNaM drauNirekastenAvadhIdbahUn .. 10\-17\-6 (64731)
+prasanno hi mahAdevo dadyAdamaratAmapi .
+vIryaM cha girisho dadyAdyenendramapi shAtayet .. 10\-17\-7 (64732)
+vedAhaM hi mahAdevaM tattvena bharatarShabha .
+yAni chAsyapurANAni karmANi vividhAni cha .. 10\-17\-8 (64733)
+AdireSha hi bhUtAnAM madhyamantashcha bhArata .
+vicheShTate jagachchedaM sarvamasyaiva karmaNA .. 10\-17\-9 (64734)
+evaM sisR^ikShurbhUtAni dadarsha prathamaM vibhuH .
+pitAmaho.abravIchchainaM bhUtAni sR^ija mAchiram .. 10\-17\-10 (64735)
+harikeshastathetyukvA dIrghadarshI tadA prabhuH .
+dIrghakAlaM tapastepe magno.ambhasi mahAtapAH .. 10\-17\-11 (64736)
+sumahAntaM tataH kAlaM pratIkShyainaM pitAmahaH .
+sraShTAraM sarvabhUtAnAM sasarja manasA.aparam .. 10\-17\-12 (64737)
+so.abravIdvAtaraM dR^iShTvA girishaM suptamambhasi .
+yadi me nAgrajo.astyanyastataH srakShyAmyahaM prajAH .. 10\-17\-13 (64738)
+tamabravItpitA nAsti tvadanyaH puruSho.agrajaH .
+sthANureSha jale magno visrabdhaH kuru vai prajAH .. 10\-17\-14 (64739)
+bhUtAnyanvasR^ijatsapta dakShaH kShipraM prajApatiH .
+yairimaM vyakarotsarvaM bhUtagrAmaM chaturvidham .. 10\-17\-15 (64740)
+tAH sR^iShTamAtrAH kShudhitAH prajAH sarvAH prajApatim .
+bibhakShayivo rAjansahasA prAdravaMstadA .. 10\-17\-16 (64741)
+sa bhakShyamANastrANArthI pitAmahamupAdravat .
+Abhyo mAM bhagavAMstrAtu vR^ittirAsAM vidhIyatAm .. 10\-17\-17 (64742)
+tatastAbhyo dadAvannamoShadhIH sthAvarANi cha .
+ja~NgamAni cha bhUtAni durbalAni balIyasAm .. 10\-17\-18 (64743)
+vihitAnnAH prajAstAstu jagmustuShTA yathAgatam .
+tato vavR^idhire rAjanprItimatyaH svayoniShu .. 10\-17\-19 (64744)
+bhUtagrAme vivR^idve tu sR^iShTe devAsure tadA .
+udatiShThajjalAjjyeShThaH prajAshchemA dadarsha saH .. 10\-17\-20 (64745)
+bahurUpAH prajAH sR^iShTA vivR^iddhAshcha svatejasA .
+chukrodha balavaddR^iShTvA li~NgaM svaM chApyavidhyata .. 10\-17\-21 (64746)
+tatpraviddhaM tathA bhUmau tathaiva pratyatiShThata .
+tamuvAchAvyayo brahmA vachobhiH shamayanniva .. 10\-17\-22 (64747)
+kiM kR^itaM salile sharva chirakAlasthitena te .
+kimarthaM chedamutpAdya li~NgaM bhUmau praveshitam .. 10\-17\-23 (64748)
+so.abravIjjAtasaMrambhastathA lokagururgurum .
+prajAH sR^iShTAH pareNemAH kiM kariShyAmyanena vai .. 10\-17\-24 (64749)
+prajAH sR^iShTAH pareNemAH prajArthaM me pitAmaha .
+oShadhyaH parivarteranyathaivaM satataM prajAH .. 10\-17\-25 (64750)
+evamuktvA sa sakrodho jagAma vimanA bhavaH .
+girermu~njavataH pAdaM tapastaptuM mahAtapAH .. .. 10\-17\-26 (64751)
+
+iti shrImanmahAbhArate sauptikaparvaNi aiShIkaparvaNi saptadasho.adhyAyaH
+.. 17 ..
+
+\medskip\hrule\medskip
+sauptikaparva \- adhyAya 018
+.. shrIH ..
+10\.18\. adhyAyaH 18
+
+##Mahabharata - Sauptika Parva - Chapter Topics##
+kR^iShNena yudhiShThiramprati rudrasya kopaprasAdAkShyAM devAnAM
+yaj~nanAshatatpravR^ittikathanapUrvakaM tata evAshvatthAmadvArA
+putrAdivadha sambhavakathanam .. 1 ..
+
+##Mahabharata - Sauptika Parva - Chapter Text##
+
+10\-18\-0 (64752)
+kashrIbhagavAnuvAcha. 10\-18\-0x (5305)
+tato devayuge.atIte devA vai samakalpayan .
+yaj~navedapramANena vidhivadyaShTumIpsavaH .. 10\-18\-1 (64753)
+kalpayAmAsuratha te sAdhanAni havIMShi cha .
+bhAgArhA devatAshchaiva yaj~niyaM dravyameva cha .. 10\-18\-2 (64754)
+tA vai rudramajAnantyo yAthAtathyena devatAH .
+nAkalpayanta devasya sthANorbhAgaM narAdhipa .. 10\-18\-3 (64755)
+so.akalpyamAne bhAge tu kR^ittivAsA makhe.amaraiH .
+tapasA yaj~namanvichChandhanurAdau sasarja ha .. 10\-18\-4 (64756)
+lokayaj~naH kriyAyaj~no gR^ihayaj~naH sanAtanaH .
+pa~nchabhUtanR^iyaj~nashcha jaj~ne sarvamidaM jagat .. 10\-18\-5 (64757)
+lokayaj~nairnR^iyaj~naishcha kapardI vidadhe dhanuH .
+dhanuH sR^iShTamabhUttasya ShaShTikiShkupramANataH .. 10\-18\-6 (64758)
+vaShaTkAro.abhavajjyA tu dhanuShastasya bhArata .
+yaj~nA~NgAni cha chatvAri tasya sannahane.abhavan .. 10\-18\-7 (64759)
+tataH kruddho mahAdevasdupAdAya kArmukam .
+AjagAmAtha tatraiva yatra devAH samIjire .. 10\-18\-8 (64760)
+tamAtkArmukaM dR^iShTvA brahmachAriNamavyayam .
+vivyathe pR^ithivI devI parvatAshcha chakampire .. 10\-18\-9 (64761)
+na vavau pavanashchaiva nAgnirjajvAla vaidhitaH .
+vyabhramachchApi saMvignaM divi nakShatramaNDalam .. 10\-18\-10 (64762)
+na babhau bhAskarashchApi somaH shrImuktamaNDalaH .
+timireNAkulaM sarvamAkAshaM chAbhavR^idvR^itam .. 10\-18\-11 (64763)
+abhibhUtAstato devA viShayAnna prajaj~nire .
+na pratyabhAchcha yaj~naH sa devatAstresire tathA .. 10\-18\-12 (64764)
+tataH sa yaj~naM vivyAdha raudreNa hR^idi patriNA .
+apakrAnstato yaj~no mR^igo bhUtvA sapAvakaH .. 10\-18\-13 (64765)
+sa tu tenaiva rUpeNa divistho vai vyarAjata .
+anvIyamAno rudreNa yudhiShThira nabhastale .. 10\-18\-14 (64766)
+apakrAnte tato yaj~ne saMj~nA na pratyabhAtsurAn .
+naShTasaMj~neShu deveShu na prAj~nAyata ki~nchana .. 10\-18\-15 (64767)
+tryambakaH saviturbAhU bhagasya nayane tathA .
+pUShNashcha dashanAnkruddho dhanuShkoTyA vyashAtayat .. 10\-18\-16 (64768)
+prAdravan tato devA yaj~nA~NgAni cha sarvashaH .
+kechittatraiva ghUrNanto gatAsava ivAbhavan .. 10\-18\-17 (64769)
+sa tu vidrAvya tatsarvaM shitikamTho.avahasya cha .
+avaShTabhya dhanuShkoTiM rurodha vibudhAMstataH .. 10\-18\-18 (64770)
+tato vAgamarairuktA jyAM tasya dhanuSho.achChinat .
+atha tatsahasA rAjaMshChinnajyaM visphuraddhanuH .. 10\-18\-19 (64771)
+tato vidhanuShaM devA devashreShThamupAgaman .
+sharaNaM saha yaj~nena prasAdaM chAkarotprabhuH .. 10\-18\-20 (64772)
+tataH prasanno bhagavAnprAsyatkopaM jalAshaye .
+sa jalaM pAvako bhUtvA shoShayatyanishaM prabho .. 10\-18\-21 (64773)
+bhagasya nayane chaiva bAhU cha savitustathA .
+prAdAtpUShNashcha dashanAnpunaryaj~nAMshcha pANDava .. 10\-18\-22 (64774)
+tataH susthamidaM sarvaM babhUva punareva hi .
+sarvANi cha havIMShyasya devA bhAgamakalpayan .. 10\-18\-23 (64775)
+tasminkruddhe.abhavatsarvamasusthaM bhuvanaM prabho .
+prasanne cha punaH susthaM jagadbhavati bhArata .. 10\-18\-24 (64776)
+tataste nihatAH sarve tava putrA mahArathAH .
+anye cha bahavaH shUrAH pA~nchAlasya padAnugAH .. 10\-18\-25 (64777)
+na tanmanasi karvyaM na cha taddrauNinA kR^itam .
+mahAdevaprasAdaH sa kurukAryamanantaram .. .. 10\-18\-26 (64778)
+
+iti shrImanmahAbhArate shatasAhasrikAyAM saMhitAyAM vaiyAsikyAM
+sauptikaparvaNi aiShIkaparvaNi aShTAdasho.adhyAyaH .. 18 .. samAptaM
+aiShIkaparva  .. 2 .. sauptikaparva cha samAptam.. 10 ..
+asyAnanraM strIparva bhaviShyati
+tasyAyamAdyaH shlokaH.  10\-18\-1 (64779)
+10\-18\-1x (5306)
+janamejaya uvAcha .
+hate duryodhane chaiva hate sainye cha sarvashaH .
+dhR^itarAShTro mahArAja shrutvA kimakaronmune ..
+##Mahabharata - Sauptika Parva - Chapter Footnotes##
+
+10\-18\-5 lokayaj~no lokeShaNA sarvo mAM sAdhumeva jAnAtviti
+vAsanArUpaH . kriyAyaj~naH garbhAdhAnAdisaMskArarUpaH. gR^ihayaj~naH
+patnIsAdhyAgnihotrAdiH. pa~nchabhUtanR^iyaj~naH pa~nchabhUtAnAM
+guNaiH shabdAdibhiryA nR^iNAM prItistadrUpaH. viShayajaM
+sukhamityarthaH. etaireva chaturbhiryaj~naiH sarvaM jagatsR^iShTam ..
+10\-18\-6 tatra madhyamayoH shAstroktayoryaj~nayornAshArthaM
+prathamacharamayaj~nAbhyAmIshvaro dhanuH kR^itavAn kiShkurhastaH ..
+10\-18\-18 aShTAdasho.adhyAyaH ..
+
+##
+
+\medskip\hrule\obeylines
+\medskip
+{\rm Please send corrections to sanskrit at cheerful dot c om}
+{\rm Last updated \today}
+{\rm https://sanskritdocuments.org}
+\end{document}
