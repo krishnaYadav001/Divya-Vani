@@ -49,3 +49,7 @@ next-env.d.ts
 # original-corpus backups (preserve locally for safety, never publish —
 # they may contain copyrighted source content we deliberately replaced)
 data/*.backup-*
+
+# bhagavata raw OCR sources (CC0 archive.org djvu_txt, ~600–760 KB each;
+# regenerate via curl per CLAUDE.md Phase 1.6 notes — keeps repo small)
+/data/bhagavata-raw/
