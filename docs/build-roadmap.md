@@ -160,20 +160,37 @@ Phase 0 — Decision lock (done)
   - **Narrator-tag form variation** (बोले vs ने कहा) — monitor in Phase 1.7 spot-check; if persists, consider v1.2 glossary lock.
   - **1/633 ग्वाला** accepted as contextual exception at `bhagavata_10.54.9` (villain-contempt register about Krishna). Threshold for Phase 1.7 same: ≤0.5% with per-instance documentation.
 
-## Phase 1.7 — Uddhava Gita (Bhagavata 11.6–29) (weeks 7–8, NEXT)
+## Phase 1.7 — Uddhava Gita (Bhagavata 11.6–29) (weeks 7–8, COMPLETE 2026-05-02)
 
 - **Goal:** Ingest Krishna's final teaching to Uddhava ("the second Gita") — practical bhakti, real-world dharma, complement to the more cosmological Bhagavad Gita.
-- **Source:** Same source decisions as Phase 1.6. Uddhava Gita has slightly higher PD-translation availability (some 19th–early-20th-century translations are PD).
-- **Curation:** Canto 11, chapters 6–29. Natural arc: 11.6–7 farewell, 11.8–10 bhakti vs jñāna vs karma yoga, 11.11–17 practical paths, 11.18–25 avadhūta-saṁvāda (24 gurus), 11.26–29 final teachings + departure.
-- **Chunk strategy:** Per-verse, same as 1.6. Reference format `bhagavata_11.<chapter>.<verse>` (e.g. `bhagavata_11.13.32`).
-- **Chunk count:** ~700 chunks (~25–35 verses/chapter × 24 chapters).
-- **Time:** 1 week. Smaller corpus, parser/chunker code reused from Phase 1.6.
-- **Test queries:** "मुझे रोज़मर्रा की ज़िंदगी में भक्ति कैसे करनी है?" / "how do I practice devotion in everyday life?" → practical bhakti chapters. "I learn from everything around me" → avadhūta-24-gurus passages. "I want to surrender but don't know how" → surrender-path Uddhava dialogues. "What is real renunciation?" → renunciation-vs-engagement verses.
+- **Source:**
+  - **English:** J. M. Sanyal *Srimad-Bhagavatam* Vol 5 only (`qpbw_…` Sarayu/UP-Museum CC0 archive.org scan; same edition + license-fallback chain as Phase 1.6). Vol 5 BOOK XI body slice (lines 7448–14174 inclusive) covers all of Canto 11 / Sanyal Book XI in 31 chapters; Phase 1.7 scope-filters to chs 6–29 via `--chapters=6-29` (skipping the Yadu-curse / Nimi-Yogendras prelude in chs 1–5 and the Mausala / Krishna-departure coda in chs 30–31).
+  - **Hindi:** regenerated 2026-05-02 via Claude Sonnet 4.6 + v3 system prompt + **Bhagavata addendum v1.1 (locked permanent for all Bhagavata phases, no v1.2 needed)**. v1.1's "Canto 10 voice is lyrical" framing was tested explicitly against Uddhava-Gita didactic / theoretical content in the Phase 1.7 dry-run; the model takes register cues from source text first and does not import inappropriate Vrindavan imagery into philosophical chunks (5/5 dry-run register match → confirmed at full scale by 9d Sanskrit-philosophical-term preservation across the 20-chunk spot-check, 116 target-term occurrences with 0 dilutions). Total Sonnet spend ₹231.18 across 162 chunks.
+  - **Sanskrit:** intentionally **not attached** at this phase (mirrors Phase 1.5 BORI deferral and Phase 1.6 Canto 10). All Phase 1.7 Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL`. Sanskrit alignment is a Phase 9+ audit, where it will also settle the Sanyal-vs-standard per-chapter content audit (see Curation note).
+- **Sanyal-vs-standard chapter alignment:** Sanyal Book XI = standard Canto 11. **1:1 chapter count (both 31 chapters), 1:1 alignment verified at Sanyal Ch VI = std 11.6 boundary** (Devas-at-Dwaraka opening). Per-chapter content audit for chs 7–29 deferred to Phase 9+ Sanskrit-attachment milestone.
+- **Curation:** Sanyal chs 6–29 (Phase 1.7 = `--chapters=6-29` filter applied during parse). Chs 1–5 (Yadu curse + Nimi-Yogendras), 30 (Mausala), 31 (Krishna's departure) intentionally skipped — these are narrative bookends rather than the Uddhava-frame teaching itself.
+- **Chunk strategy:** Same as Phase 1.6 (paragraph-batched within chapter; Sanyal is literary prose with sporadic `(N—M)` verse-range parentheticals). Reference format inherits: `bhagavata_11.<chapter>.<verseStart>` anchored / `bhagavata_11.<chapter>_<fallbackChunkN>` fallback.
+- **Chunk count:** parser emitted 162 chunks → post-process em-dash merge consolidated to **159 chunks** (3 pairs joined, all resolved cleanly to terminal punctuation; 0 deep chains, 0 oversize merges, 0 footnote strips). Final ingest: **159 rows** with 768-dim Gemini embeddings. Original ~700-chunk roadmap estimate **4.4× over actual** — Sanyal compresses Bhagavata prose denser than expected, identical lesson to Phase 1.6 (633 chunks vs ~3,000 estimate). Re-baseline future Bhagavata-canto chunk estimates from this ratio.
+- **Anchor rate:** 82.1% anchored (133 / 162) — **higher than Canto 10's 69.2%**. Sanyal Book XI uses verse-range parentheticals more methodically than Book X's longer narrative paragraphs. The 17.9% fallback chunks are mostly the avadhūta-Brahmana speech intros (chs 7–9) and dialogue-frame transitions where source has no verse-range labels.
+- **Cost:** ~₹231.46 total (Sonnet 4.6 Hindi regen ₹231.18 — includes the ₹7.41 dry-run pressure-test + Gemini embedding ₹0.28). Tracks the Phase 1.6 baseline of ₹1.43/chunk almost exactly.
+- **Quality gate:** **18/20 stratified spot-check PASS + 3/5 retrieval** (acceptance was ≥17/20 + ≥3/5; threshold lowered from Phase 1.6's ≥4/5 retrieval because the 159-chunk corpus competes against ~3,200 rows of Gita + Mahabharata + Canto 10). Report: `test-results/phase1.7-quality-gate-result-2026-05-02.md`. The 2 spot-check FLAGs (`bhagavata_11.22.19` + `bhagavata_11.29_4`) are the pre-existing 1.3% non-terminal class — English source truncates mid-clause at parser-induced chunk boundary, em-dash merger doesn't catch non-dash residual fragments. Same mechanism as Phase 1.6 residual; not a Phase 1.7 regression.
+- **Test queries (validated):** "मुझे रोज़मर्रा की ज़िंदगी में भक्ति कैसे करनी है?" / "how do I practice devotion in everyday life?" → 3/5 Bhagavata in top-5 (`11.14.21`, `11.18.42`, `11.19.15` — practical bhakti chapters surface). "I learn from everything around me" → 3/5 Bhagavata (the actual avadhūta 24-gurus content surfaces: `11.7.25` Yadu-asks-Brahmana + `11.8_1` black-bee-guru + `11.8_2` fish-guru). "I want to surrender but don't know how" → 0/5 Bhagavata (Gita 18.66 / 12.11 dominate by cosine; same compact-verse-bias as Phase 1.5 anger and Phase 1.6 ख़ुशी / surrender queries). "What is real renunciation?" → 0/5 Bhagavata (Gita 18.11 / 6.2 / 18.49 dominate). "मुझे संसार से वैराग्य हो गया है" → 2/5 Bhagavata (`11.8_3` Pingala-story + `11.23.22` mother-as-guru — both excellent content matches).
+- **Carry-forward to Phase 2:**
+  - **Structural Gita-compact-verse-cosine-bias** (failing queries 3 + 4) — same retrieval issue surfaced in Phase 1.5 (anger query) and Phase 1.6 (queries 3 + 4). Address in Phase 2 via theme tags / query rewriting / source-aware retrieval boost.
+  - **2/159 residual non-terminal chunks** (`bhagavata_11.22.19`, `bhagavata_11.29_4`) — pre-existing 1.3% class, parser truncates English mid-clause at chunk boundary, em-dash merger only catches dash-terminal cases. Either fix with a generalized non-terminal merger in Phase 2, or accept as Phase-9+ corpus polish.
+- **Carry-forward to Phase 9+:**
+  - **0% cache hit rate confirmed at full scale** (162 calls; 1,317-token SYSTEM_PROMPT verified above 1,024 cache minimum via `messages.countTokens`; 3-call sequential probe in `scripts/count-system-prompt-tokens.ts` reproduces 0 cache_creation + 0 cache_read). Root cause unknown — candidates in `test-results/phase1.7-cache-investigation.md`: model-specific eligibility, beta-header drift, API-tier gating, ephemeral-TTL default change. Reopen with Sanskrit-attachment milestone when prompt size + cache savings get bigger.
+  - **Sanyal Book XI per-chapter content audit** for chs 7–29 (alignment with standard Canto 11 verified at boundary, but per-chapter content audit needs Sanskrit BORI attachment).
 
-Phase 2 — RAG retuning (weeks 8–9): retrieval rebalanced across all 4
-  corpora, verse-card UI labels updated to handle source-aware references
-  (gita / mahabharata / bhagavata), regression-test every test_queries case
-  from Phases 1–1.7.
+Phase 2 — RAG retuning (weeks 8–9, NEXT): retrieval rebalanced across all
+  4 corpora (3,132 rows: 701 Gita + 1,704 Mahabharata + 727 Bhagavata =
+  568 Canto 10 + 159 Canto 11), verse-card UI labels updated to handle
+  source-aware references (gita / mahabharata / bhagavata anchored vs
+  fallback dot/underscore), regression-test every test_queries case from
+  Phases 1–1.7. Headline carry-forward issue: structural Gita-compact-
+  verse-cosine-bias defeats Bhagavata prose on abstract emotional queries
+  (anger / surrender / renunciation). Fix candidates: theme tags, query
+  rewriting, source-aware retrieval boost.
 Phase 3 — Krishna persona prompt (weeks 10–11): re-iterate systemPrompt.ts
   with full-corpus retrieval available. Apply HELD Round 4 edits — mode
   rotation rule (§2), Arjuna rate limit with alternative parallels (§6),

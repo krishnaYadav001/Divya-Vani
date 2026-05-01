@@ -1,38 +1,77 @@
-// Phase 1.6 Hindi regeneration for the Bhagavata Purana Canto 10 corpus.
-// Sibling to scripts/regenerate-hindi-mahabharata.ts (Phase 1.5).
+// Hindi regeneration for the Bhagavata Purana corpus.
+// Reusable across Phase 1.6 (Canto 10) and Phase 1.7+ (Canto 11.6–29 Uddhava
+// Gita, future cantos). Sibling to scripts/regenerate-hindi-mahabharata.ts.
 //
-// Input:  data/bhagavata.json (633 chunks emitted by parse-bhagavata.ts)
-// Output: data/bhagavata-regenerated.json (each chunk gets a `hindi` field)
+// CLI flags (added Phase 1.7):
+//   --input=<path>    Input chunks JSON. Default data/bhagavata.json (Canto
+//                     10 backcompat). Phase 1.7: data/bhagavata-canto11.json.
+//   --output=<path>   Output JSON with `hindi` field added to each chunk.
+//                     Default data/bhagavata-regenerated.json (Canto 10
+//                     backcompat). Phase 1.7:
+//                     data/bhagavata-canto11-regenerated.json.
+//   --dry-run         5-chunk sample across the canto's register list, no
+//                     file write. Picks one chunk per register entry.
+//   --resume          Resume from existing OUTPUT_PATH (skip already-
+//                     regenerated refs). Default for full runs.
 //
-// SYSTEM_PROMPT = v3 base (regenerate-hindi.ts:55-72) softened to
-// "Sanskrit scripture (Bhagavad Gita, Mahabharata, and Bhagavata Purana)"
-// + Bhagavata addendum v1.1 (3 bullets, locked 2026-05-01 in decisions.md;
-// full text in project memory project_phase16_bhagavata_source.md). The MB
-// single-line prose addendum is REPLACED entirely — bullet 1 of v1.1 covers
-// the same Sanskrit-absent ground.
+// Canto-aware behavior (auto-detected from chunks[0].canto):
+//   - DRY_RUN_REGISTERS[canto] picks the dry-run sample chapters + labels.
+//     Canto 10 is the Phase 1.6 picker (Bal-vatsalya / mādhurya / viraha /
+//     householder); Canto 11 is the Phase 1.7 Uddhava-Gita picker
+//     (transitional / philosophical / didactic / theoretical / devotional-
+//     climax).
+//   - Discrepancy report path becomes
+//     test-results/bhagavata-canto<N>-regen-discrepancy.md.
 //
-// Differences from MB regen:
-//   - INPUT_PATH / OUTPUT_PATH point to bhagavata files
-//   - MAX_TOKENS = 1800 (up from MB's 1500) — Bhagavata Hindi expansion is
-//     25–35% (vs MB's 20–30%); pressure-test 2026-05-01 truncated 2/6 at 800
-//   - Chunk type uses canto/chapter/verseStart/verseEnd/fallbackChunkN
+// SYSTEM_PROMPT = v3 base softened to include "Bhagavata Purana" + Bhagavata
+// addendum v1.1 (3 bullets, locked 2026-05-01 in decisions.md). The
+// SYSTEM_PROMPT constant below is the canonical source-of-truth for the
+// addendum text per CLAUDE.md "Phase 1.6 corpus sources". v1.1's "Canto 10
+// voice is lyrical" framing is retained verbatim across the Phase 1.7
+// dry-run as the test of whether a v1.2 register addition is needed for
+// Uddhava-Gita philosophical content.
+//
+// Phase 1.6 differences from MB regen carry forward unchanged:
+//   - MAX_TOKENS = 1800 (Bhagavata expansion 25–35% vs MB 20–30%)
+//   - Chunk type carries canto/chapter/verseStart/verseEnd/fallbackChunkN
 //   - userPrompt frames "Bhagavata Purana Canto N passage" + verse-range
 //     clause only when verseStart is non-null
-//   - Dry-run picker selects 5 chunks by chapter (one per register) instead
-//     of MB's by-parva picker
-//   - Consistency-check report → test-results/phase1.6-regen-discrepancy.md
 //
 // Invocation:
-//   npm run regen:hindi:bhagavata          # full ~633-chunk run
-//   npm run regen:hindi:bhagavata:dry      # 5-chunk sample, no file write
-//   tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts [--dry-run|--resume]
+//   # Phase 1.6 default (Canto 10):
+//   npm run regen:hindi:bhagavata          # full run
+//   npm run regen:hindi:bhagavata:dry      # 5-chunk sample
+//   # Phase 1.7 (Canto 11.6–29):
+//   npm run regen:hindi:bhagavata:canto11
+//   npm run regen:hindi:bhagavata:canto11:dry
+//   # Direct invocation:
+//   tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts \
+//     --input=data/bhagavata-canto11.json \
+//     --output=data/bhagavata-canto11-regenerated.json [--dry-run|--resume]
 
 import fs from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import pLimit from "p-limit";
 
-const INPUT_PATH = "data/bhagavata.json";
-const OUTPUT_PATH = "data/bhagavata-regenerated.json";
+// CLI parsing — mirrors parse-bhagavata.ts. Defaults preserve Phase 1.6
+// behavior (no-args run reads/writes Canto 10 paths). Phase 1.7+ runs pass
+// --input + --output explicitly via the canto-specific npm aliases.
+function parseCli() {
+  const args = process.argv.slice(2);
+  const get = (name: string): string | null => {
+    const arg = args.find(a => a.startsWith(`--${name}=`));
+    return arg ? arg.slice(`--${name}=`.length) : null;
+  };
+  return {
+    inputPath: get("input") ?? "data/bhagavata.json",
+    outputPath: get("output") ?? "data/bhagavata-regenerated.json",
+    dryRun: args.includes("--dry-run"),
+    resume: args.includes("--resume"),
+  };
+}
+const CLI = parseCli();
+const INPUT_PATH = CLI.inputPath;
+const OUTPUT_PATH = CLI.outputPath;
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 1800; // Up from MB's 1500. Bhagavata Hindi expansion is
@@ -49,8 +88,8 @@ const PRICE_CACHE_READ_PER_M  = 0.30;   // cache read: 0.10x standard (90% off)
 const PRICE_OUTPUT_PER_M      = 15.00;
 const USD_TO_INR              = 83;
 
-const DRY_RUN = process.argv.includes("--dry-run");
-const RESUME = process.argv.includes("--resume");
+const DRY_RUN = CLI.dryRun;
+const RESUME = CLI.resume;
 const DRY_RUN_LIMIT = 5;
 const PROGRESS_EVERY = 50;
 const SAVE_EVERY = 50;
@@ -71,6 +110,33 @@ type Chunk = {
   wordCount: number;
   warnings: string[];
   hindi?: string;
+};
+
+// Per-canto dry-run register list — picks one chunk per row for the 5-chunk
+// dry-run sample. Each entry: { chapter: <Sanyal-numbered>, label: <register> }.
+// To extend to a new canto, add an entry here.
+type DryRunRegister = { chapter: number; label: string };
+const DRY_RUN_REGISTERS: Record<number, DryRunRegister[]> = {
+  10: [
+    // Phase 1.6 register set (same chapters as the original Phase 1.6 picker).
+    { chapter: 9,  label: "Bal-vatsalya"        },  // Yashoda binds Krishna to mortar
+    { chapter: 25, label: "Vrindavan-strength"  },  // Govardhana lifting
+    { chapter: 29, label: "Vrindavan-longing"   },  // rāsa-līlā opening
+    { chapter: 47, label: "Vrindavan-viraha"    },  // Bhramara-gītā
+    { chapter: 80, label: "Householder"         },  // Sudāmā arrives at Dvārakā
+  ],
+  11: [
+    // Phase 1.7 Uddhava-Gita register set. Chapters chosen 2026-05-02 to
+    // span the arc: farewell → philosophical opener → didactic comparison →
+    // theoretical → devotional climax. If v1.1 addendum produces register
+    // mismatches on this set, propose v1.2 with a "philosophical-didactic"
+    // register addition before the full run.
+    { chapter: 6,  label: "transitional (Yadu farewell)"           },
+    { chapter: 11, label: "philosophical (avadhūta-saṁvāda intro)" },
+    { chapter: 20, label: "didactic (yoga-jñāna-bhakti)"           },
+    { chapter: 25, label: "theoretical (guṇas)"                    },
+    { chapter: 29, label: "devotional-climax (final teaching)"     },
+  ],
 };
 
 // SYSTEM_PROMPT — v3 base verbatim from scripts/regenerate-hindi.ts:55-72
@@ -231,6 +297,18 @@ async function main() {
   const chunks: Chunk[] = JSON.parse(fs.readFileSync(INPUT_PATH, "utf8"));
   console.log(`Loaded ${chunks.length} chunks from ${INPUT_PATH}`);
 
+  // Auto-detect canto. All chunks must share the same canto — surfaces parser
+  // misconfiguration before any API spend.
+  if (chunks.length === 0) throw new Error(`No chunks in ${INPUT_PATH}`);
+  const detectedCanto = chunks[0].canto;
+  const stragglers = chunks.filter(c => c.canto !== detectedCanto);
+  if (stragglers.length > 0) {
+    throw new Error(
+      `Mixed-canto input: ${stragglers.length} chunks have canto != ${detectedCanto} (first: ${stragglers[0].reference}).`,
+    );
+  }
+  console.log(`Detected canto: ${detectedCanto}`);
+
   let processed: Chunk[] = [];
 
   if (RESUME && !DRY_RUN) {
@@ -261,23 +339,24 @@ async function main() {
       // Prefer anchored chunks; fall back to any candidate
       return candidates.find(c => c.verseStart != null) ?? candidates[0];
     };
-    const samples = [
-      pickInChapter(9),    // Bal-vatsalya — Yashoda binding Krishna to mortar
-      pickInChapter(25),   // Vrindavan-strength — Govardhana lifting
-      pickInChapter(29),   // Vrindavan-longing — rasa-lila opening
-      pickInChapter(47),   // Vrindavan-viraha — Bhramara-gita
-      pickInChapter(80),   // Householder — Sudama arrives at Dvaraka
-    ].filter((c): c is Chunk => c !== null);
+
+    const registers = DRY_RUN_REGISTERS[detectedCanto];
+    if (!registers) {
+      throw new Error(
+        `No DRY_RUN_REGISTERS entry for canto ${detectedCanto}. Add one in regenerate-hindi-bhagavata.ts.`,
+      );
+    }
+    const samples = registers
+      .map(r => pickInChapter(r.chapter))
+      .filter((c): c is Chunk => c !== null);
 
     if (samples.length < DRY_RUN_LIMIT) {
       console.warn(`Only ${samples.length} dry-run samples found; expected ${DRY_RUN_LIMIT}.`);
     }
 
-    const registerLabels = ["Bal-vatsalya", "Vrindavan-strength", "Vrindavan-longing", "Vrindavan-viraha", "Householder"];
-
     for (let i = 0; i < samples.length; i++) {
       const c = samples[i];
-      const label = registerLabels[i] ?? "?";
+      const label = registers[i]?.label ?? "?";
       try {
         const stats = await regenerateOne(client, c);
         tokens.input       += stats.inputTokens;
@@ -384,8 +463,9 @@ async function main() {
     const onDisk = JSON.parse(onDiskRaw) as Chunk[];
     if (onDisk.length !== processed.length) {
       const ts = new Date().toISOString();
+      const reportPath = `test-results/bhagavata-canto${detectedCanto}-regen-discrepancy.md`;
       const report = [
-        `# Phase 1.6 disk-vs-memory consistency check FAILED`,
+        `# Bhagavata Canto ${detectedCanto} regen disk-vs-memory consistency check FAILED`,
         ``,
         `**Generated:** ${ts}`,
         ``,
@@ -408,10 +488,10 @@ async function main() {
         ``,
       ].join("\n");
       fs.mkdirSync("test-results", { recursive: true });
-      fs.writeFileSync("test-results/phase1.6-regen-discrepancy.md", report, "utf8");
+      fs.writeFileSync(reportPath, report, "utf8");
       console.error(`\n!!! DISK-VS-MEMORY CONSISTENCY CHECK FAILED !!!`);
       console.error(`In-memory: ${processed.length}, on-disk: ${onDisk.length}`);
-      console.error(`Wrote test-results/phase1.6-regen-discrepancy.md`);
+      console.error(`Wrote ${reportPath}`);
       process.exit(2);
     }
     console.log(`Disk-vs-memory consistency check: OK (both = ${processed.length})`);

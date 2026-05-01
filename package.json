@@ -21,10 +21,16 @@
     "parse:bhagavata": "tsx scripts/parse-bhagavata.ts",
     "regen:hindi:bhagavata": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts",
     "regen:hindi:bhagavata:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts --dry-run",
+    "regen:hindi:bhagavata:canto11": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts --input=data/bhagavata-canto11.json --output=data/bhagavata-canto11-regenerated.json",
+    "regen:hindi:bhagavata:canto11:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts --input=data/bhagavata-canto11.json --output=data/bhagavata-canto11-regenerated.json --dry-run",
     "fix:bhagavata-em-dash": "tsx scripts/fix-em-dash-endings-bhagavata.ts",
     "fix:bhagavata-em-dash:dry": "tsx scripts/fix-em-dash-endings-bhagavata.ts --dry-run",
+    "fix:bhagavata-em-dash:canto11": "tsx scripts/fix-em-dash-endings-bhagavata.ts --input=data/bhagavata-canto11-regenerated.json --output=data/bhagavata-canto11-regenerated-cleaned.json",
+    "fix:bhagavata-em-dash:canto11:dry": "tsx scripts/fix-em-dash-endings-bhagavata.ts --input=data/bhagavata-canto11-regenerated.json --output=data/bhagavata-canto11-regenerated-cleaned.json --dry-run",
     "ingest:bhagavata": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts",
-    "ingest:bhagavata:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --dry-run"
+    "ingest:bhagavata:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --dry-run",
+    "ingest:bhagavata:canto11": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json",
+    "ingest:bhagavata:canto11:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",

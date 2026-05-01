@@ -41,12 +41,16 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const embedModel = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
 
+// Phase 1.7 query set (Uddhava-Gita arc). Sourced from build-roadmap.md
+// line 162 + Cowork's 5th query (संसार वैराग्य). Acceptance threshold
+// lowered from Phase 1.6's ≥4/5 to ≥3/5 because Phase 1.7's 159-chunk
+// corpus competes against ~3,200 rows of Gita + Mahabharata + Canto 10.
 const TEST_QUERIES = [
-  { query: "बारिश में चाय पी, बहुत अच्छा लगा", expect: "Vrindavan-mood / Bal Krishna joy" },
-  { query: "I miss someone deeply", expect: "gopi-virahā (separation), flute themes" },
-  { query: "मैं छोटी सी ख़ुशी महसूस कर रहा हूँ", expect: "Bal Krishna mischief episodes" },
-  { query: "I'm overwhelmed and want to surrender", expect: "Bhagavata-mode surrender verses" },
-  { query: "I want to be playful, not serious", expect: "Bal Krishna butter-stealing / mud-eating" },
+  { query: "मुझे रोज़मर्रा की ज़िंदगी में भक्ति कैसे करनी है?", expect: "practical bhakti chapters (Uddhava-Gita didactic yoga 14–21)" },
+  { query: "I learn from everything around me",                 expect: "avadhūta-24-gurus passages (Sanyal IX speeches; chs 11–13 philosophical conclusions)" },
+  { query: "I want to surrender but don't know how",            expect: "surrender-path Uddhava dialogues (devotional climax 26–29)" },
+  { query: "What is real renunciation?",                        expect: "renunciation-vs-engagement verses (theoretical guṇas / yoga 22–25)" },
+  { query: "मुझे संसार से वैराग्य हो गया है",                    expect: "saṁsāra-vairāgya (transitional 6–7 + theoretical 22–25)" },
 ];
 
 function sourceFromRef(ref: string): "gita" | "mahabharata" | "bhagavata" | "unknown" {
@@ -92,36 +96,84 @@ async function rowCounts() {
 }
 
 function pickStratified() {
-  const data = JSON.parse(fs.readFileSync("data/bhagavata-regenerated-cleaned.json", "utf8"));
+  // Phase 1.7 customization: input path → canto11 cleaned, register groups
+  // → Uddhava-Gita arc, MUST-INCLUDE refs → the two pre-existing
+  // non-terminal chunks (verify they're Phase 1.6-class residual, not a
+  // Phase 1.7 regression), avadhūta-bias in the philosophical/avadhūta
+  // group to stress-test criterion 9d (Sanskrit-philosophical-term
+  // preservation).
+  const data = JSON.parse(fs.readFileSync("data/bhagavata-canto11-regenerated-cleaned.json", "utf8"));
   const groups = [
-    { label: "Bal-vatsalya", filter: (c: any) => c.chapter >= 1 && c.chapter <= 14 },
-    { label: "Vrindavan-mādhurya/strength", filter: (c: any) => c.chapter >= 15 && c.chapter <= 28 },
-    { label: "Vrindavan-mādhurya/longing", filter: (c: any) => c.chapter >= 29 && c.chapter <= 35 },
-    { label: "Vrindavan-viraha + Mathura", filter: (c: any) => c.chapter >= 36 && c.chapter <= 55 },
-    { label: "Householder", filter: (c: any) => c.chapter >= 56 && c.chapter <= 90 },
+    { label: "transitional",            filter: (c: any) => c.chapter >= 6  && c.chapter <= 7  },
+    { label: "philosophical/avadhūta",  filter: (c: any) => c.chapter >= 11 && c.chapter <= 13 },
+    { label: "didactic yoga",           filter: (c: any) => c.chapter >= 14 && c.chapter <= 21 },
+    { label: "theoretical guṇas",       filter: (c: any) => c.chapter >= 22 && c.chapter <= 25 },
+    { label: "devotional climax",       filter: (c: any) => c.chapter >= 26 && c.chapter <= 29 },
   ];
+
+  // Avadhūta / 24-gurus / Sanskrit-philosophical-term markers used to bias
+  // picks within the philosophical/avadhūta group toward criterion 9d
+  // stress chunks. The list is empirical: terms appearing in dense clusters
+  // in Sanyal's Brahmana-discourse content.
+  const PHIL_TERMS = /(अवधूत|गुरु|आत्मा|ब्रह्म|माया|प्रकृति|पुरुष|गुण|अविद्या|विद्या|जीव|ईश्वर|मोक्ष|बन्धन)/g;
+
+  // Manual-include refs to verify (must be present in the 20-sample). If
+  // they happen to be picked by the even-step sampler in their group,
+  // dedupe; otherwise displace the last sample of the matching group.
+  const MUST_INCLUDE = new Set(["bhagavata_11.22.19", "bhagavata_11.29_4"]);
+
   const out: Array<{ label: string; chunk: any }> = [];
+
   for (const g of groups) {
     const candidates = data.filter(g.filter).filter((c: any) => c.wordCount >= 150);
-    // Sample 4 evenly across the group
-    const step = Math.max(1, Math.floor(candidates.length / 4));
-    for (let i = 0; i < 4 && i * step < candidates.length; i++) {
-      out.push({ label: g.label, chunk: candidates[i * step] });
-    }
-  }
-  // Ensure at least one सुदामा chunk is included (per decisions.md flag)
-  const sudamaIncluded = out.some(s => /सुदामा/.test(s.chunk.hindi));
-  if (!sudamaIncluded) {
-    const sudamaChunk = data.find((c: any) => /सुदामा/.test(c.hindi));
-    if (sudamaChunk) {
-      // Replace last Householder sample with the Sudama chunk
-      const lastHouseholderIdx = out.findIndex(s => s.label === "Householder");
-      if (lastHouseholderIdx >= 0) {
-        const replaceIdx = out.length - 1;  // replace last entry which should be Householder
-        out[replaceIdx] = { label: "Householder (सुदामा-bearing)", chunk: sudamaChunk };
+    // Compute philosophical-term density per chunk (used only for the
+    // philosophical/avadhūta group; other groups sample evenly).
+    const scoreOf = (c: any) => {
+      const hits = (c.hindi.match(PHIL_TERMS) ?? []).length;
+      return hits;
+    };
+    let picks: any[];
+    if (g.label === "philosophical/avadhūta") {
+      // Sort descending by phil-term density, take top 4.
+      picks = [...candidates].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 4);
+    } else {
+      // Sample 4 evenly across the group.
+      const step = Math.max(1, Math.floor(candidates.length / 4));
+      picks = [];
+      for (let i = 0; i < 4 && i * step < candidates.length; i++) {
+        picks.push(candidates[i * step]);
       }
     }
+    for (const c of picks) out.push({ label: g.label, chunk: c });
   }
+
+  // Apply MUST_INCLUDE: ensure both refs are present. If a ref is already
+  // in the picks, no-op. Otherwise, find the chunk in `data`, locate its
+  // group, and replace the last existing sample of that group with it.
+  for (const mustRef of MUST_INCLUDE) {
+    if (out.some(s => s.chunk.reference === mustRef)) continue;
+    const chunk = data.find((c: any) => c.reference === mustRef);
+    if (!chunk) {
+      console.warn(`[stratify] MUST_INCLUDE ref ${mustRef} not found in cleaned corpus — skipping injection`);
+      continue;
+    }
+    const grp = groups.find(g => g.filter(chunk));
+    if (!grp) {
+      console.warn(`[stratify] MUST_INCLUDE ref ${mustRef} (ch ${chunk.chapter}) does not match any register group — skipping`);
+      continue;
+    }
+    // Find last sample in that group; displace it.
+    let replaceIdx = -1;
+    for (let i = out.length - 1; i >= 0; i--) {
+      if (out[i].label === grp.label) { replaceIdx = i; break; }
+    }
+    if (replaceIdx >= 0) {
+      out[replaceIdx] = { label: `${grp.label} (must-include: ${mustRef})`, chunk };
+    } else {
+      out.push({ label: `${grp.label} (must-include: ${mustRef})`, chunk });
+    }
+  }
+
   return out;
 }
 
@@ -155,20 +207,23 @@ async function main() {
     retrievalReport.push(JSON.stringify({ query: t.query, expect: t.expect, hits: hits.map(h => ({ ref: h.reference, src: sourceFromRef(h.reference), sim: h.similarity })) }));
   }
   console.log(`\n=== Retrieval gate: ${passing}/5 queries returned a Bhagavata chunk in top-5 ===`);
-  console.log(`Acceptance threshold: ≥4/5. Result: ${passing >= 4 ? "PASS" : "FAIL"}`);
+  console.log(`Acceptance threshold: ≥3/5 (Phase 1.7). Result: ${passing >= 3 ? "PASS" : "FAIL"}`);
 
   console.log("\n=== B. 20-chunk stratified spot-check ===");
   const samples = pickStratified();
-  console.log(`Selected ${samples.length} samples (4 per register group):\n`);
+  console.log(`Selected ${samples.length} samples across 5 register groups:\n`);
   // Save spot-check file for manual review
   const lines: string[] = [
-    `# Phase 1.6 quality-gate spot-check`,
+    `# Phase 1.7 quality-gate spot-check (Bhagavata Canto 11.6–29 Uddhava-Gita)`,
     ``,
     `Generated: ${new Date().toISOString()}`,
-    `Source: data/bhagavata-regenerated-cleaned.json (568 chunks)`,
+    `Source: data/bhagavata-canto11-regenerated-cleaned.json (159 chunks)`,
     `Sampled: ${samples.length} chunks across 5 register groups`,
+    `Register groups: transitional 6–7, philosophical/avadhūta 11–13, didactic yoga 14–21, theoretical guṇas 22–25, devotional climax 26–29.`,
+    `Must-include refs: bhagavata_11.22.19, bhagavata_11.29_4 (verify pre-existing 1–2% non-terminal class is not a Phase 1.7 regression).`,
+    `Philosophical/avadhūta picks biased by Sanskrit-philosophical-term density (criterion 9d stress-test).`,
     ``,
-    `## Acceptance criteria (9 from plan + 9b narrator-name)`,
+    `## Acceptance criteria (9 from plan + 9b/9c/9d added Phase 1.7)`,
     ``,
     `1. Hindi reads naturally with scriptural dignity`,
     `2. Sanskrit philosophical terms preserved in Devanagari`,
@@ -180,8 +235,10 @@ async function main() {
     `8. English source meaning preserved`,
     `9. Register-mode appropriateness`,
     `9b. Narrator-name consistency (Sukadeva → शुकदेव/श्रीशुकदेव; not सूत unless source says Suta)`,
+    `9c. Narrator-tag form variation count: tally बोले vs ने कहा across all 20. >5 mixed → trigger v1.2 addendum lock for future cantos.`,
+    `9d. Sanskrit philosophical-term preservation: terms like आत्मा / माया / ब्रह्म / गुण / अविद्या / विद्या / जीव / ईश्वर / प्रकृति / पुरुष / मोक्ष / बन्धन must remain in Sanskrit form (not translated to Hindi prose equivalents). Critical for the Uddhava-Gita's philosophical content; if a chunk dilutes a Sanskrit philosophical term to a vague Hindi gloss, FAIL.`,
     ``,
-    `Acceptance gate: ≥17/20 PASS.`,
+    `Acceptance gate: ≥17/20 PASS (spot-check) + ≥3/5 retrieval (lower than Phase 1.6 because the 159-chunk Phase 1.7 corpus competes against ~3,200 rows of Gita + Mahabharata + Canto 10).`,
     ``,
     `---`,
     ``,
@@ -207,14 +264,14 @@ async function main() {
     console.log(`  ${i+1}. [${s.label}] ${c.reference} ch=${c.chapter} ${anchorTag} ${c.wordCount}w`);
   }
   fs.mkdirSync("test-results", { recursive: true });
-  const reportPath = "test-results/phase1.6-bhagavata-spotcheck-2026-05-01.md";
+  const reportPath = "test-results/phase1.7-bhagavata-spotcheck-2026-05-02.md";
   fs.writeFileSync(reportPath, lines.join("\n"), "utf8");
   console.log(`\nSpot-check chunks written to: ${reportPath}`);
   console.log(`(Manual reviewer reads this file and tallies PASS/FAIL per chunk.)`);
 
   console.log("\n=== Summary ===");
   console.log(`Row count (Supabase verses, source=bhagavata): ${counts.bhagavata}`);
-  console.log(`Retrieval gate: ${passing}/5 (threshold ≥4)`);
+  console.log(`Retrieval gate: ${passing}/5 (threshold ≥3 for Phase 1.7)`);
   console.log(`Spot-check: ${samples.length} samples written for manual review`);
 }
 

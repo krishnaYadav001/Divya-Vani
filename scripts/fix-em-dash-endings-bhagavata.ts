@@ -1,15 +1,18 @@
-// Phase 1.6 post-process repair for em-dash chunk-boundary artifacts.
+// Bhagavata em-dash chunk-boundary repair. Reusable across Phase 1.6
+// (Canto 10) and Phase 1.7+ (Canto 11.6–29 Uddhava Gita).
 // Sibling to scripts/fix-em-dash-endings.ts (Phase 1.5).
 //
-// Problem: 63 of 633 chunks in data/bhagavata-regenerated.json end on a
-// trailing em-dash where the following chunk continues the same sentence.
-// CLAUDE.md forbids non-terminal endings; "replace — with ।" terminates
-// mid-clause. Root cause is the parser's paragraph batching cutting at
-// dialogue-intro lines like "X said —" with the actual quoted speech in
-// the next chunk. This script merges those split pairs back, restoring
-// the original sentence boundaries.
+// Problem (carried forward from Phase 1.6): some regenerated chunks end on
+// a trailing em-dash where the following chunk continues the same sentence
+// (CLAUDE.md forbids non-terminal endings). Root cause is the parser's
+// paragraph batching cutting at dialogue-intro lines like "X said —" with
+// the actual quoted speech in the next chunk. This script merges split
+// pairs back, restoring the original sentence boundaries.
 //
-// Adapted from Phase 1.5:
+// Phase 1.6 evidence: 63 of 633 chunks merged → 568 final chunks (62
+// resolved cleanly, 1 unresolved deep chain, 2 oversize merges flagged).
+//
+// Inherited Phase 1.6 behaviors:
 //   - Chunk type uses canto/chapter/verseStart/verseEnd/fallbackChunkN
 //   - Merge boundary: refuse to merge across CHAPTER (not parva)
 //   - Reference suffix-drop: handles both anchored (dot) and fallback
@@ -17,19 +20,44 @@
 //   - Translator-footnote strip retained from MB (will likely match 0
 //     in Sanyal source, kept defensively)
 //
-// Reads:  data/bhagavata-regenerated.json  (untouched)
-// Writes: data/bhagavata-regenerated-cleaned.json
+// CLI flags (added Phase 1.7):
+//   --input=<path>    Regenerated chunks JSON. Default
+//                     data/bhagavata-regenerated.json (Canto 10 backcompat).
+//                     Phase 1.7: data/bhagavata-canto11-regenerated.json.
+//   --output=<path>   Cleaned chunks JSON. Default
+//                     data/bhagavata-regenerated-cleaned.json.
+//                     Phase 1.7: data/bhagavata-canto11-regenerated-cleaned.json.
+//   --dry-run         Preview merges + footnote strips, no files written.
+//
+// Canto-aware: flagged-merge report paths auto-derive from chunks[0].canto:
+//   test-results/bhagavata-canto<N>-merges-flagged-{oversize,deep}.md.
 //
 // Invocation:
-//   npm run fix:bhagavata-em-dash:dry  # preview; no writes
+//   # Phase 1.6 default (Canto 10):
+//   npm run fix:bhagavata-em-dash:dry  # preview
 //   npm run fix:bhagavata-em-dash       # full run
+//   # Phase 1.7 (Canto 11.6–29):
+//   npm run fix:bhagavata-em-dash:canto11:dry
+//   npm run fix:bhagavata-em-dash:canto11
 
 import fs from "node:fs";
 
-const INPUT_PATH = "data/bhagavata-regenerated.json";
-const OUTPUT_PATH = "data/bhagavata-regenerated-cleaned.json";
-
-const DRY_RUN = process.argv.includes("--dry-run");
+function parseCli() {
+  const args = process.argv.slice(2);
+  const get = (name: string): string | null => {
+    const arg = args.find(a => a.startsWith(`--${name}=`));
+    return arg ? arg.slice(`--${name}=`.length) : null;
+  };
+  return {
+    inputPath: get("input") ?? "data/bhagavata-regenerated.json",
+    outputPath: get("output") ?? "data/bhagavata-regenerated-cleaned.json",
+    dryRun: args.includes("--dry-run"),
+  };
+}
+const CLI = parseCli();
+const INPUT_PATH = CLI.inputPath;
+const OUTPUT_PATH = CLI.outputPath;
+const DRY_RUN = CLI.dryRun;
 const DRY_RUN_PREVIEW = 20;
 const MAX_CHAIN_DEPTH = 5;
 const OVERSIZE_THRESHOLD = 600;
@@ -111,6 +139,19 @@ function main() {
   const chunksBefore = data.length;
   console.log(`Loaded ${chunksBefore} chunks from ${INPUT_PATH}`);
   console.log(`Mode: ${DRY_RUN ? "DRY-RUN (no writes)" : "FULL (writes to " + OUTPUT_PATH + ")"}`);
+
+  // Auto-detect canto. All chunks must share the same canto. Used to scope
+  // flagged-merge report filenames per canto so Phase 1.6 and 1.7 reports
+  // don't collide.
+  if (data.length === 0) throw new Error(`No chunks in ${INPUT_PATH}`);
+  const detectedCanto = data[0].canto;
+  const stragglers = data.filter(c => c.canto !== detectedCanto);
+  if (stragglers.length > 0) {
+    throw new Error(
+      `Mixed-canto input: ${stragglers.length} chunks have canto != ${detectedCanto} (first: ${stragglers[0].reference}).`,
+    );
+  }
+  console.log(`Detected canto: ${detectedCanto}`);
   console.log();
 
   // ===== Pass 1: footnote strip (defensive; expected 0 in Sanyal source) =====
@@ -264,7 +305,7 @@ function main() {
 
   if (flaggedOversize.length > 0) {
     const lines: string[] = [
-      `# Phase 1.6 em-dash merge — oversize (>${OVERSIZE_THRESHOLD}w) flagged for manual review`,
+      `# Bhagavata Canto ${detectedCanto} em-dash merge — oversize (>${OVERSIZE_THRESHOLD}w) flagged for manual review`,
       ``,
       `**Generated:** ${new Date().toISOString()}`,
       `**Total flagged:** ${flaggedOversize.length}`,
@@ -282,13 +323,14 @@ function main() {
       lines.push(`---`);
       lines.push(``);
     }
-    fs.writeFileSync("test-results/phase1.6-merges-flagged-oversize.md", lines.join("\n"), "utf8");
-    console.log(`Wrote oversize flags: test-results/phase1.6-merges-flagged-oversize.md`);
+    const oversizePath = `test-results/bhagavata-canto${detectedCanto}-merges-flagged-oversize.md`;
+    fs.writeFileSync(oversizePath, lines.join("\n"), "utf8");
+    console.log(`Wrote oversize flags: ${oversizePath}`);
   }
 
   if (flaggedDeep.length > 0) {
     const lines: string[] = [
-      `# Phase 1.6 em-dash merge — deep chains (≥${MAX_CHAIN_DEPTH}) flagged for manual review`,
+      `# Bhagavata Canto ${detectedCanto} em-dash merge — deep chains (≥${MAX_CHAIN_DEPTH}) flagged for manual review`,
       ``,
       `**Generated:** ${new Date().toISOString()}`,
       `**Total flagged:** ${flaggedDeep.length}`,
@@ -306,8 +348,9 @@ function main() {
       lines.push(`---`);
       lines.push(``);
     }
-    fs.writeFileSync("test-results/phase1.6-merges-flagged-deep.md", lines.join("\n"), "utf8");
-    console.log(`Wrote deep-chain flags: test-results/phase1.6-merges-flagged-deep.md`);
+    const deepPath = `test-results/bhagavata-canto${detectedCanto}-merges-flagged-deep.md`;
+    fs.writeFileSync(deepPath, lines.join("\n"), "utf8");
+    console.log(`Wrote deep-chain flags: ${deepPath}`);
   }
 }
 

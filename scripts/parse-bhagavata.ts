@@ -1,21 +1,42 @@
-// Phase 1.6 parser — Sanyal English Bhagavata Purana → structured chunks.
+// Bhagavata parser — Sanyal English Bhagavata Purana → structured chunks.
 //
-// Scope: Canto 10 only. Vol 4 covers chapters 1–61, Vol 5 covers 62–90.
-// Beyond chapter 90 in Vol 5 begins Canto 11 (BOOK XI), which is Phase 1.7
-// scope and is excluded here.
+// Scope:
+//   * Canto 10 (Phase 1.6, default): Vol 4 covers chs 1–61, Vol 5 covers
+//     chs 62–90. Vol 5 BOOK XI body marker (occurrence 2 in the file)
+//     terminates the read.
+//   * Canto 11 (Phase 1.7+, --canto=11): Vol 5 only. Slice between the
+//     BOOK XI body marker (occurrence 2) and the BOOK XII body marker
+//     (occurrence 2). Sanyal Book XI = 31 chapters, 1:1 with standard
+//     Canto 11 (verified at Ch VI = std 11.6 boundary 2026-05-01).
+//
+// CLI flags:
+//   --canto=<N>          Canto number. Defaults to 10. Configured cantos
+//                        are listed in CANTO_CONFIGS; add an entry to
+//                        extend.
+//   --chapters=<A>-<B>   Inclusive chapter range filter. Phase 1.7 uses
+//                        --chapters=6-29 to scope to the Uddhava-Gita and
+//                        skip the Yadu-curse / Nimi-Yogendras prelude
+//                        (chs 1–5) and the Mausala / Krishna-departure
+//                        coda (chs 30–31). Default: no filter, full canto.
+//   --output=<path>      Override default output path. Default for
+//                        canto=10 is data/bhagavata.json (Phase 1.6
+//                        backcompat); for other cantos defaults to
+//                        data/bhagavata-canto<N>.json.
 //
 // Invocation:
+//   # Phase 1.6 default (Canto 10):
 //   npm run parse:bhagavata
 //   tsx --env-file=.env.local scripts/parse-bhagavata.ts
+//   # Phase 1.7 (Canto 11, Uddhava-Gita scope):
+//   tsx scripts/parse-bhagavata.ts --canto=11 --chapters=6-29
 //
-// Output:
-//   data/bhagavata.json — array of Chunk
-//
-// Schema (from plan, locked 2026-05-01):
-//   reference is "bhagavata_10.<ch>.<verseStart>" when Sanyal's "(N—M)"
-//   parenthetical is present (anchored, dot separator), else
-//   "bhagavata_10.<ch>_<fallbackChunkN>" (fallback, underscore separator).
-//   verse_number int in DB = verseStart (anchored) or fallbackChunkN (fallback).
+// Schema (locked 2026-05-01, applies across all cantos):
+//   reference is "bhagavata_<canto>.<ch>.<verseStart>" when Sanyal's
+//   "(N—M)" parenthetical is present (anchored, dot separator), else
+//   "bhagavata_<canto>.<ch>_<fallbackChunkN>" (fallback, underscore
+//   separator). verse_number int in DB = verseStart (anchored) or
+//   fallbackChunkN (fallback). canto info lives in the reference text
+//   only (no schema column).
 
 import fs from "node:fs";
 
@@ -25,12 +46,40 @@ import fs from "node:fs";
 
 const VOL4_PATH = "data/bhagavata-raw/sanyal/vol4_djvu.txt";
 const VOL5_PATH = "data/bhagavata-raw/sanyal/vol5_djvu.txt";
-const OUTPUT_PATH = "data/bhagavata.json";
 
-const CANTO = 10;
-const CANTO_LAST_CHAPTER = 90;
 const MAX_WORDS = 300;        // matches MB parser target
 const MIN_WORDS = 30;         // matches MB MIN_WORDS — drop sub-30-word fragments unless speaker present
+
+// ============================================================================
+// Per-canto configuration
+// ============================================================================
+//
+// Sanyal's 5-volume Srimad-Bhagavatam edition layout in the data/ raw files:
+//   Vol 3: Books VII–IX (deferred, see CLAUDE.md Phase 1.6 notes)
+//   Vol 4: Canto 10 chs 1–61 (BOOK X start)
+//   Vol 5: Canto 10 chs 62–90, BOOK XI (Canto 11) chs 1–31, BOOK XII front
+//   matter
+//
+// Each volume's djvu_txt has both a TOC (early) and body (later) with the
+// same BOOK X / XI / XII markers. The TOC's BOOK markers are occurrence 1;
+// the body markers are occurrence 2. We slice the volume text by
+// occurrence-counting the markers — no fragile "wait until first chapter
+// is seen" interlock needed (replaces the Phase 1.6 firstChapterSeen gate).
+//
+// To extend to Canto 12 in a future phase, add a CANTO_CONFIGS[12] entry
+// using { startMarker: BOOK_XII occ 2, stopMarker: <none — Vol 5 ends> }.
+
+type VolumeConfig = {
+  path: string;
+  label: string;
+  startMarker?: { regex: RegExp; occurrence: number };
+  stopMarker?: { regex: RegExp; occurrence: number };
+};
+
+type CantoConfig = {
+  lastChapter: number;
+  volumes: VolumeConfig[];
+};
 
 // Chapter heading: tolerate up to 3 chars of OCR junk before "CHAPTER"
 // (seen in actual data: "_ CHAPTER XLVI", "q CHAPTER XXXI", "t CHAPTER LII",
@@ -42,8 +91,15 @@ const MIN_WORDS = 30;         // matches MB MIN_WORDS — drop sub-30-word fragm
 // after CHAPTER, since "CHAPTERS" has S where the whitespace would be.
 const CHAPTER_HEADER = /^.{0,3}CHAPTER[,.]?\s+([A-Za-z0-9]+)/;
 
-// Cut-off marker for Vol 5: "BOOK XI" begins Canto 11 (Phase 1.7 scope).
+// Book markers in Vol 5. Each appears twice: once in the TOC (occurrence 1)
+// and once at the body-content boundary (occurrence 2). \b after the roman
+// numeral prevents BOOK XI from greedily matching BOOK XII (the next char
+// 'I' in "XII" follows another word char 'I' in "XI", so \b fails — verified
+// empirically). BOOK_XII matches both "BOOK XII" and tolerates any trailing
+// text including a continuing alphabetic char only if it's word-boundary-
+// terminated, which "BOOK XII " with trailing space satisfies.
 const BOOK_XI = /^BOOK\s+XI\b/;
+const BOOK_XII = /^BOOK\s+XII\b/;
 
 // Verse-range parenthetical placed AFTER the prose paragraph it labels.
 // Forms seen: "(14—24)", "(26—30)", "(17—29).", "(45—50).". Em-dash,
@@ -75,6 +131,128 @@ const PAGE_HEADER_PATTERNS: RegExp[] = [
 
 // Speaker markers — short fragments are kept if they contain one of these.
 const SPEAKER_RE = /\b(said|continued|replied|asked|inquired|answered|exclaimed|spoke|hymn(ed)?)\b/i;
+
+// Per-canto registry. Add an entry here to support a new canto.
+const CANTO_CONFIGS: Record<number, CantoConfig> = {
+  10: {
+    lastChapter: 90,
+    volumes: [
+      { path: VOL4_PATH, label: "Vol 4" },
+      // Stop at the BOOK XI body marker (occurrence 2). The TOC's BOOK XI
+      // (occurrence 1) is bypassed.
+      { path: VOL5_PATH, label: "Vol 5", stopMarker: { regex: BOOK_XI, occurrence: 2 } },
+    ],
+  },
+  11: {
+    lastChapter: 31,  // Sanyal Book XI = standard Canto 11, 31 chapters
+    volumes: [
+      {
+        path: VOL5_PATH,
+        label: "Vol 5",
+        startMarker: { regex: BOOK_XI, occurrence: 2 },   // skip TOC, start at body
+        stopMarker: { regex: BOOK_XII, occurrence: 2 },   // skip TOC, stop at body BOOK XII
+      },
+    ],
+  },
+};
+
+// ============================================================================
+// CLI parsing
+// ============================================================================
+
+type Cli = {
+  canto: number;
+  chapterRange: { from: number; to: number } | null;
+  outputPath: string;
+};
+
+function parseCli(): Cli {
+  const args = process.argv.slice(2);
+  const get = (name: string): string | undefined => {
+    const arg = args.find(a => a.startsWith(`--${name}=`));
+    return arg ? arg.slice(`--${name}=`.length) : undefined;
+  };
+
+  const cantoStr = get("canto") ?? "10";
+  const canto = parseInt(cantoStr, 10);
+  if (!Number.isFinite(canto) || !(canto in CANTO_CONFIGS)) {
+    throw new Error(
+      `--canto=${cantoStr} not configured. Configured cantos: ${Object.keys(CANTO_CONFIGS).join(", ")}.`,
+    );
+  }
+
+  const chaptersRaw = get("chapters");
+  let chapterRange: { from: number; to: number } | null = null;
+  if (chaptersRaw) {
+    const m = chaptersRaw.match(/^(\d+)-(\d+)$/);
+    if (!m) throw new Error(`--chapters must be of form A-B (got: ${chaptersRaw})`);
+    const from = parseInt(m[1], 10);
+    const to = parseInt(m[2], 10);
+    if (from < 1 || to < from) throw new Error(`--chapters range invalid: ${chaptersRaw}`);
+    chapterRange = { from, to };
+  }
+
+  const defaultOutput = canto === 10 ? "data/bhagavata.json" : `data/bhagavata-canto${canto}.json`;
+  const outputPath = get("output") ?? defaultOutput;
+
+  return { canto, chapterRange, outputPath };
+}
+
+// ============================================================================
+// Volume slicing — find the body-content window of a Sanyal volume.
+// ============================================================================
+//
+// Counts marker occurrences from the start of the FULL text (not relative to
+// any prior slice). For Canto 10 Vol 5, stopMarker BOOK_XI occurrence 2 lands
+// at the body marker, with the TOC marker (occurrence 1) bypassed. For
+// Canto 11 Vol 5, startMarker BOOK_XI occurrence 2 starts the slice at the
+// body, and stopMarker BOOK_XII occurrence 2 ends it at the next book.
+
+function sliceVolume(text: string, vol: VolumeConfig): string {
+  const lines = text.split("\n");
+  let startIdx = 0;
+  let endIdx = lines.length;
+
+  if (vol.startMarker) {
+    let count = 0;
+    let found = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (vol.startMarker.regex.test(lines[i].trim())) {
+        count++;
+        if (count === vol.startMarker.occurrence) {
+          startIdx = i + 1;  // start AFTER the marker line
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      throw new Error(
+        `${vol.label}: start marker ${vol.startMarker.regex} occurrence ${vol.startMarker.occurrence} not found (saw ${count})`,
+      );
+    }
+  }
+
+  if (vol.stopMarker) {
+    let count = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (vol.stopMarker.regex.test(lines[i].trim())) {
+        count++;
+        if (count === vol.stopMarker.occurrence && i > startIdx) {
+          endIdx = i;
+          break;
+        }
+      }
+    }
+    // If stopMarker not found, endIdx stays at lines.length (read to EOF).
+    // This is acceptable — Vol 5 BOOK XII appearing only once would still
+    // be caught at i > startIdx since both the start and stop markers are
+    // counted from the file head; the i > startIdx guard prevents accepting
+    // a stop marker that appears before the start.
+  }
+
+  return lines.slice(startIdx, endIdx).join("\n");
+}
 
 export type Chunk = {
   reference: string;
@@ -122,10 +300,10 @@ function sanitizeRoman(raw: string): string {
   return raw.toUpperCase().replace(/[^IVXLCDM]/g, "");
 }
 
-function romanToInt(raw: string, prevChapter: number): number {
+function romanToInt(raw: string, prevChapter: number, cantoLastChapter: number): number {
   const sanitized = sanitizeRoman(raw);
   const strict = romanToIntStrict(sanitized);
-  if (strict <= 0 || strict > CANTO_LAST_CHAPTER) return -1;
+  if (strict <= 0 || strict > cantoLastChapter) return -1;
 
   // Sequential or near-sequential: definitive accept of strict reading.
   if (strict === prevChapter + 1) return strict;
@@ -137,11 +315,13 @@ function romanToInt(raw: string, prevChapter: number): number {
   // chapter is III=3 (final L is OCR-mangled I). For a wide jump, try L→I.
   // Crucially: only override strict if a variant lands within prevChapter+5
   // (sequential window). Otherwise keep strict — Vol 5's first real chapter
-  // LXII (=62) is a legitimate wide jump from prevChapter=0.
+  // LXII (=62) is a legitimate wide jump from prevChapter=0 (Canto 10 only;
+  // for Canto 11, the slice starts after BOOK XI so chapters begin at I=1
+  // and this branch is rarely taken).
   const variants = new Set<number>();
   const tryVariant = (s: string) => {
     const n = romanToIntStrict(sanitizeRoman(s));
-    if (n > 0 && n <= CANTO_LAST_CHAPTER) variants.add(n);
+    if (n > 0 && n <= cantoLastChapter) variants.add(n);
   };
   tryVariant(sanitized.replace(/L$/, "I"));   // trailing L → I
   tryVariant(sanitized.replace(/L/g, "I"));   // all L → I
@@ -296,36 +476,27 @@ function extractVerseRange(para: string): {
 // Volume parsing
 // ============================================================================
 
-// Parse a volume's text into a list of RawChapter records.
-// `volLabel` is for debug logging. `stopAtBookXI` short-circuits at the
-// "BOOK XI" line (Vol 5 only — to skip Cantos 11–12).
-function parseVolume(text: string, volLabel: string, stopAtBookXI: boolean): RawChapter[] {
+// Parse a (pre-sliced) volume's text into a list of RawChapter records.
+// The volume text passed in here is already trimmed to the canto's body
+// window by sliceVolume — no BOOK marker handling is needed in this loop.
+function parseVolume(text: string, volLabel: string, cantoLastChapter: number): RawChapter[] {
   const lines = text.split("\n");
   const chapters: RawChapter[] = [];
 
   let current: RawChapter | null = null;
   let prevChapter = 0;
   let titleNeeded = false;  // true after a chapter heading is detected; next non-empty line is title
-  let firstChapterSeen = false;  // gate the BOOK XI stop so TOC references don't trip it
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
-    // Vol 5 only: stop at the BOOK XI marker, BUT only after at least one chapter
-    // has been detected. The TOC at the start of Vol 5 references BOOK XI / XII
-    // which would otherwise short-circuit before any Canto 10 content.
-    if (stopAtBookXI && firstChapterSeen && BOOK_XI.test(line.trim())) {
-      console.error(`[parse] ${volLabel}: stopping at BOOK XI marker (line ${i + 1})`);
-      break;
-    }
 
     const m = line.match(CHAPTER_HEADER);
     if (m) {
       // Flush prior chapter
       if (current) chapters.push(current);
 
-      const detectedChapter = romanToInt(m[1], prevChapter);
-      if (detectedChapter <= 0 || detectedChapter > CANTO_LAST_CHAPTER) {
+      const detectedChapter = romanToInt(m[1], prevChapter, cantoLastChapter);
+      if (detectedChapter <= 0 || detectedChapter > cantoLastChapter) {
         console.error(`[parse] ${volLabel} line ${i + 1}: unparseable chapter heading '${line.trim()}' (raw='${m[1]}', sanitized='${sanitizeRoman(m[1])}')`);
         current = null;
         continue;
@@ -340,7 +511,6 @@ function parseVolume(text: string, volLabel: string, stopAtBookXI: boolean): Raw
       };
       prevChapter = detectedChapter;
       titleNeeded = true;
-      firstChapterSeen = true;
       continue;
     }
 
@@ -364,7 +534,7 @@ function parseVolume(text: string, volLabel: string, stopAtBookXI: boolean): Raw
 // Chunking
 // ============================================================================
 
-function chunkChapter(ch: RawChapter): Chunk[] {
+function chunkChapter(ch: RawChapter, canto: number): Chunk[] {
   const cleaned = cleanChapterText(ch.rawText);
   const paragraphs = cleaned.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
 
@@ -423,20 +593,20 @@ function chunkChapter(ch: RawChapter): Chunk[] {
       chunkOrdinalAnchored++;
       const dupCount = seenVerseStart.get(verseStart) ?? 0;
       const suffix = dupCount === 0 ? "" : String.fromCharCode(96 + dupCount);  // "a","b","c"...
-      reference = `bhagavata_${CANTO}.${ch.chapter}.${verseStart}${suffix}`;
+      reference = `bhagavata_${canto}.${ch.chapter}.${verseStart}${suffix}`;
       seenVerseStart.set(verseStart, dupCount + 1);
       if (dupCount > 0) warnings.push("duplicate-verse-anchor");
       if (verseEnd != null && verseEnd < verseStart) warnings.push("verse-range-non-monotonic");
     } else {
       chunkOrdinalFallback++;
       fallbackChunkN = chunkOrdinalFallback;
-      reference = `bhagavata_${CANTO}.${ch.chapter}_${fallbackChunkN}`;
+      reference = `bhagavata_${canto}.${ch.chapter}_${fallbackChunkN}`;
       warnings.push("no-verse-anchor");
     }
 
     chunks.push({
       reference,
-      canto: CANTO,
+      canto,
       chapter: ch.chapter,
       verseStart,
       verseEnd,
@@ -474,16 +644,16 @@ function chunkChapter(ch: RawChapter): Chunk[] {
         if (verseStart != null) {
           chunkOrdinalAnchored++;
           // Append a/b/c suffix when split (matches MB convention)
-          reference = `bhagavata_${CANTO}.${ch.chapter}.${verseStart}${String.fromCharCode(97 + i)}`;
+          reference = `bhagavata_${canto}.${ch.chapter}.${verseStart}${String.fromCharCode(97 + i)}`;
         } else {
           chunkOrdinalFallback++;
           fallbackChunkN = chunkOrdinalFallback;
-          reference = `bhagavata_${CANTO}.${ch.chapter}_${fallbackChunkN}`;
+          reference = `bhagavata_${canto}.${ch.chapter}_${fallbackChunkN}`;
           warnings.unshift("no-verse-anchor");
         }
         chunks.push({
           reference,
-          canto: CANTO,
+          canto,
           chapter: ch.chapter,
           verseStart,
           verseEnd,
@@ -511,7 +681,14 @@ function chunkChapter(ch: RawChapter): Chunk[] {
 // Sequence validation
 // ============================================================================
 
-function validateChapterSequence(chapters: RawChapter[]): string[] {
+// Validate chapter sequence within the expected range. With a chapter-range
+// filter set (Phase 1.7+ scope-narrowed runs), validate only the filtered
+// range. Without a filter (Phase 1.6 default), validate the full canto.
+function validateChapterSequence(
+  chapters: RawChapter[],
+  cantoLastChapter: number,
+  chapterRange: { from: number; to: number } | null,
+): string[] {
   const warnings: string[] = [];
   const seen = new Set<number>();
   for (const c of chapters) {
@@ -520,7 +697,9 @@ function validateChapterSequence(chapters: RawChapter[]): string[] {
     }
     seen.add(c.chapter);
   }
-  for (let n = 1; n <= CANTO_LAST_CHAPTER; n++) {
+  const from = chapterRange?.from ?? 1;
+  const to = chapterRange?.to ?? cantoLastChapter;
+  for (let n = from; n <= to; n++) {
     if (!seen.has(n)) {
       warnings.push(`missing-chapter-${n}`);
     }
@@ -533,21 +712,42 @@ function validateChapterSequence(chapters: RawChapter[]): string[] {
 // ============================================================================
 
 function main() {
-  if (!fs.existsSync(VOL4_PATH)) throw new Error(`Vol 4 djvu_txt missing at ${VOL4_PATH}`);
-  if (!fs.existsSync(VOL5_PATH)) throw new Error(`Vol 5 djvu_txt missing at ${VOL5_PATH}`);
+  const cli = parseCli();
+  const cfg = CANTO_CONFIGS[cli.canto];
 
-  console.error(`=== parse-bhagavata: Canto ${CANTO} ===`);
+  for (const v of cfg.volumes) {
+    if (!fs.existsSync(v.path)) throw new Error(`${v.label} djvu_txt missing at ${v.path}`);
+  }
 
-  const vol4Text = fs.readFileSync(VOL4_PATH, "utf8");
-  const vol5Text = fs.readFileSync(VOL5_PATH, "utf8");
+  const rangeStr = cli.chapterRange ? ` chs ${cli.chapterRange.from}–${cli.chapterRange.to}` : "";
+  console.error(`=== parse-bhagavata: Canto ${cli.canto}${rangeStr} ===`);
 
-  const vol4Chapters = parseVolume(vol4Text, "Vol 4", false);
-  const vol5Chapters = parseVolume(vol5Text, "Vol 5", true);
+  // Slice + parse each configured volume.
+  const allRawChapters: RawChapter[] = [];
+  const perVolStats: string[] = [];
+  for (const v of cfg.volumes) {
+    const text = fs.readFileSync(v.path, "utf8");
+    const sliced = sliceVolume(text, v);
+    const totalLines = text.split("\n").length;
+    const slicedLines = sliced.split("\n").length;
+    console.error(`[parse] ${v.label}: sliced ${slicedLines}/${totalLines} lines (${((slicedLines / totalLines) * 100).toFixed(1)}%)`);
+    const volChapters = parseVolume(sliced, v.label, cfg.lastChapter);
+    perVolStats.push(`${volChapters.length} from ${v.label}`);
+    allRawChapters.push(...volChapters);
+  }
 
-  const allChapters = [...vol4Chapters, ...vol5Chapters];
-  console.error(`Detected ${allChapters.length} chapters across both volumes (${vol4Chapters.length} from Vol 4, ${vol5Chapters.length} from Vol 5)`);
+  console.error(`Detected ${allRawChapters.length} chapters across ${cfg.volumes.length} volume(s) (${perVolStats.join(", ")})`);
 
-  const sequenceWarnings = validateChapterSequence(allChapters);
+  // Apply chapter-range filter BEFORE chunking — saves work on out-of-scope
+  // chapters and prevents their references from leaking into the output file.
+  const inRange = (n: number): boolean =>
+    cli.chapterRange == null || (n >= cli.chapterRange.from && n <= cli.chapterRange.to);
+  const filteredChapters = allRawChapters.filter(c => inRange(c.chapter));
+  if (cli.chapterRange) {
+    console.error(`After --chapters=${cli.chapterRange.from}-${cli.chapterRange.to} filter: ${filteredChapters.length} chapters retained (dropped ${allRawChapters.length - filteredChapters.length})`);
+  }
+
+  const sequenceWarnings = validateChapterSequence(filteredChapters, cfg.lastChapter, cli.chapterRange);
   if (sequenceWarnings.length > 0) {
     console.error(`Chapter-sequence warnings: ${sequenceWarnings.length}`);
     for (const w of sequenceWarnings) console.error(`  - ${w}`);
@@ -556,13 +756,25 @@ function main() {
   let allChunks: Chunk[] = [];
   let anchoredCount = 0;
   let fallbackCount = 0;
-  for (const c of allChapters) {
-    const cs = chunkChapter(c);
+  // Per-chapter chunk-count breakdown (printed at end for the founder report).
+  const perChapterCounts = new Map<number, { total: number; anchored: number; fallback: number; words: number }>();
+  for (const c of filteredChapters) {
+    const cs = chunkChapter(c, cli.canto);
     allChunks = allChunks.concat(cs);
+    let chAnchored = 0;
+    let chFallback = 0;
+    let chWords = 0;
     for (const chunk of cs) {
-      if (chunk.verseStart != null) anchoredCount++;
-      else fallbackCount++;
+      if (chunk.verseStart != null) {
+        anchoredCount++;
+        chAnchored++;
+      } else {
+        fallbackCount++;
+        chFallback++;
+      }
+      chWords += chunk.wordCount;
     }
+    perChapterCounts.set(c.chapter, { total: cs.length, anchored: chAnchored, fallback: chFallback, words: chWords });
   }
 
   // Post-process: enforce reference uniqueness across the corpus. If any
@@ -591,19 +803,26 @@ function main() {
     for (const t of tagOn) t.warnings.push(`adjacent-chapter-${missing}-unmarked-in-source`);
   }
 
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allChunks, null, 2), "utf8");
+  fs.writeFileSync(cli.outputPath, JSON.stringify(allChunks, null, 2), "utf8");
 
   const total = allChunks.length;
   const anchorPct = total > 0 ? ((anchoredCount / total) * 100).toFixed(1) : "0.0";
   const wcAvg = total > 0 ? Math.round(allChunks.reduce((s, c) => s + c.wordCount, 0) / total) : 0;
 
+  console.error(`\n=== Per-chapter breakdown ===`);
+  for (const [ch, s] of [...perChapterCounts.entries()].sort((a, b) => a[0] - b[0])) {
+    const anchorPctCh = s.total > 0 ? ((s.anchored / s.total) * 100).toFixed(0) : "0";
+    console.error(`  Ch ${String(ch).padStart(2)}: ${String(s.total).padStart(3)} chunks  (${String(s.anchored).padStart(3)} anchored, ${String(s.fallback).padStart(2)} fallback — ${anchorPctCh.padStart(3)}%)  ${s.words}w`);
+  }
+
   console.error(`\n=== Summary ===`);
+  console.error(`Canto:                 ${cli.canto}${rangeStr}`);
   console.error(`Total chunks:          ${total}`);
   console.error(`Anchored (dot ref):    ${anchoredCount} (${anchorPct}%)`);
   console.error(`Fallback (underscore): ${fallbackCount}`);
   console.error(`Avg word count:        ${wcAvg}`);
   console.error(`Sequence warnings:     ${sequenceWarnings.length}`);
-  console.error(`Wrote: ${OUTPUT_PATH}`);
+  console.error(`Wrote: ${cli.outputPath}`);
 }
 
 main();

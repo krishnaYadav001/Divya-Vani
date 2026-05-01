@@ -140,8 +140,11 @@ scripts/                            (project root, not under src/)
 │                                   whether Sanyal's "(N—M)" parenthetical
 │                                   survived OCR. npm run parse:bhagavata.
 ├── regenerate-hindi-bhagavata.ts   Regenerate Bhagavata Hindi via Sonnet 4.6
-│                                   + v3 + Bhagavata addendum v1.1 (line 80;
-│                                   canonical addendum source-of-truth).
+│                                   + v3 + Bhagavata addendum v1.1 (the
+│                                   `SYSTEM_PROMPT` constant in that file
+│                                   is the canonical addendum source-of-
+│                                   truth; line number drifts with refactors,
+│                                   so reference by symbol not line).
 │                                   Same concurrency/retry/consistency-check
 │                                   skeleton as MBh regen, MAX_TOKENS=1800.
 │                                   npm run regen:hindi:bhagavata(:dry).
@@ -208,14 +211,36 @@ data/                               (project root, not under src/)
 ├── bhagavata-regenerated-cleaned.json
 │                                   568 chunks after em-dash post-process
 │                                   merge (63 sentence-bisect pairs joined).
-│                                   This is the file ingested into Supabase.
+│                                   This is the Canto 10 file ingested into
+│                                   Supabase.
+├── bhagavata-canto11.json          Phase 1.7 parser output: 162 chunks
+│                                   across 24 chapters of Canto 11 (Sanyal
+│                                   VI–XXIX = std 11.6–29 Uddhava-Gita).
+│                                   Canto field=11. 82.1% anchored vs
+│                                   17.9% fallback — denser parenthetical
+│                                   labeling than Canto 10's 69.2%.
+│                                   Preserved as parse baseline.
+├── bhagavata-canto11-regenerated.json
+│                                   162 chunks with regenerated Hindi.
+│                                   Output of regenerate-hindi-bhagavata.ts
+│                                   --canto=11 (₹231.18 Sonnet 4.6 spend).
+│                                   Preserved as backup before em-dash
+│                                   cleanup.
+├── bhagavata-canto11-regenerated-cleaned.json
+│                                   159 chunks after em-dash post-process
+│                                   merge (3 pairs joined, all resolved
+│                                   cleanly to terminal). This is the file
+│                                   ingested into Supabase as Canto 11.
 └── bhagavata-raw/                  Sanyal Vol 4 + Vol 5 djvu_txt — gitignored
                                     (CC0 archive.org sources, ~600–760 KB
                                     each, re-fetchable via curl per the
                                     "Phase 1.6 corpus sources" section
                                     below). Vol 3 also stored locally for
                                     future Bhagavata expansion (Books 7–9,
-                                    NOT Canto 10, do not use for Phase 1.6).
+                                    NOT Canto 10/11, do not use for Phase
+                                    1.6 / 1.7). Vol 5 BOOK XI body slice
+                                    (lines 7448–14174) is the Canto 11
+                                    source for Phase 1.7.
 
 docs/
 ├── build-roadmap.md                14-week phase plan
@@ -259,11 +284,26 @@ docs/
 ## Phase 1.6 corpus sources
 
 - **English:** J. M. Sanyal *Srimad-Bhagavatam* (Calcutta 1929–34, PD), via Sarayu Foundation / UP State Museum CC0 archive.org scans — Vol 4 (`eszb_…`, Canto 10 chs 1–61) + Vol 5 (`qpbw_…`, Canto 10 chs 62–90). djvu_txt URL pattern matches Phase 1.5 (`archive.org/stream/<id>/<id>_djvu.txt`).
-- **Hindi:** regenerated 2026-05-01 via Claude Sonnet 4.6 from English using v3 system prompt + **Bhagavata addendum v1.1** (3 bullets: Sanskrit-absent caveat + lyrical/devotional voice rule + glossary lock with गोप uniform, names through सुदामा, no राधा pending Phase 9+). Canonical addendum text lives at `scripts/regenerate-hindi-bhagavata.ts:80`. Total Sonnet spend ₹897.53 across 633 chunks (40% under estimate; 0% cache hit rate — investigate before Phase 1.7).
+- **Hindi:** regenerated 2026-05-01 via Claude Sonnet 4.6 from English using v3 system prompt + **Bhagavata addendum v1.1** (3 bullets: Sanskrit-absent caveat + lyrical/devotional voice rule + glossary lock with गोप uniform, names through सुदामा, no राधा pending Phase 9+). Canonical addendum text lives in the `SYSTEM_PROMPT` constant of `scripts/regenerate-hindi-bhagavata.ts` (reference by symbol, not line — line numbers drift with refactors). Total Sonnet spend ₹897.53 across 633 chunks (40% under estimate; 0% cache hit rate — falsified Phase 1.7 by `messages.countTokens` showing 1,317 > 1,024 minimum).
 - **Sanskrit:** intentionally **NOT attached** at this phase (mirrors Phase 1.5 BORI deferral). All Bhagavata rows in `verses` have `sanskrit = ''` and `sanskrit_source = NULL`. Sanskrit alignment is a Phase 9+ audit.
 - **Reference scheme:** `bhagavata_10.<chapter>.<verseStart>` anchored (dot separator, when Sanyal's "(N—M)" parenthetical is present, 69.2% of chunks) OR `bhagavata_10.<chapter>_<fallbackChunkN>` fallback (underscore separator, when parenthetical absent or OCR-garbled, 30.8% of chunks). Schema mapping: `chapter` int = chapter-within-canto, `verse_number` int = verseStart (anchored) or fallbackChunkN (fallback).
 - **Post-process:** `fix-em-dash-endings-bhagavata.ts` merged 63 sentence-bisected pairs (62 cleanly resolved, 1 deep chain + 2 oversize merges flagged for review), reducing 633 → 568 chunks. OCR fix patterns baked into the parser: leading-digit 8→3 gate (handles Sanyal 3↔8 misread), inline parenthetical fallback (recovers OCR-merged paragraphs), tilde separator on verse-range parentheticals.
 - **Quality gate:** 20/20 spot-check PASS + 3/5 retrieval coverage (queries 3 + 4 deferred to Phase 2 corpus-balance retuning, same precedent as Phase 1.5 anger-query carry-forward).
+
+---
+
+## Phase 1.7 corpus sources
+
+- **English:** J. M. Sanyal *Srimad-Bhagavatam* Vol 5 only (`qpbw_…` Sarayu/UP-Museum CC0 archive.org scan; same edition + license-fallback chain as Phase 1.6). Vol 5 BOOK XI body slice (lines 7448–14174 inclusive) covers all 31 chapters of Sanyal Book XI = standard Canto 11. Phase 1.7 scope is Sanyal chs 6–29 (`--chapters=6-29` filter): the Uddhava-Gita arc — Krishna's Yadu farewell + Devas hymn at Dwaraka (chs 6–7), avadhūta-Brahmana / 24-gurus (chs 7–9), philosophical conclusions (chs 11–13), didactic yoga / four-orders / vibhūti / vānaprastha (chs 14–21), theoretical guṇas + tattva-enumeration (chs 22–25), devotional climax + ritual worship + final teaching (chs 26–29). Sanyal chs 1–5 (Yadu curse + Nimi-Yogendras prelude) and chs 30–31 (Mausala + Krishna's departure) intentionally excluded — narrative bookends, not Uddhava-frame teaching.
+- **Sanyal-vs-standard chapter alignment:** Sanyal Book XI = standard Canto 11 — **1:1 chapter count (both 31 chapters), 1:1 alignment verified at Sanyal Ch VI = std 11.6 boundary** (Devas-at-Dwaraka opening). Per-chapter content audit for chs 7–29 deferred to Phase 9+ Sanskrit-attachment milestone.
+- **Hindi:** regenerated 2026-05-02 via Claude Sonnet 4.6 + v3 system prompt + Bhagavata addendum v1.1 (locked permanent — no v1.2 needed; canonical addendum text remains the SYSTEM_PROMPT constant in `scripts/regenerate-hindi-bhagavata.ts`). v1.1's "Canto 10 voice is lyrical" framing was tested explicitly against Phase 1.7's didactic / theoretical / philosophical content via the dry-run register-validation pass; the model takes register cues from source text first and does not import inappropriate Vrindavan imagery into philosophical chunks. Confirmed at full scale by 9d Sanskrit-philosophical-term preservation in the 20-chunk spot-check (116 target-term occurrences = 5.8/chunk avg, 0 dilutions). Total Sonnet spend ₹231.18 across 162 chunks (≈₹1.43/chunk, identical to Phase 1.6 baseline).
+- **Sanskrit:** intentionally **NOT attached** at this phase (mirrors Phase 1.5 BORI deferral and Phase 1.6 Canto 10). All Phase 1.7 Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL`. Sanskrit alignment + per-chapter content audit are a Phase 9+ milestone.
+- **Reference scheme:** inherits Phase 1.6: `bhagavata_11.<chapter>.<verseStart>` anchored (dot separator, 82.1% — higher than Canto 10's 69.2% because Sanyal Book XI uses `(N—M)` parentheticals more methodically than Book X) OR `bhagavata_11.<chapter>_<fallbackChunkN>` fallback (underscore separator, 17.9%). Schema mapping unchanged: `chapter` int = chapter-within-canto (here 6–29), `verse_number` int = verseStart (anchored) or fallbackChunkN (fallback), canto info in reference text only.
+- **Post-process:** `fix-em-dash-endings-bhagavata.ts --canto11` merged 3 sentence-bisected pairs (all resolved cleanly to terminal punctuation; 0 deep chains, 0 oversize merges, 0 footnote strips), reducing 162 → 159 chunks. Em-dash merger inherits the Phase 1.6 boundary rule (refuse to merge across CHAPTER) and the OCR fix patterns (8→3 leading-digit gate, tilde separator, inline parenthetical fallback) baked into the parser.
+- **Quality gate:** 18/20 spot-check PASS + 3/5 retrieval coverage (≥17/20 + ≥3/5 thresholds met; threshold lowered from Phase 1.6's ≥4/5 retrieval because the 159-chunk corpus competes against ~3,200 rows of older content). 2 spot-check FLAGs (`bhagavata_11.22.19`, `bhagavata_11.29_4`) are pre-existing 1.3% non-terminal class — English source truncates mid-clause at parser-induced chunk boundary, em-dash merger only catches dash-terminal cases. Same mechanism as Phase 1.6 residual; not a Phase 1.7 regression. Retrieval queries 3 + 4 (surrender, renunciation) returned 5/5 Gita: structural Gita-compact-verse-cosine-bias carry-forward, defer to Phase 2.
+- **Carry-forward to Phase 2 / 9+:**
+  - **Phase 2:** structural Gita-compact-verse-cosine-bias on abstract-emotional queries (anger / surrender / renunciation) — same issue surfaced in Phases 1.5 + 1.6 + 1.7. Address via theme tags / query rewriting / source-aware retrieval boost. Also: 2/159 residual non-terminal chunks from parser-truncated English boundaries.
+  - **Phase 9+:** **0% cache hit rate confirmed at full scale** (162 calls; 1,317-token SYSTEM_PROMPT verified above the 1,024-token cache minimum via `messages.countTokens`; 3-call sequential probe in `scripts/count-system-prompt-tokens.ts` reproduces 0 cache_creation + 0 cache_read). The Phase 1.6 "below threshold" hypothesis is falsified. Remaining hypotheses: Sonnet-4.6-specific cache eligibility, beta-header drift, API-tier gating, ephemeral-TTL default change. Investigation note at `test-results/phase1.7-cache-investigation.md`. Reopen alongside Sanskrit-attachment milestone when prompt size + cache savings get bigger. Sanyal-vs-standard per-chapter content audit also opens at this milestone.
 
 ---
 
@@ -308,7 +348,7 @@ Note: legacy `is_paid` column from God Messenger era is dropped in Phase 5 in fa
 
 Index: `ivfflat` on `embedding` using `vector_cosine_ops`.
 
-**Current row counts (2026-05-01):** 701 gita + 1,704 mahabharata + 568 bhagavata = **2,973 total scriptural rows**. Mahabharata + Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL` per Phase 1.5 / 1.6 Sanskrit deferrals.
+**Current row counts (2026-05-02):** 701 gita + 1,704 mahabharata + 727 bhagavata (568 Canto 10 + 159 Canto 11.6–29 Uddhava-Gita) = **3,132 total scriptural rows**. Mahabharata + Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL` per Phase 1.5 / 1.6 / 1.7 Sanskrit deferrals.
 
 ### `feedback` (Phase 6+)
 
@@ -394,8 +434,8 @@ Optional Supabase email-OTP auth (Phase 5+) for cross-device sync. When the user
 | 1 | 1–2 | Bhagavad Gita ingestion (701 verses) — **COMPLETE** |
 | 1.5 | 3–4 | Mahabharata Krishna sections — 13 parvas, 23 curated ranges, 1,704 chunks — **COMPLETE 2026-04-30** |
 | 1.6 | 5–7 | Bhagavata Purana Canto 10 — full 90 chapters, Sanyal CC0, 568 chunks — **COMPLETE 2026-05-01** |
-| 1.7 (next) | 7–8 | Bhagavata Purana Canto 11.6–29 — Uddhava Gita |
-| 2 | 8–9 | RAG retuning with full corpus + verse-card UI + regression-test all retrieval |
+| 1.7 | 7–8 | Bhagavata Purana Canto 11.6–29 — Uddhava Gita, 159 chunks across 24 chapters — **COMPLETE 2026-05-02** |
+| 2 (next) | 8–9 | RAG retuning with full corpus + verse-card UI + regression-test all retrieval |
 | 3 | 10–11 | Krishna persona prompt iteration with full data; apply held Round 4 edits (mode rotation, Arjuna rate limit, Vrindavan example) |
 | 4 | 12 | Safety classifier, helpline cards, name flow, content filter, disclaimer bar |
 | 5 | 13 | Razorpay seva integration (pay-as-you-go, 4 tiers) |

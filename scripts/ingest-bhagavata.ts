@@ -1,16 +1,35 @@
-// Phase 1.6 ingest: Bhagavata Purana Canto 10 corpus → Supabase verses table.
-// Sibling to scripts/ingest-mahabharata.ts (Phase 1.5); shares the same
-// embedding model, retry strategy, and table schema.
+// Bhagavata Purana corpus → Supabase verses table.
+// Reusable across Phase 1.6 (Canto 10) and Phase 1.7+ (Canto 11.6–29 Uddhava
+// Gita, future cantos). Sibling to scripts/ingest-mahabharata.ts (Phase 1.5);
+// shares the same embedding model, retry strategy, and table schema.
 //
-// Reads:  data/bhagavata-regenerated-cleaned.json (568 chunks post-em-dash-merge)
-// Writes: Supabase `verses` table, source='bhagavata'
+// Reads:  the cleaned chunks JSON for the active canto (CLI flag --input;
+//         default data/bhagavata-regenerated-cleaned.json for Canto 10
+//         backcompat, Phase 1.7 passes
+//         --input=data/bhagavata-canto11-regenerated-cleaned.json).
+// Writes: Supabase `verses` table, source='bhagavata' (Canto 10 + 11 share
+//         the source bucket — chunk.reference disambiguates by canto prefix).
+//
+// CLI flags (added Phase 1.7):
+//   --input=<path>    Cleaned chunks JSON (default
+//                     data/bhagavata-regenerated-cleaned.json).
+//   --dry-run         5-chunk preview, no DB writes.
+//   --resume          No-op flag (resume is automatic via existingRefs query).
+//
+// Canto-aware behavior (auto-detected from chunks[0].canto):
+//   - The CANTO_LAST_CHAPTER lookup gates chapter-range validation: 90 for
+//     Canto 10, 31 for Canto 11. To extend, add an entry to
+//     CANTO_LAST_CHAPTER_BY_CANTO below.
+//   - All chunks in one ingest run must share the same canto (mixed-canto
+//     inputs throw before any embedding spend).
 //
 // Field mapping vs CLAUDE.md schema:
-//   source           = 'bhagavata'
+//   source           = 'bhagavata' (constant; canto info lives in reference)
 //   reference        = chunk.reference (e.g. 'bhagavata_10.29.7' anchored
-//                      or 'bhagavata_10.55_3' fallback — dot vs underscore
-//                      separator distinguishes)
-//   chapter          = chunk.chapter (1–90 within Canto 10)
+//                      or 'bhagavata_10.55_3' fallback; or
+//                      'bhagavata_11.20.5' for Phase 1.7 — dot vs underscore
+//                      separator distinguishes anchored from fallback)
+//   chapter          = chunk.chapter (1–N within the active canto)
 //   verse_number     = chunk.verseStart (anchored) OR chunk.fallbackChunkN
 //                      (fallback). Schema invariant: exactly one is non-null.
 //   sanskrit         = '' (Sanskrit alignment is Phase 9+)
@@ -24,8 +43,9 @@
 // Embedding text is `english\n\nhindi` — same as MB and Gita ingest. Excludes
 // Sanskrit (none attached at this phase).
 //
-// Resume-safe: queries existing bhagavata refs at startup and skips them.
-// Idempotent via upsert(onConflict='reference').
+// Resume-safe: queries existing bhagavata refs at startup (paginated to
+// bypass Supabase's 1000-row .select() cap, fixed in Phase 1.6) and skips
+// them. Idempotent via upsert(onConflict='reference').
 //
 // Retry coverage (verbatim from MB ingest):
 //   - 429 / RESOURCE_EXHAUSTED → 60s/120s/240s/480s/960s backoff
@@ -33,16 +53,38 @@
 // Inter-call delay 500ms keeps us at ~40 RPM.
 //
 // Invocation:
+//   # Phase 1.6 default (Canto 10):
 //   npm run ingest:bhagavata             # full run, resume-safe
-//   npm run ingest:bhagavata:dry         # 5-chunk preview, no writes
+//   npm run ingest:bhagavata:dry         # 5-chunk preview
+//   # Phase 1.7 (Canto 11.6–29):
+//   npm run ingest:bhagavata:canto11
+//   npm run ingest:bhagavata:canto11:dry
+//   # Direct invocation:
+//   tsx --env-file=.env.local scripts/ingest-bhagavata.ts \
+//     --input=data/bhagavata-canto11-regenerated-cleaned.json [--dry-run]
 
 import fs from "node:fs";
 import { GoogleGenerativeAI, TaskType } from "@google/generative-ai";
 import { createClient } from "@supabase/supabase-js";
 
-const DRY_RUN = process.argv.includes("--dry-run");
-const RESUME_FLAG = process.argv.includes("--resume");
-const INPUT_PATH = "data/bhagavata-regenerated-cleaned.json";
+// CLI parsing — defaults preserve Phase 1.6 behavior. Phase 1.7+ runs pass
+// --input via the canto-specific npm aliases.
+function parseCli() {
+  const args = process.argv.slice(2);
+  const get = (name: string): string | null => {
+    const arg = args.find(a => a.startsWith(`--${name}=`));
+    return arg ? arg.slice(`--${name}=`.length) : null;
+  };
+  return {
+    inputPath: get("input") ?? "data/bhagavata-regenerated-cleaned.json",
+    dryRun: args.includes("--dry-run"),
+    resume: args.includes("--resume"),
+  };
+}
+const CLI = parseCli();
+const DRY_RUN = CLI.dryRun;
+const RESUME_FLAG = CLI.resume;
+const INPUT_PATH = CLI.inputPath;
 const SOURCE_NAME = "bhagavata";
 
 const EMBED_MODEL = "gemini-embedding-001";
@@ -60,12 +102,14 @@ const PRICE_PER_M_TOKENS_USD = 0.025;
 const CHARS_PER_TOKEN_EST = 3;
 const USD_TO_INR = 83;
 
-// Bhagavata Canto 10 has 90 chapters. Validation: every chunk's chapter must
-// be in [1, CANTO_LAST_CHAPTER]. Throwing on out-of-range at startup keeps
-// future Phase 1.7 (Canto 11.6–29) honest about updating this constant rather
-// than silently writing chapter=99.
-const CANTO = 10;
-const CANTO_LAST_CHAPTER = 90;
+// Per-canto last-chapter map. Validation: every chunk's chapter must be in
+// [1, CANTO_LAST_CHAPTER_BY_CANTO[detectedCanto]]. Throwing on out-of-range
+// or unknown canto at startup catches parser misconfigurations before any
+// embedding spend. Add an entry to extend to a new canto.
+const CANTO_LAST_CHAPTER_BY_CANTO: Record<number, number> = {
+  10: 90,  // Sanyal Book X = standard Canto 10
+  11: 31,  // Sanyal Book XI = standard Canto 11
+};
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -121,14 +165,28 @@ async function main() {
 
   // Validate input shape up front. Mirror MB's "throw on unknown parva"
   // discipline — surface schema violations BEFORE any embedding spend.
-  const distinctChapters = [...new Set(chunks.map((c) => c.chapter))];
-  const oor = distinctChapters.filter((ch) => ch < 1 || ch > CANTO_LAST_CHAPTER);
-  if (oor.length > 0) {
-    throw new Error(`Out-of-range chapters (expected 1–${CANTO_LAST_CHAPTER}): ${oor.join(", ")}`);
+
+  // Auto-detect canto. All chunks in one ingest run must share the same
+  // canto (the source bucket is 'bhagavata' for both, but reference prefixes
+  // and chapter validation diverge).
+  if (chunks.length === 0) throw new Error(`No chunks in ${INPUT_PATH}`);
+  const detectedCanto = chunks[0].canto;
+  const cantoLastChapter = CANTO_LAST_CHAPTER_BY_CANTO[detectedCanto];
+  if (cantoLastChapter == null) {
+    throw new Error(
+      `Canto ${detectedCanto} not configured in CANTO_LAST_CHAPTER_BY_CANTO. Configured: ${Object.keys(CANTO_LAST_CHAPTER_BY_CANTO).join(", ")}.`,
+    );
   }
-  const wrongCanto = chunks.filter((c) => c.canto !== CANTO);
+  const wrongCanto = chunks.filter((c) => c.canto !== detectedCanto);
   if (wrongCanto.length > 0) {
-    throw new Error(`Found ${wrongCanto.length} chunks with canto != ${CANTO} — Phase 1.6 should be Canto 10 only.`);
+    throw new Error(
+      `Mixed-canto input: ${wrongCanto.length} chunks have canto != ${detectedCanto} (first: ${wrongCanto[0].reference}).`,
+    );
+  }
+  const distinctChapters = [...new Set(chunks.map((c) => c.chapter))];
+  const oor = distinctChapters.filter((ch) => ch < 1 || ch > cantoLastChapter);
+  if (oor.length > 0) {
+    throw new Error(`Out-of-range chapters (Canto ${detectedCanto}, expected 1–${cantoLastChapter}): ${oor.join(", ")}`);
   }
   // Schema invariant: exactly one of verseStart / fallbackChunkN is non-null.
   const broken = chunks.filter(
@@ -140,7 +198,7 @@ async function main() {
     );
   }
   console.log(
-    `Chapter coverage: ${distinctChapters.length} chapters (range ${Math.min(...distinctChapters)}–${Math.max(...distinctChapters)}).`
+    `Detected canto: ${detectedCanto}. Chapter coverage: ${distinctChapters.length} chapters (range ${Math.min(...distinctChapters)}–${Math.max(...distinctChapters)}).`
   );
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
