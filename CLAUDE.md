@@ -130,6 +130,40 @@ scripts/                            (project root, not under src/)
 │                                   (Phase 1.5). Retry-on-429 + 500ms
 │                                   inter-call delay + cost tracking.
 │                                   npm run ingest:mahabharata(:dry).
+├── parse-bhagavata.ts              Parse Sanyal English Bhagavata Canto 10
+│                                   into chunks (Phase 1.6 parser, 633
+│                                   chunks emitted across all 90 chapters).
+│                                   Paragraph-batched; emits both anchored
+│                                   (`bhagavata_10.<ch>.<verseStart>`, dot)
+│                                   and fallback (`bhagavata_10.<ch>_<N>`,
+│                                   underscore) reference forms based on
+│                                   whether Sanyal's "(N—M)" parenthetical
+│                                   survived OCR. npm run parse:bhagavata.
+├── regenerate-hindi-bhagavata.ts   Regenerate Bhagavata Hindi via Sonnet 4.6
+│                                   + v3 + Bhagavata addendum v1.1 (line 80;
+│                                   canonical addendum source-of-truth).
+│                                   Same concurrency/retry/consistency-check
+│                                   skeleton as MBh regen, MAX_TOKENS=1800.
+│                                   npm run regen:hindi:bhagavata(:dry).
+├── fix-em-dash-endings-bhagavata.ts  Phase 1.6 post-process: merges 63
+│                                   sentence-bisect pairs at chapter
+│                                   boundaries (vs MB's parva boundaries).
+│                                   Reduced 633 → 568 chunks.
+│                                   npm run fix:bhagavata-em-dash(:dry).
+├── ingest-bhagavata.ts             Embed cleaned Bhagavata chunks into
+│                                   Supabase (Phase 1.6). Same retry coverage
+│                                   + pagination loop as MBh ingest.
+│                                   Schema-invariant validation: every chunk
+│                                   has exactly one of verseStart /
+│                                   fallbackChunkN non-null.
+│                                   npm run ingest:bhagavata(:dry).
+├── bhagavata-addendum-test.ts      Reusable addendum pressure-test driver
+│                                   (Phase 1.6 baseline run produced
+│                                   test-results/phase1.6-pressure-test-
+│                                   2026-05-01.md). Edit SYSTEM_PROMPT,
+│                                   passages array, OUTPUT_PATH for
+│                                   future addendum tweaks (Phase 1.7+).
+│                                   NOT in package.json.
 ├── test-search.ts                  10-query verse retrieval test (Phase 1).
 │                                   npm run test:search
 └── test-prompt.ts                  Run system prompt against test queries
@@ -153,13 +187,35 @@ data/                               (project root, not under src/)
 │                                   merge (138 sentence-bisect pairs joined,
 │                                   2 translator footnotes stripped). This
 │                                   is the file ingested into Supabase.
-└── mahabharata-raw/                Source ground truth for the MBh parser:
-                                    ganguli/ (Roy/Ganguli English, archive
-                                    .org PD plain-text, 12 vols),
-                                    sanskrit-bori/ (BORI critical edition,
-                                    deferred to Phase 9+ audit),
-                                    sanskrit-kumbakonam/ (Southern recension,
-                                    not used in v1).
+├── mahabharata-raw/                Source ground truth for the MBh parser:
+│                                   ganguli/ (Roy/Ganguli English, archive
+│                                   .org PD plain-text, 12 vols),
+│                                   sanskrit-bori/ (BORI critical edition,
+│                                   deferred to Phase 9+ audit),
+│                                   sanskrit-kumbakonam/ (Southern recension,
+│                                   not used in v1).
+├── bhagavata.json                  Phase 1.6 parser output: 633 chunks
+│                                   across all 90 chapters of Canto 10
+│                                   (English + canto/chapter/verseStart/
+│                                   verseEnd/fallbackChunkN/wordCount/
+│                                   warnings, no Hindi yet). Preserved
+│                                   as parse baseline.
+├── bhagavata-regenerated.json      633 chunks with regenerated Hindi.
+│                                   Output of regenerate-hindi-bhagavata.ts
+│                                   (~₹897.53 total Sonnet 4.6 spend).
+│                                   Preserved as backup before em-dash
+│                                   cleanup.
+├── bhagavata-regenerated-cleaned.json
+│                                   568 chunks after em-dash post-process
+│                                   merge (63 sentence-bisect pairs joined).
+│                                   This is the file ingested into Supabase.
+└── bhagavata-raw/                  Sanyal Vol 4 + Vol 5 djvu_txt — gitignored
+                                    (CC0 archive.org sources, ~600–760 KB
+                                    each, re-fetchable via curl per the
+                                    "Phase 1.6 corpus sources" section
+                                    below). Vol 3 also stored locally for
+                                    future Bhagavata expansion (Books 7–9,
+                                    NOT Canto 10, do not use for Phase 1.6).
 
 docs/
 ├── build-roadmap.md                14-week phase plan
@@ -197,6 +253,17 @@ docs/
 - **Sanskrit:** intentionally **NOT attached** at this phase. BORI critical edition was downloaded but deferred per `docs/decisions.md` 2026-04-29 decision. All MBh rows in `verses` have `sanskrit = ''` and `sanskrit_source = NULL`. Sanskrit alignment is a Phase 9+ audit.
 - **Curation:** 13 parvas across 23 curated section ranges per `docs/decisions.md` 2026-04-29 audit (rounds 1 + 2). Excludes Sauptika 1–12 (massacre prose, no Krishna), Adi pre-218 (background mythology), Anushasana / Ashramavasika / Mahaprasthanika / Svargarohanika.
 - **Post-process:** `fix-em-dash-endings.ts` merged 138 sentence-bisected pairs (chunker artefact at original Ganguli line endings), reducing 1,844 → 1,704 chunks. 18 mid-word/ellipsis truncation chunks remain — deferred to Phase 2 RAG retuning or future parser improvements.
+
+---
+
+## Phase 1.6 corpus sources
+
+- **English:** J. M. Sanyal *Srimad-Bhagavatam* (Calcutta 1929–34, PD), via Sarayu Foundation / UP State Museum CC0 archive.org scans — Vol 4 (`eszb_…`, Canto 10 chs 1–61) + Vol 5 (`qpbw_…`, Canto 10 chs 62–90). djvu_txt URL pattern matches Phase 1.5 (`archive.org/stream/<id>/<id>_djvu.txt`).
+- **Hindi:** regenerated 2026-05-01 via Claude Sonnet 4.6 from English using v3 system prompt + **Bhagavata addendum v1.1** (3 bullets: Sanskrit-absent caveat + lyrical/devotional voice rule + glossary lock with गोप uniform, names through सुदामा, no राधा pending Phase 9+). Canonical addendum text lives at `scripts/regenerate-hindi-bhagavata.ts:80`. Total Sonnet spend ₹897.53 across 633 chunks (40% under estimate; 0% cache hit rate — investigate before Phase 1.7).
+- **Sanskrit:** intentionally **NOT attached** at this phase (mirrors Phase 1.5 BORI deferral). All Bhagavata rows in `verses` have `sanskrit = ''` and `sanskrit_source = NULL`. Sanskrit alignment is a Phase 9+ audit.
+- **Reference scheme:** `bhagavata_10.<chapter>.<verseStart>` anchored (dot separator, when Sanyal's "(N—M)" parenthetical is present, 69.2% of chunks) OR `bhagavata_10.<chapter>_<fallbackChunkN>` fallback (underscore separator, when parenthetical absent or OCR-garbled, 30.8% of chunks). Schema mapping: `chapter` int = chapter-within-canto, `verse_number` int = verseStart (anchored) or fallbackChunkN (fallback).
+- **Post-process:** `fix-em-dash-endings-bhagavata.ts` merged 63 sentence-bisected pairs (62 cleanly resolved, 1 deep chain + 2 oversize merges flagged for review), reducing 633 → 568 chunks. OCR fix patterns baked into the parser: leading-digit 8→3 gate (handles Sanyal 3↔8 misread), inline parenthetical fallback (recovers OCR-merged paragraphs), tilde separator on verse-range parentheticals.
+- **Quality gate:** 20/20 spot-check PASS + 3/5 retrieval coverage (queries 3 + 4 deferred to Phase 2 corpus-balance retuning, same precedent as Phase 1.5 anger-query carry-forward).
 
 ---
 
@@ -241,7 +308,7 @@ Note: legacy `is_paid` column from God Messenger era is dropped in Phase 5 in fa
 
 Index: `ivfflat` on `embedding` using `vector_cosine_ops`.
 
-**Current row counts (2026-04-30):** 701 gita + 1,704 mahabharata = **2,405 total scriptural rows**. Mahabharata rows have `sanskrit = ''` and `sanskrit_source = NULL` per Phase 1.5 Sanskrit deferral.
+**Current row counts (2026-05-01):** 701 gita + 1,704 mahabharata + 568 bhagavata = **2,973 total scriptural rows**. Mahabharata + Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL` per Phase 1.5 / 1.6 Sanskrit deferrals.
 
 ### `feedback` (Phase 6+)
 
@@ -326,8 +393,8 @@ Optional Supabase email-OTP auth (Phase 5+) for cross-device sync. When the user
 | 0 | Day 1 | Decision lock, docs setup |
 | 1 | 1–2 | Bhagavad Gita ingestion (701 verses) — **COMPLETE** |
 | 1.5 | 3–4 | Mahabharata Krishna sections — 13 parvas, 23 curated ranges, 1,704 chunks — **COMPLETE 2026-04-30** |
-| 1.6 (next) | 5–7 | Bhagavata Purana Canto 10 — Krishna lila (Vrindavan childhood, Bal Krishna, gopi episodes, Uddhava arrival) |
-| 1.7 | 7–8 | Bhagavata Purana Canto 11.6–29 — Uddhava Gita |
+| 1.6 | 5–7 | Bhagavata Purana Canto 10 — full 90 chapters, Sanyal CC0, 568 chunks — **COMPLETE 2026-05-01** |
+| 1.7 (next) | 7–8 | Bhagavata Purana Canto 11.6–29 — Uddhava Gita |
 | 2 | 8–9 | RAG retuning with full corpus + verse-card UI + regression-test all retrieval |
 | 3 | 10–11 | Krishna persona prompt iteration with full data; apply held Round 4 edits (mode rotation, Arjuna rate limit, Vrindavan example) |
 | 4 | 12 | Safety classifier, helpline cards, name flow, content filter, disclaimer bar |

@@ -18,7 +18,13 @@
     "regen:hindi:dry": "tsx --env-file=.env.local scripts/regenerate-hindi.ts --dry-run",
     "regen:hindi:mahabharata": "tsx --env-file=.env.local scripts/regenerate-hindi-mahabharata.ts",
     "regen:hindi:mahabharata:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-mahabharata.ts --dry-run",
-    "parse:bhagavata": "tsx scripts/parse-bhagavata.ts"
+    "parse:bhagavata": "tsx scripts/parse-bhagavata.ts",
+    "regen:hindi:bhagavata": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts",
+    "regen:hindi:bhagavata:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts --dry-run",
+    "fix:bhagavata-em-dash": "tsx scripts/fix-em-dash-endings-bhagavata.ts",
+    "fix:bhagavata-em-dash:dry": "tsx scripts/fix-em-dash-endings-bhagavata.ts --dry-run",
+    "ingest:bhagavata": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts",
+    "ingest:bhagavata:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
