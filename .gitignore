@@ -43,8 +43,14 @@ next-env.d.ts
 # phase 3 prompt iteration outputs (founder copies preserved ones into docs/)
 /test-results
 
-# claude code session state (plans, agent context)
-/.claude
+# claude code session state — ignore local cache + personal settings,
+# but allow team-shared memory rules + project CLAUDE.md
+# (per Anthropic memory docs: .claude/rules/ + .claude/CLAUDE.md are
+# team-shared via source control).
+/.claude/*
+!/.claude/rules/
+!/.claude/rules/**
+!/.claude/CLAUDE.md
 
 # original-corpus backups (preserve locally for safety, never publish —
 # they may contain copyrighted source content we deliberately replaced)
