@@ -182,15 +182,29 @@ Phase 0 — Decision lock (done)
   - **0% cache hit rate confirmed at full scale** (162 calls; 1,317-token SYSTEM_PROMPT verified above 1,024 cache minimum via `messages.countTokens`; 3-call sequential probe in `scripts/count-system-prompt-tokens.ts` reproduces 0 cache_creation + 0 cache_read). Root cause unknown — candidates in `test-results/phase1.7-cache-investigation.md`: model-specific eligibility, beta-header drift, API-tier gating, ephemeral-TTL default change. Reopen with Sanskrit-attachment milestone when prompt size + cache savings get bigger.
   - **Sanyal Book XI per-chapter content audit** for chs 7–29 (alignment with standard Canto 11 verified at boundary, but per-chapter content audit needs Sanskrit BORI attachment).
 
-Phase 2 — RAG retuning (weeks 8–9, NEXT): retrieval rebalanced across all
-  4 corpora (3,132 rows: 701 Gita + 1,704 Mahabharata + 727 Bhagavata =
-  568 Canto 10 + 159 Canto 11), verse-card UI labels updated to handle
-  source-aware references (gita / mahabharata / bhagavata anchored vs
-  fallback dot/underscore), regression-test every test_queries case from
-  Phases 1–1.7. Headline carry-forward issue: structural Gita-compact-
-  verse-cosine-bias defeats Bhagavata prose on abstract emotional queries
-  (anger / surrender / renunciation). Fix candidates: theme tags, query
-  rewriting, source-aware retrieval boost.
+Phase 2 — RAG retuning (weeks 8–9, COMPLETE 2026-05-02): RAG retuning
+  across 4 corpora — theme tagging, source-aware reranking, query
+  rewriting, regression-tested against Phase 1.5/1.6/1.7 failing queries.
+  3,132 rows tagged via Sonnet 4.6 against the locked 34-tag Decision-#17
+  taxonomy (~₹1,204 total spend). Two layers shipped default-on:
+    L1 — theme-overlap reranking (RAG_THEME_WEIGHT=0.3)
+    L2 — source-aware diversity boost (cosine threshold 0.65)
+  L3 (query rewriting) implemented but ships disabled — ablation showed
+  +1 failing improvement at cost of +2 passing regressions; available
+  behind RAG_LAYER_QUERY_REWRITE flag for Phase 7 beta toggle.
+  Resolution: failing-query gain +5 vs baseline (Q1.5.2 lifted to 5/5
+  MBh; Q1.7.2 surfaced first Bhagavata via L2 force-include at cosine
+  0.659; smaller wins on Q1.5.1, Q1.7.1). 3 passing regressions remain
+  (1 real — Q1.7.4 query-classifier weakness, Phase 3 follow-up; 2
+  borderline source-mix shifts not regressions in emotional terms).
+  See decisions.md row + PROJECT_HISTORY.md Phase 2 entry +
+  test-results/phase2-regression-{baseline,layer1,layer1-2,final}-2026-05-02.md.
+Phase 2.5 — Verse-card UI (week 9, NEXT): source-aware references +
+  dual-format Bhagavata handling (anchored `bhagavata_<canto>.<ch>.<vStart>`
+  vs fallback `bhagavata_<canto>.<ch>_<chunkN>` per Phase 1.6/1.7
+  reference scheme); empty-Sanskrit handling (MBh + Bhagavata rows have
+  `sanskrit = ''`); source badges on each verse card. Manual mobile QA
+  before close-out. Spec: `~/.claude/projects/.../memory/project_phase2_verse_card_dual_format.md`.
 Phase 3 — Krishna persona prompt (weeks 10–11): re-iterate systemPrompt.ts
   with full-corpus retrieval available. Apply HELD Round 4 edits — mode
   rotation rule (§2), Arjuna rate limit with alternative parallels (§6),

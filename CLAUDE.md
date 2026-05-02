@@ -8,7 +8,7 @@ This file is the canonical project context. Read this first in every session bef
 
 ## Status
 
-**Phase 1.7 COMPLETE 2026-05-02 — corpus locked at 3,132 rows. NEXT: Phase 2 (RAG retuning).**
+**Phase 2 COMPLETE 2026-05-02 — RAG retuning landed (L1+L2 default-on, L3 behind flag). NEXT: Phase 2.5 (verse-card UI dual-format labels).**
 
 ---
 
@@ -36,6 +36,26 @@ The AI explicitly does NOT claim to be the actual divine Krishna. A permanent di
   - Safety classifier: `claude-haiku-4-5` (Phase 4+)
   - Embeddings: Gemini `gemini-embedding-001` (`outputDimensionality: 768` to match `vector(768)`; `taskType: RETRIEVAL_DOCUMENT` for ingest, `RETRIEVAL_QUERY` for search)
 - **Hosting:** local dev currently; Vercel target (Phase 6+).
+
+---
+
+## Phase 2 RAG retrieval config
+
+Locked 2026-05-02 after layer ablation. `.env.local` flags drive `src/lib/verses.ts`; safe defaults if any flag is missing. `.env.example` mirrors the shipped config.
+
+```
+RAG_LAYER_THEME_RERANK=true             # L1: theme-overlap reranking
+RAG_LAYER_SOURCE_DIVERSITY=true         # L2: source-aware diversity boost
+RAG_LAYER_QUERY_REWRITE=false           # L3: disabled — ablation showed net regression
+RAG_THEME_WEIGHT=0.3                    # score = cosine·0.7 + theme_overlap·0.3
+RAG_CANDIDATES_K=30                     # cosine candidates fetched before rerank
+RAG_DIVERSITY_COSINE_THRESHOLD=0.65     # L2 force-include threshold
+RAG_DIVERSITY_SCOPE_K=10                # rerank window checked for missing sources
+RAG_REWRITE_VARIANTS=3                  # L3: paraphrases per query (only when enabled)
+RAG_REWRITE_PER_VARIANT_K=10            # L3: cosine top-k per variant before union/dedupe
+```
+
+L3 stays implemented and exercised in tests but ships off — Phase 7 beta can A/B-toggle it without redeploy. Phase 2 ablation reports under `test-results/phase2-regression-*.md` document the trade-offs.
 
 ---
 

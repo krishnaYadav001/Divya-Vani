@@ -56,6 +56,54 @@ The repo was originally "God Messenger" — a calm Hindi-first emotional support
 
 ---
 
+## Phase 2 RAG retuning
+
+- **Goal:** fix the structural Gita-compact-verse-cosine-bias surfaced in Phases 1.5 / 1.6 / 1.7 retrieval gates. Add rebalancing layers on top of pgvector cosine retrieval so Bhagavata prose + MBh narrative content surface on abstract emotional queries (anger / surrender / renunciation) where Gita's compact verse-form previously dominated by cosine alone.
+- **Theme taxonomy locked (Decision #17):** 34 tags total — 15 emotional/state (Group A: loneliness, anger, fear, grief, jealousy, doubt, despair, attachment, longing, joy, gratitude, surrender, devotion, forgiveness, equanimity), 15 relational/dharmic (Group B: duty, betrayal, family-conflict, friendship, marriage, parent-child, teacher-student, ruler-subject, action, inaction, decision, sacrifice, renunciation, householder, ascetic), 4 caution (Group C: caution_devotional_intimacy, caution_violence, caution_complex_dharma, caution_renunciation_extreme). Closed vocabulary; reopen requires re-tagging the full corpus.
+- **Classification model:** Sonnet 4.6 over Haiku 4.5. Step 2.1b validation showed Haiku invented out-of-taxonomy tags (`faith`, `delusion`, `defeat`, `playfulness`) on ~17% of 30-sample validation set despite explicit "Do NOT invent" instruction; Sonnet stayed in-taxonomy. Cost tradeoff accepted: ~₹1,187 Sonnet-only vs ~₹319 Haiku-alone for guaranteed taxonomy fidelity. Validation report `test-results/phase2-classification-validation-2026-05-02.md`.
+- **Full-corpus tagging:** all 3,132 rows tagged. Avg 5.79 tags/chunk (min 2, max 7); 0 invalid tags in DB; 0 overrun chunks (>7); 1,560 chunks (49.8%) carry ≥1 caution tag. Distribution health: `caution_violence` concentrated in MBh (43.1%) + Bhagavata (22.1%); `caution_devotional_intimacy` concentrated in Bhagavata (15.5% — rāsa-līlā / vastra-haran). 4 tags exceed 30% prevalence threshold (`action` 52.9%, `duty` 50.2%, `equanimity` 43.5%, `devotion` 35.5%) — overridden with judgment, NOT reclassified: the threshold was a sanity-check for degraded classifier behavior, NOT a flag for genuine high-prevalence themes. MBh is genuinely 70% about duty; Bhagavata is 75% about devotion. Distribution report `test-results/phase2-tag-distribution-full-corpus-2026-05-02.md`. Spot-check report `test-results/phase2-tag-spot-check-2026-05-02.md`.
+- **Tagging operational notes:** the run died once at chunk ~920 when the laptop slept (4h gap, no log activity). Resume-safety in `scripts/tag-themes.ts` worked cleanly on rerun. A second run hit a Sonnet two-JSON parser edge-case — model emits initial JSON, then "Wait, X is not in taxonomy. Let me reconsider" reasoning aside, then a corrected JSON. The greedy `/\{[\s\S]*\}/` regex captured both objects as one string and JSON.parse failed. Fix: LAST-valid-JSON pattern (try non-nested `/\{[^{}]*\}/g` matches from last to first, accept first that parses). 35 chunks failed under the original parser; all 35 cleared in 36s on the third run with the patched parser. **The LAST-valid-JSON pattern is now the canonical defensive parser pattern** for any future Haiku/Sonnet JSON-output Phase work — inherited into `src/lib/queryThemes.ts` (extractMemory + classifyQueryThemes + rewriteQuery).
+- **Three rebalancing layers:**
+  - **L1 — theme-overlap reranking** (default ON): `score = cosine·0.7 + theme_overlap·0.3`. Reranks the top-30 cosine candidates by hybrid score before truncating to top-5. Query themes piggyback onto extractMemory's existing Haiku call (one round-trip for memory + themes).
+  - **L2 — source-aware diversity boost** (default ON): if a source (gita/mahabharata/bhagavata) has 0 chunks in top-10 reranked AND a chunk from that source exists in top-30 with cosine ≥ 0.65, force-include 1 from each missing source into the final top-5 by displacing the lowest-ranked chunk. Up to one force-include per missing source.
+  - **L3 — query rewriting** (default OFF, behind flag): generate 3 variant phrasings via Haiku (paraphrase + language-flip + emotional-core), embed all 4 in parallel, top-10 each via match_verses, union deduped by reference, top-30 by max-cosine across variants → pass to L1 rerank.
+- **Ablation table** (per-layer regression-test deltas vs baseline; harness `scripts/retrieval-regression-test.ts`):
+
+  | run | failing-gain sum | failing-improved | passing-regressions | report |
+  |---|---|---|---|---|
+  | baseline (no layers) | 0 | 0/6 | 0/6 | `phase2-regression-baseline-2026-05-02.md` |
+  | L1 only | +3 | 2/6 | 3/6 | `phase2-regression-layer1-2026-05-02.md` |
+  | L1 + L2 (shipped) | **+5** | **3/6** | **3/6** | `phase2-regression-layer1-2-2026-05-02.md` |
+  | L1 + L2 + L3 (1-7 prompt) | +4 | 4/6 | 5/6 | `phase2-regression-final-pre-fix-2026-05-02.md` |
+  | L1 + L2 + L3 + 3-7 prompt | +3 | 3/6 | 6/6 | `phase2-regression-final-2026-05-02.md` |
+
+- **Final shipped config** (canonical lock, see `CLAUDE.md` § "Phase 2 RAG retrieval config" + `.env.example`):
+  ```
+  RAG_LAYER_THEME_RERANK=true
+  RAG_LAYER_SOURCE_DIVERSITY=true
+  RAG_LAYER_QUERY_REWRITE=false           # ablation showed net regression
+  RAG_THEME_WEIGHT=0.3
+  RAG_CANDIDATES_K=30
+  RAG_DIVERSITY_COSINE_THRESHOLD=0.65
+  RAG_DIVERSITY_SCOPE_K=10
+  ```
+- **Step 2.4 prompt-tuning lesson:** classifier-prompt change (1-7 → 3-7 minimum + worked examples) BACKFIRED. The worked examples I drafted included `devotion` in 3 of 4 examples; Haiku learned "devotion is usually applicable" and tagged 5 of 6 failing queries with devotion. Combined with theme-rerank, this over-weighted Gita (the most devotion-tagged source) and 6/6 passing queries regressed. Reverted to original 1-7 prompt with no worked examples — that's the canonical Phase 2 query-classifier prompt. Lesson: when adding examples to a classification prompt, ensure no single tag appears in more than half of the examples, or it leaks as a default.
+- **Per-source-count regression metric brittleness:** Q1.7.3 ("daily devotion") shifted from 2 Gita + 3 Bhagavata → 0 Gita + 5 Bhagavata. Subjectively this is a pure improvement (more Bhagavata content for a Bhagavata-relevant query) but the per-source-count criterion fired because Gita dropped. Q1.6.4 similarly traded MBh for Bhagavata. Future phases should pair this metric with subjective-quality review or with a "total-relevant-chunks" criterion that gives weight to the expected source.
+- **Total Phase 2 spend:** ~₹1,204 (₹1,187 corpus tagging + ₹14 classification validation + ₹3 baseline + ablation runs). 1.4% over the ₹1,187 projection — within noise.
+- **Carry-forward to Phase 2.5:**
+  - Verse-card UI dual-format rendering (Bhagavata anchored `bhagavata_<canto>.<ch>.<vStart>` vs fallback `bhagavata_<canto>.<ch>_<chunkN>`); empty-Sanskrit handling for MBh + Bhagavata; source badges. Spec lives in the auto-memory note `project_phase2_verse_card_dual_format`.
+- **Carry-forward to Phase 3:**
+  - Persona prompt should reference theme overlap when explaining why a verse was retrieved (the `themes` column is now populated and meaningful).
+  - Caution-tag-aware reply framing: when a `caution_violence` or `caution_renunciation_extreme` chunk is retrieved, persona should soften the framing. When `caution_devotional_intimacy` is retrieved, frame as devotional metaphor not surface intimacy.
+  - **Q1.7.4 query-classifier weakness** ("I learn from everything around me" → only `[gratitude]`): the classifier needs better priors for the avadhūta-style "every encounter is a teacher" stance. Likely Phase 3 systemPrompt iteration will surface a tweak; if not, revisit with a focused few-shot prompt at that time (without the devotion-bias trap).
+- **Carry-forward to Phase 7 beta:**
+  - L3 (query rewriting) ships disabled but available behind `RAG_LAYER_QUERY_REWRITE` flag. A/B-toggle in beta to gather real-user data on whether the +1 failing improvement (Q1.6.2 surrender) outweighs the regressions on emotional-direct queries. Toggling requires no redeploy.
+- **Carry-forward to Phase 9+:**
+  - GIN index on `themes` column when in-memory rerank cost shows up in latency budget.
+  - Re-tag with newer model when caution-tag taxonomy expands beyond the locked 4 categories.
+
+---
+
 ## Open issues / known caveats
 
 - Personalization is "previous turn → current turn" via `context_summary`, not deep multi-turn history. Acceptable for v1.

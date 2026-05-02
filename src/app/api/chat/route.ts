@@ -3,7 +3,19 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
-import { searchVerses, type VerseHit } from "@/lib/verses";
+import {
+  fetchCandidates,
+  fetchCandidatesMultiQuery,
+  rerankByTheme,
+  applyDiversityBoost,
+  getRagFlags,
+  type VerseHit,
+} from "@/lib/verses";
+import {
+  QUERY_TAXONOMY_BLOCK,
+  filterValidThemes,
+  rewriteQuery,
+} from "@/lib/queryThemes";
 import {
   fetchMemory,
   saveMemory,
@@ -76,11 +88,16 @@ function isReturningAfterGap(prior: UserMemory | null): boolean {
   return Date.now() - last >= RETURNING_THRESHOLD_MS;
 }
 
+// Phase 2 piggyback: extract memory + classify the user's query into the
+// 34-tag taxonomy in ONE Haiku call. The query themes feed Layer-1
+// theme-overlap reranking against the chunks pre-tagged in Step 2.2.
+type ExtractedTurn = UserMemory & { query_themes?: string[] };
+
 async function extractMemory(
   message: string,
   priorSummary: string | null,
   nameAwaited: boolean,
-): Promise<UserMemory | null> {
+): Promise<ExtractedTurn | null> {
   try {
     const priorBlock = priorSummary
       ? `Prior context summary (the user's emotional thread up to now):
@@ -93,7 +110,7 @@ async function extractMemory(
 
     const response = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 400,
+      max_tokens: 500,
       messages: [
         {
           role: "user",
@@ -102,25 +119,51 @@ async function extractMemory(
 The user's latest message:
 "${message}"
 
-Produce these four fields about the user, integrating the prior summary with the new message:
+Produce these five fields about the user, integrating the prior summary with the new message:
 - main_problem: short phrase describing what they are dealing with right now
 - emotion: one word for the current emotional state
 - context_summary: ONE OR TWO sentences that capture the user's running emotional thread — what they have been feeling and why, including how today's message fits into that thread. If there was no prior summary, write a fresh one based on this message alone.
 ${nameInstruction}
+- query_themes: 1-7 themes from the fixed taxonomy below that capture what the user is feeling, asking about, or struggling with in THIS message. The same taxonomy was applied to the scripture corpus, so query themes can match retrieved-verse themes during scripture retrieval reranking.
+
+${QUERY_TAXONOMY_BLOCK}
 
 Return ONLY valid JSON in this exact shape, with no surrounding text or markdown:
-{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null}`,
+{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null,"query_themes":["tag1","tag2"]}`,
         },
       ],
     });
     const text =
       response.content.find((b) => b.type === "text")?.text ?? "";
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) {
+    // Use a LAST-valid-JSON pattern so a "Wait, X is not in taxonomy"
+    // reasoning aside (Sonnet two-JSON pattern Phase 2.2 surfaced) doesn't
+    // sink the whole turn. Iterate `{...}` candidates from last to first
+    // and accept the first one that parses + has main_problem as a string.
+    let parsed: Record<string, unknown> | null = null;
+    const candidates: string[] = [text.trim()];
+    const fence = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+    if (fence) candidates.push(fence[1]);
+    const allBlocks = text.match(/\{[^{}]*\}/g) ?? [];
+    candidates.push(...[...allBlocks].reverse());
+    const greedy = text.match(/\{[\s\S]*\}/);
+    if (greedy) candidates.push(greedy[0]);
+    for (const c of candidates) {
+      try {
+        const obj = JSON.parse(c.trim());
+        if (
+          typeof obj === "object" &&
+          obj !== null &&
+          typeof (obj as Record<string, unknown>).main_problem === "string"
+        ) {
+          parsed = obj as Record<string, unknown>;
+          break;
+        }
+      } catch { /* try next */ }
+    }
+    if (!parsed) {
       console.error("[extractMemory] no JSON object found in output");
       return null;
     }
-    const parsed = JSON.parse(match[0]);
     if (
       typeof parsed.main_problem !== "string" ||
       typeof parsed.emotion !== "string" ||
@@ -129,16 +172,24 @@ Return ONLY valid JSON in this exact shape, with no surrounding text or markdown
       console.error("[extractMemory] parsed JSON had wrong shape:", parsed);
       return null;
     }
-    const result: UserMemory = {
-      main_problem: parsed.main_problem.trim(),
-      emotion: parsed.emotion.trim(),
-      context_summary: parsed.context_summary.trim(),
+    const result: ExtractedTurn = {
+      main_problem: (parsed.main_problem as string).trim(),
+      emotion: (parsed.emotion as string).trim(),
+      context_summary: (parsed.context_summary as string).trim(),
     };
     if (
       typeof parsed.detected_user_name === "string" &&
-      parsed.detected_user_name.trim()
+      (parsed.detected_user_name as string).trim()
     ) {
-      result.user_name = parsed.detected_user_name.trim();
+      result.user_name = (parsed.detected_user_name as string).trim();
+    }
+    if (Array.isArray(parsed.query_themes)) {
+      const stringTags = (parsed.query_themes as unknown[]).filter(
+        (x): x is string => typeof x === "string",
+      );
+      result.query_themes = filterValidThemes(stringTags);
+    } else {
+      result.query_themes = [];
     }
     return result;
   } catch (e) {
@@ -339,14 +390,52 @@ export async function POST(req: Request) {
   // doesn't get caught by the conservative default heuristic.
   const nameAwaited = !priorMemory?.user_name && priorCount >= 1;
 
-  const [verses, extracted, safety] = await Promise.all([
-    searchVerses(message, 5).catch((e) => {
-      console.error("[searchVerses] threw:", e);
+  // Phase 2 retrieval pipeline:
+  //   0. rewriteQuery + fetchCandidatesMultiQuery (Layer 3) — broaden the
+  //      candidate pool with paraphrases when RAG_LAYER_QUERY_REWRITE=true.
+  //      Inlined into the same parallel slot as the candidate fetch so the
+  //      Haiku rewrite latency overlaps with extractMemory's Haiku latency.
+  //   1. fetchCandidates(message, K)        — cosine top-K (default 30)
+  //   2. rerankByTheme (Layer 1)            — score = cosine·0.7 + theme_overlap·0.3
+  //   3. applyDiversityBoost (Layer 2)      — force-include missing sources
+  // Layers 1/2/3 are individually toggleable via RAG_LAYER_* env flags.
+  const ragFlags = getRagFlags();
+  const wantWidePool =
+    ragFlags.themeRerank || ragFlags.sourceDiversity || ragFlags.queryRewrite;
+  const fetchK = wantWidePool ? ragFlags.candidatesK : 5;
+
+  async function gatherCandidates(): Promise<VerseHit[]> {
+    if (!ragFlags.queryRewrite) {
+      return fetchCandidates(message, fetchK);
+    }
+    const variants = await rewriteQuery(message, ragFlags.rewriteVariants);
+    return fetchCandidatesMultiQuery(variants, fetchK, ragFlags.rewritePerVariantK);
+  }
+
+  const [candidates, extracted, safety] = await Promise.all([
+    gatherCandidates().catch((e) => {
+      console.error("[gatherCandidates] threw:", e);
       return [] as VerseHit[];
     }),
     extractMemory(message, priorMemory?.context_summary ?? null, nameAwaited),
     safetyClassify(message),
   ]);
+
+  const queryThemes = extracted?.query_themes ?? [];
+
+  let reranked = candidates;
+  if (ragFlags.themeRerank && queryThemes.length > 0) {
+    reranked = rerankByTheme(candidates, queryThemes, ragFlags.themeWeight);
+  }
+
+  const verses = ragFlags.sourceDiversity
+    ? applyDiversityBoost(
+        reranked,
+        5,
+        ragFlags.diversityCosineThreshold,
+        ragFlags.diversityScopeK,
+      )
+    : reranked.slice(0, 5);
 
   const safetyFlag: SafetyFlag | null =
     safety.flag !== "safe" && safety.confidence > SAFETY_THRESHOLD

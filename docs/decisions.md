@@ -4,7 +4,7 @@ This is the canonical list of locked product decisions. When in doubt about
 "did we decide X or Y?", check here first. Do not relitigate items in this
 file unless explicitly reopening one.
 
-Last updated: 2026-05-02 (Phase 1.7 close-out)
+Last updated: 2026-05-02 (Phase 2 RAG retuning — COMPLETE)
 
 ---
 
@@ -161,6 +161,81 @@ Deferred to Phase 9+: other Bhagavata cantos, Harivamsa, Brahma Vaivarta
 Purana, regional Krishna texts (Surdas, Mirabai, etc.), secondary
 commentaries (Shankara, Ramanuja, Madhva).
 
+## 17. Phase 2 theme taxonomy (locked 2026-05-02)
+
+Fixed controlled vocabulary used to tag every chunk in the `verses` table
+(701 Gita + 1,704 Mahabharata + 727 Bhagavata = 3,132 rows). Tags drive
+Phase 2 retrieval reranking (theme-overlap score, weight 0.3 vs cosine
+0.7 by default) and Phase 3+ persona framing (caution-tag-aware reply
+shaping). Each chunk gets 3–7 tags; classifier rejects outside that band.
+
+This taxonomy is **closed** — adding a tag requires reopening this
+decision and re-tagging the full corpus (cost ~₹150–400). No
+single-instance tags, no ad-hoc additions during classification.
+
+### Group A — Emotional / state (15 tags)
+
+`loneliness`, `anger`, `fear`, `grief`, `jealousy`, `doubt`, `despair`,
+`attachment`, `longing`, `joy`, `gratitude`, `surrender`, `devotion`,
+`forgiveness`, `equanimity`.
+
+The user's surface query usually maps to one of these (e.g. "I'm angry
+at someone close" → `anger`, `attachment`). Phase 2 query-classification
+also returns tags from this group.
+
+### Group B — Relational / dharmic (15 tags)
+
+`duty`, `betrayal`, `family-conflict`, `friendship`, `marriage`,
+`parent-child`, `teacher-student`, `ruler-subject`, `action`, `inaction`,
+`decision`, `sacrifice`, `renunciation`, `householder`, `ascetic`.
+
+Captures the *situation* and *role* a chunk speaks to. Mahabharata-heavy
+content tends to land here (kingship, war, family lines). Bhagavata
+Uddhava-Gita weight on `ascetic` / `renunciation` / `householder` —
+critical for getting Phase 1.7 corpus to surface on renunciation queries.
+
+### Group C — Caution tags (4)
+
+Apply ONLY when the passage genuinely warrants the caveat. These flag
+chunks Phase 3+ persona framing must handle carefully.
+
+- `caution_devotional_intimacy` — rāsa-līlā, vastra-haraṇa, Krishna's
+  multiple wives. Devotionally legitimate but easily misread by a casual
+  modern reader.
+- `caution_violence` — Kaṁsa-vadha, Aristhāsura, demon-slayings. Krishna
+  acts as warrior; persona must contextualize, not glorify.
+- `caution_complex_dharma` — Krishna's strategic actions, Yudhishthira's
+  half-truth, Bhima's vow against Dushasana. Cases where literal-rule
+  ethics fail and the text models a higher-order calculus.
+- `caution_renunciation_extreme` — passages mis-readable as endorsing
+  self-harm or extreme withdrawal. Critical safety-adjacent: Krishna
+  reading distress in a user's words while a `caution_renunciation_extreme`
+  chunk is in the retrieval pool requires softer Bhagavata-mode framing.
+
+(Four tags lock for Phase 2; reopen this decision if Phase 3+ persona
+work surfaces a fifth caution category that meaningfully changes reply
+shape.)
+
+### How this taxonomy is applied
+
+- **Tagging script** (Step 2.2): every chunk classified once via the
+  Step-2.1b model winner; results written to `verses.themes text[]`
+  column. Resume-safe; sample-validated against tag-distribution
+  sanity-check (no single tag >30%, no tag <0.5%).
+- **Retrieval rerank** (Step 2.3 Layer 1): query-time Haiku call returns
+  query themes from this same taxonomy; theme-overlap score added to
+  cosine similarity at weight 0.3.
+- **Persona framing** (Phase 3, deferred): caution tags surfaced in
+  retrieved chunks should bias Krishna's reply shape (e.g. soften framing
+  when `caution_violence` chunk retrieved). Persona prompt iteration
+  itself is out-of-scope for Phase 2.
+
+*Why locked-vocabulary instead of free-form: free-form tags drift across
+runs (same chunk gets "anger" once and "rage" the next), defeat overlap
+scoring, and require post-hoc clustering. A 35-tag closed set is small
+enough to memorize, large enough to discriminate Bhagavata didactic
+content from Gita epigrams from Mahabharata narrative passages.*
+
 ---
 
 ## Decisions explicitly reopened or under review
@@ -191,4 +266,6 @@ resolved, update the main list above and remove from this section.)
 | 2026-05-01 | Phase 1.6 Bhagavata source locked + addendum v1.1 locked | J. M. Sanyal *Srimad-Bhagavatam* (Calcutta 1929–34, PD). Primary: Sarayu/UP-Museum CC0 archive.org scans `eszb_…` (Vol 4) + `qpbw_…` (Vol 5). Fallback: DLI `in.ernet.dli.2015.461237`. Avoid Munshiram Manoharlal reprint `qblt_…`. License-backup translator: Manmatha Nath Dutt *Shrimad Bhagwatam* 1896, `in.ernet.dli.2015.272582`. djvu_txt URL pattern matches Phase 1.5 (`archive.org/stream/<id>/<id>_djvu.txt`). Bhagavata addendum v1.1 locked for the regenerator SYSTEM_PROMPT (Sanskrit-absent caveat + lyrical/devotional voice rule + glossary lock with गोप uniform, names including सुदामा, no राधा pending Phase 9+); full text in project memory and slated for `scripts/regenerate-hindi-bhagavata.ts` line 80 once built. Pressure-test 2026-05-01: 6/6 registers passed (Bal-vatsalya, mādhurya/strength, mādhurya/longing, viraha, householder, philosophical Veda-stuti) at ₹8.22 spend; report at `test-results/phase1.6-pressure-test-2026-05-01.md`. Vol 3 (`ikxh_…`) found but covers Books 7–9 (Prahlāda, Vāmana, dynasties), NOT Canto 10 — Canto 10 ch 1–22 lives in Vol 4 itself (verified Vol 4 Ch IX = Canto 10 Ch 9 Yashoda-mortar). Vol 4 + Vol 5 alone cover all of Canto 10; no additional volume needed for Phase 1.6 ingest. Two production-pipeline tunings flagged for Phase 1.6a regenerator: MAX_TOKENS to 1500–1800 (Bhagavata Hindi expansion 25–35%; 800 truncated 2/6 test passages) and post-run spot-check on सुदामा name spelling. Open caveat: Sanyal's death year 1937 not independently confirmed in 15-min validation; Indian PD holds via pre-1955 publication-date rule regardless. |
 | 2026-05-01 | Phase 1.6 corrections: source-gap concern resolved + reference scheme locked | Source-gap concern resolved: Sanyal Vol 4 covers Canto 10 chs 1–61 starting at Ch 1 = "Destruction of Devakī's Six Sons by Kansa"; the earlier "Vol 4 = chs 23–61" figure (in the Phase 1.6 implementation kickoff prompt) was incorrect. Vol 4 + Vol 5 alone cover all of Canto 10; no additional volume needed. Reference scheme locked: Option A (verse-range start) per Sanyal's sparse parenthetical structure. Anchored form `bhagavata_10.<ch>.<verseStart>` (dot separator) when Sanyal's "(N—M)" parenthetical is present; fallback form `bhagavata_10.<ch>_<fallbackChunkN>` (underscore separator flags fallback at a glance) when parenthetical absent or OCR-garbled. Per-verse references like `bhagavata_10.29.21` (kickoff assumption) not feasible from literary-prose translation. Schema mapping: chapter int = chapter-within-canto, verse_number int = verseStart (anchored) or fallbackChunkN (fallback). Canto info in reference text only; no schema change. |
 | 2026-05-01 | Phase 1.6 Bhagavata Canto 10 corpus ingested: 568 chunks across 90 chapters | Sanyal English from archive.org CC0 plain-text (Vol 4 + Vol 5 Sarayu/UP-Museum scans), regenerated Hindi via Sonnet 4.6 + v3 prompt + Bhagavata addendum v1.1 (canonical text now at `scripts/regenerate-hindi-bhagavata.ts:80`), Sanskrit deferred to Phase 9+ audit (mirrors Phase 1.5). All Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL`. Reference scheme: 69.2% anchored `bhagavata_10.<ch>.<verseStart>` + 30.8% fallback `bhagavata_10.<ch>_<chunkN>` — structural ceiling for this Sanyal corpus per fallback-chunk audit (intro/dialogue/commentary paragraphs without verse-range parentheticals). Total spend: ~₹907 (Sonnet 4.6 regen ₹897.53 + Gemini embedding ₹1.10 + pressure-test ₹8.22) — 40–98% under per-stage estimates. Quality gate: 20/20 spot-check PASS (independently verified) + 3/5 retrieval coverage (queries 3 + 4 deferred to Phase 2 corpus-balance retuning, same precedent as Phase 1.5 anger-query carry-forward — Bhagavata corpus IS embedded and retrievable; the 2 failing queries return semantically valid Gita matches that score higher cosine similarity than Bhagavata equivalents). Em-dash post-process: `fix-em-dash-endings-bhagavata.ts` merged 63 sentence-bisected pairs (1 unresolved deep chain, 2 oversize merges flagged), reducing 633 → 568 chunks. Carry-forward to Phase 1.7: (a) **0% cache hit rate** persisted across 633 calls — investigate `cache_control` placement / SDK version; SYSTEM_PROMPT measures ~1500 tokens (above Sonnet's 1024 minimum), so below-threshold theory ruled out. (b) Em-dash cleanup, OCR fix patterns (8→3 leading-digit gate, tilde separator, inline parenthetical fallback) — inherit verbatim. (c) Narrator-tag form variation (बोले / ने कहा) — monitor in Phase 1.7 spot-check; if persists, consider v1.2 glossary lock. (d) 1/633 ग्वाला accepted as contextual exception at `bhagavata_10.54.9` (villain-contempt register about Krishna) — threshold for Phase 1.7 same: ≤0.5% with per-instance documentation. |
+| 2026-05-02 | Phase 2 theme taxonomy locked (Decision #17): 34 tags total — 15 emotional (Group A) + 15 relational/dharmic (Group B) + 4 caution (Group C) | Closed vocabulary; reopen requires re-tagging the 3,132-row corpus. Drives Phase 2 Layer-1 theme-overlap reranking (weight 0.3 vs cosine 0.7) and Phase 3+ caution-tag-aware persona framing. Step 2.0a regression baseline shows 5/5 Gita lock-in on three failing queries (Q1.6.2, Q1.7.1, Q1.7.2) — taxonomy chosen specifically to discriminate Bhagavata didactic / Uddhava-ascetic content from Gita epigrams on these surrender/renunciation themes. **Step 2.1b classification model: Sonnet 4.6** chosen over Haiku 4.5 because Haiku invented out-of-taxonomy tags (`faith`, `delusion`, `defeat`, `playfulness`) on ~17% of validation samples despite the explicit "Do NOT invent" prompt — Sonnet stayed in-taxonomy. Cost tradeoff accepted: ~₹1,187 Sonnet-only vs ~₹319 Haiku-alone, in exchange for guaranteed taxonomy fidelity for the full 3,132-row corpus. Validation report: `test-results/phase2-classification-validation-2026-05-02.md`. **30% prevalence threshold override:** distribution audit found 4 tags exceeding 30% of corpus — `action` 52.9%, `duty` 50.2%, `equanimity` 43.5%, `devotion` 35.5%. Override-with-judgment, not reclassify: the 30% sanity-check was designed to catch a degraded classifier defaulting everything to one tag, NOT to flag genuine high-prevalence themes. These 4 tags correctly identify central themes of all three texts (MBh is genuinely 70% about duty; Bhagavata is 75% about devotion). Distribution report: `test-results/phase2-tag-distribution-full-corpus-2026-05-02.md`. |
+| 2026-05-02 | Phase 2 RAG retuning COMPLETE: L1 (theme rerank) + L2 (source diversity) shipped default-on; L3 (query rewrite) shipped behind `RAG_LAYER_QUERY_REWRITE=false` flag for Phase 7 beta toggle | Three rebalancing layers landed on `src/lib/verses.ts` + `src/app/api/chat/route.ts`. **L1 + L2** (final shipped config) added **+5 failing-query gain** vs baseline (Bhagavata + MBh chunks gained in top-5, summed across 6 prior-phase failing queries) and **3/6 passing regressions** (1 real — Q1.7.4 "I learn from everything around me", classifier returned `[gratitude]` only — flagged as Phase 3 follow-up; 2 borderline source-mix shifts with no quality loss in emotional terms). **L3 (query rewrite) net-negative** in ablation (added 1 failing improvement Q1.6.2 surrender via multi-query expansion at cosine 0.665, but introduced 2 additional regressions because emotional-core variants drift surface meaning — e.g., "Simple pleasures bring deep contentment" mapped Q1.6.3 from Bhagavata pastoral to Gita contentment teachings). L3 stays implemented + tested but ships disabled; founder Phase 7 beta can A/B re-enable without redeploy. **Step 2.4 query-classifier prompt-tuning (3-7 minimum + worked examples) backfired** — biased toward `devotion` (in 3 of 4 examples) which over-rerank toward Gita; reverted to original 1-7 prompt. **Per-source-count regression metric proved brittle**: Q1.7.3 ("daily devotion") tripped the criterion when 2 Gita dropped, but the user gained 2 Bhagavata chunks (5/5 Bhagavata vs baseline 3 Bhagavata + 2 Gita) — i.e., subjectively better retrieval flagged as regression. Documented as ablation lesson; future phases should pair the criterion with subjective-quality review. **Total Phase 2 spend: ~₹1,204** (₹1,187 corpus tagging + ₹14 classification validation + ₹3 baseline + ablation runs). Final config locked in `CLAUDE.md` "Phase 2 RAG retrieval config" + `.env.example`. Reports: `test-results/phase2-regression-{baseline,layer1,layer1-2,final-pre-fix,final}-2026-05-02.md`. Carry-forward to Phase 3: persona prompt should reference theme overlap when explaining why a verse was retrieved + caution-tag-aware reply framing (e.g., soften when `caution_violence` or `caution_renunciation_extreme` chunk retrieved). Carry-forward to Phase 9+: GIN index on `themes` column when in-memory rerank cost shows up in latency budget; re-tag with newer model when caution-tag taxonomy expands. |
 | 2026-05-02 | Phase 1.7 Bhagavata Canto 11.6–29 Uddhava-Gita corpus ingested: 159 chunks across 24 chapters | **Sanyal Vol 5 archive.org CC0** (`qpbw_…` Sarayu/UP-Museum scan), Vol 5 alone covers Canto 11 in full — sliced via BOOK XI body marker (occurrence 2) → BOOK XII body marker (occurrence 2). **Sanyal Book XI = standard Canto 11 — 1:1 chapter alignment** verified at Sanyal Ch VI = std 11.6 boundary (Devas-at-Dwaraka opening). Per-chapter content audit deferred to Phase 9+ Sanskrit-attachment milestone, when the Sanskrit BORI / Devanagari source attachment will give per-verse alignment to settle any subtler offsets. Initial 30-vs-31 chapter gap concern was a TOC-misread on my part: both Sanyal Book XI and standard Canto 11 have 31 chapters. **Hindi regenerated via Sonnet 4.6 + v3 prompt + Bhagavata addendum v1.1 (locked, no v1.2 needed)** — 9d Sanskrit-philosophical-term preservation criterion held cleanly across the philosophical/avadhūta + theoretical guṇas chunks (116 target-term occurrences across 20 spot-check chunks ≈ 5.8/chunk, 0 dilutions), confirming v1.1's Canto-10-lyrical framing does not bleed inappropriate Vrindavan imagery into Uddhava-Gita didactic content. v1.1 stays the canonical Bhagavata addendum for Canto 10 + 11 + future cantos. Reference scheme inherits Phase 1.6: anchored `bhagavata_11.<ch>.<verseStart>` (82.1%) + fallback `bhagavata_11.<ch>_<chunkN>` (17.9%) — **higher anchor rate than Canto 10's 69.2%** because Sanyal Book XI is more methodically labeled with `(N—M)` parentheticals than Book X's longer narrative paragraphs. Em-dash post-process: 3 sentence-bisected pairs merged (all resolved cleanly to terminal punctuation, 0 deep chains, 0 oversize), reducing 162 → 159 chunks. Total spend: **~₹231.46** (Sonnet 4.6 dry-run ₹7.41 + full regen ₹231.18 already includes the dry-run line + Gemini embedding ₹0.28). Quality gate: **18/20 spot-check PASS + 3/5 retrieval** (≥17/20 + ≥3/5 thresholds met; the 2 spot-check FLAGs at `bhagavata_11.22.19` + `bhagavata_11.29_4` are the pre-existing 1.3% non-terminal class — English source itself truncates mid-clause at parser-induced chunk boundary, em-dash merger doesn't catch non-dash residual fragments; same mechanism as Phase 1.6 residual). Retrieval queries 3 (surrender) + 4 (renunciation) returned 5/5 Gita: same **structural Gita-compact-verse-cosine-bias** carry-forward from Phases 1.5 + 1.6 — defer to Phase 2 RAG retuning (theme tags, query rewriting, source-aware boost), not a corpus-quality issue. Carry-forward to Phase 9+: **0% cache hit rate confirmed at full scale** (162 calls; 1,317-token SYSTEM_PROMPT verified above 1,024 cache minimum via `messages.countTokens`; 3-call sequential probe reproduced 0 cache_creation + 0 cache_read; root cause unknown — candidates documented in `test-results/phase1.7-cache-investigation.md` are model-specific eligibility, beta-header drift, API-tier gating, ephemeral-TTL default change). Reopen alongside Sanskrit-attachment milestone when prompt size + cache savings are bigger. Schema unchanged (no migration). |

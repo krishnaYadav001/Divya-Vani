@@ -28,7 +28,8 @@ src/
     ├── systemPrompt.ts            Krishna persona prompt (rewritten Phase 3)
     ├── messages.ts                Message + VerseCitation + SafetyCard types
     ├── supabase.ts                Client + saveMemory, fetchMemory, etc.
-    ├── verses.ts                  searchVerses(query, k) — server-only
+    ├── verses.ts                  Phase 2 retrieval pipeline — fetchCandidates / rerankByTheme / applyDiversityBoost / fetchCandidatesMultiQuery / searchVerses wrapper. Reads RAG_LAYER_* + RAG_THEME_WEIGHT + RAG_CANDIDATES_K + RAG_DIVERSITY_* + RAG_REWRITE_* flags from env. Server-only.
+    ├── queryThemes.ts             Phase 2 query-theme classification + LAST-valid-JSON parser. Exports VALID_TAGS / CAUTION_TAGS / QUERY_TAXONOMY_BLOCK / parseThemesFromResponse / filterValidThemes / classifyQueryThemes / rewriteQuery. The chat-route extractMemory piggybacks query-theme classification onto its existing Haiku call (no extra round-trip); standalone classifyQueryThemes is for the regression harness + tests. Server-only.
     └── badWordFilter.ts           Client-side input filter (Phase 4+)
 
 scripts/                           (project root, not under src/)
@@ -47,6 +48,12 @@ scripts/                           (project root, not under src/)
 ├── bhagavata-addendum-test.ts     Reusable addendum pressure-test driver. NOT in package.json — invoke via tsx directly.
 ├── count-system-prompt-tokens.ts  One-off: messages.countTokens probe + 3-call cache reproducer (Phase 1.7 cache investigation). NOT in package.json — invoke via tsx directly.
 ├── count-verses-by-source.ts      One-off: post-ingest row-count sanity check. NOT in package.json — invoke via tsx directly.
+├── retrieval-regression-test.ts   Phase 2 regression harness: 6 failing + 6 passing queries with version-controlled per-query baseline source-counts. CLI flags --label / --theme-rerank / --source-diversity / --query-rewrite / --candidates-k / --theme-weight / --diversity-threshold for per-layer ablation. Imports the production pipeline (fetchCandidates + rerankByTheme + applyDiversityBoost + classifyQueryThemes + rewriteQuery) so harness exercises the same code path as /api/chat. NOT in package.json — invoke via tsx directly.
+├── tag-classifier-validation.ts   Phase 2 Step 2.1b validation harness: 30 stratified chunks (8 per source + 6 caution-likely MUST_INCLUDE) classified by both Haiku 4.5 and Sonnet 4.6 with the same prompt. Founder picks the model based on Jaccard agreement + invented-tag rate + caution-tag coverage. NOT in package.json.
+├── tag-themes.ts                  Phase 2 Step 2.2 full-corpus tagger. Reads chunks where themes IS NULL/empty (paginated, resume-safe), classifies via Sonnet 4.6 against the locked 34-tag taxonomy, writes themes column. Concurrency 3, 500ms inter-call delay, retry-on-429 with 60s/120s/240s/480s/960s backoff, parse-error one-retry-then-skip, taxonomy-rejection filter for invented tags. Emits per-source cost breakdown + caution-tag distribution. CLI: --dry-run, --source=<gita|mahabharata|bhagavata>. NOT in package.json.
+├── tag-distribution-report.ts     Phase 2 Step 2.2 follow-up: emits a full-corpus tag-distribution markdown from live Supabase state (NOT just the most recent run's chunks). Used for founder review + the close-out documentation. NOT in package.json.
+├── tag-spot-check.ts              Phase 2 Step 2.2 follow-up: 20-chunk spot-check (5 random per source × 3 + 1 from each of the 4 caution categories + 1 random caution). Deterministic seeded shuffle. NOT in package.json.
+├── check-tag-progress.ts          One-off: total / tagged / empty count per source. Used during the Phase 2 tagging run to confirm resume-safety after the laptop-sleep crash. NOT in package.json.
 ├── test-search.ts                 10-query verse retrieval test (Phase 1). npm run test:search.
 └── test-prompt.ts                 Run system prompt against test queries (Phase 3). npm run test:prompt.
 
@@ -71,11 +78,21 @@ docs/
 ├── build-session-prompt.md        Cowork build-session template
 └── community-session-prompt.md    Cowork community-session template
 
+.env.example (committed):                        canonical Phase 2 RAG flag set + placeholders for Phase 5+ secrets.
 .env.local (gitignored):
   ANTHROPIC_API_KEY
   GEMINI_API_KEY
   SUPABASE_URL
   SUPABASE_SERVICE_ROLE_KEY
+  RAG_LAYER_THEME_RERANK           (Phase 2+; default true)
+  RAG_LAYER_SOURCE_DIVERSITY       (Phase 2+; default true)
+  RAG_LAYER_QUERY_REWRITE          (Phase 2+; default false — ships off, available for Phase 7 beta toggle)
+  RAG_THEME_WEIGHT                 (Phase 2+; default 0.3)
+  RAG_CANDIDATES_K                 (Phase 2+; default 30)
+  RAG_DIVERSITY_COSINE_THRESHOLD   (Phase 2+; default 0.65)
+  RAG_DIVERSITY_SCOPE_K            (Phase 2+; default 10)
+  RAG_REWRITE_VARIANTS             (Phase 2+; default 3 — only when L3 enabled)
+  RAG_REWRITE_PER_VARIANT_K        (Phase 2+; default 10 — only when L3 enabled)
   RAZORPAY_KEY_ID                  (Phase 5+)
   RAZORPAY_KEY_SECRET              (Phase 5+)
   RAZORPAY_WEBHOOK_SECRET          (Phase 5+)
