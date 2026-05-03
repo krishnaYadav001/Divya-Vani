@@ -8,8 +8,26 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Phase 2.5 temple-aesthetic palette. Single tokens; combine
+     with Tailwind v4 opacity modifiers (bg-devotional/10 etc.).
+     Contrast vs parchment background is documented in
+     src/lib/designTokens.ts — devotional + brass do NOT meet AA
+     as text colors at full saturation; use the *-dark variants
+     when these hues need to read as text. */
+  --color-devotional: #E89B3C;
+  --color-devotional-dark: #7A4F1E;
+  --color-sacred: #7C2D2A;
+  --color-krishna: #1E2A5E;
+  --color-brass: #B08D4C;
+  --color-brass-dark: #7C5F2E;
+  --color-parchment: #FBF4E8;
+  --color-peacock: #0E5566;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-cormorant);
+  --font-devanagari: var(--font-noto-devanagari);
 }
 
 body {

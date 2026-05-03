@@ -8,7 +8,7 @@ This file is the canonical project context. Read this first in every session bef
 
 ## Status
 
-**Phase 2 COMPLETE 2026-05-02 — RAG retuning landed (L1+L2 default-on, L3 behind flag). NEXT: Phase 2.5 (verse-card UI dual-format labels).**
+**Phase 2.5 COMPLETE 2026-05-03 — temple-aesthetic UI + verse-card source-aware refs (Gita/MBh/Bhagavata badges, dual-format Bhagavata labels, empty-Sanskrit footer caveat); 6-token palette + Noto Sans Devanagari/Cormorant + photographic peacock feather + lotus mandala watermark; Lighthouse mobile a11y 100/100, CLS 0.0087 at Slow 3G, 9/9 WCAG AA. NEXT: Phase 3 (Krishna persona prompt iteration with full corpus).**
 
 ---
 

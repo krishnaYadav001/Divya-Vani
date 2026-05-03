@@ -199,13 +199,33 @@ Phase 2 — RAG retuning (weeks 8–9, COMPLETE 2026-05-02): RAG retuning
   borderline source-mix shifts not regressions in emotional terms).
   See decisions.md row + PROJECT_HISTORY.md Phase 2 entry +
   test-results/phase2-regression-{baseline,layer1,layer1-2,final}-2026-05-02.md.
-Phase 2.5 — Verse-card UI (week 9, NEXT): source-aware references +
-  dual-format Bhagavata handling (anchored `bhagavata_<canto>.<ch>.<vStart>`
-  vs fallback `bhagavata_<canto>.<ch>_<chunkN>` per Phase 1.6/1.7
-  reference scheme); empty-Sanskrit handling (MBh + Bhagavata rows have
-  `sanskrit = ''`); source badges on each verse card. Manual mobile QA
-  before close-out. Spec: `~/.claude/projects/.../memory/project_phase2_verse_card_dual_format.md`.
-Phase 3 — Krishna persona prompt (weeks 10–11): re-iterate systemPrompt.ts
+Phase 2.5 — Temple-aesthetic UI + verse-card source-aware refs (week 9,
+  COMPLETE 2026-05-03). Verse-card foundation: parseReference + formatReferenceLabel
+  handle all 4 ref formats (Gita anchored + split, MBh, Bhagavata anchored
+  + fallback) with Hindi/English labels per user input language; source
+  badges (saffron Gita / deeper-maroon MBh / indigo Bhagavata, all WCAG AA
+  on parchment); empty-Sanskrit handling renders Hindi + English + a
+  "Phase 9+ audit pending" footer caveat. Visual identity foundation:
+  6 semantic color tokens (devotional, sacred, krishna, brass, parchment,
+  peacock + dark text variants devotional-dark, brass-dark) in globals.css
+  @theme inline; Noto Sans Devanagari + Cormorant Garamond via next/font;
+  3 Krishna-presence motifs (PeacockFeather as photographic next/image,
+  Bansuri + LotusMandala inline SVG); temple atmosphere (parchment gradient
+  + lotus mandala watermark at 6% opacity + peacock-feather header +
+  bansuri input accent). Tooling: Playwright + scripts/screenshot-chat.ts
+  with --mock flag (zero-API-cost iteration), Lighthouse mobile audit,
+  scripts/cls-slow3g-check.ts + scripts/contrast-check.ts. Mobile QA:
+  Lighthouse accessibility 100/100, CLS 0.0087 at Slow 3G, 9/9 WCAG AA
+  contrast pass (min 5.44:1). Spend ~₹100. Phase 11 static avatar work
+  explicitly NOT preempted. Carry-forward to Phase 6: re-audit on Vercel
+  prod for LCP improvement; reuse cls-slow3g-check + contrast-check
+  scripts. Carry-forward to Phase 3: persona prompt should weave verse-
+  reference identity (e.g., "as I told Arjuna long ago") consistent with
+  the new label vocabulary (Bhagavad Gita / Mahabharata / Srimad Bhagavatam).
+  See decisions.md row + PROJECT_HISTORY.md Phase 2.5 entry +
+  test-results/phase2.5-mobile-qa-2026-05-03.md +
+  test-results/phase2.5-{baseline,step3-badges,step67-atmosphere,step67b-peacock-png,mobile-qa,design-system,mock-smoketest}-screenshots/.
+Phase 3 — Krishna persona prompt (weeks 10–11, NEXT): re-iterate systemPrompt.ts
   with full-corpus retrieval available. Apply HELD Round 4 edits — mode
   rotation rule (§2), Arjuna rate limit with alternative parallels (§6),
   Vrindavan/Bal joy example (§4). Re-run test harness end-to-end.

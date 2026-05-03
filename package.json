@@ -30,7 +30,9 @@
     "ingest:bhagavata": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts",
     "ingest:bhagavata:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --dry-run",
     "ingest:bhagavata:canto11": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json",
-    "ingest:bhagavata:canto11:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json --dry-run"
+    "ingest:bhagavata:canto11:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json --dry-run",
+    "screenshot:chat": "tsx scripts/screenshot-chat.ts",
+    "test": "tsx --test src/lib/__tests__/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
@@ -42,12 +44,14 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "lighthouse": "^13.2.0",
     "p-limit": "^7.3.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",

@@ -104,6 +104,66 @@ The repo was originally "God Messenger" — a calm Hindi-first emotional support
 
 ---
 
+## Phase 2.5 — Temple-aesthetic UI + verse-card source-aware refs (2026-05-03 COMPLETE)
+
+**Outcome.** Bundled two pieces of UI-foundation work that would otherwise be touched repeatedly through Phases 3-8: (1) verse-card source-aware references with dual-format Bhagavata handling, and (2) the temple-presence visual identity (color tokens, Hindi/English typography, 3 Krishna-presence motifs, soft warm gradient + lotus mandala atmosphere).
+
+**Verse-card foundation:**
+- New `src/lib/referenceParser.ts` — `parseReference()` handles all 4 formats: Gita anchored + split, MBh with optional sub-letter chunk suffix, Bhagavata anchored (dot separator), Bhagavata fallback (underscore separator). `formatReferenceLabel(parsed, lang)` produces 8 label combinations (4 sources × 2 languages); parva-name maps for all 13 Phase 1.5 parvas co-located in same file. Throws on unrecognized input. Soft-fail wrapper `tryParseReference()` for the React render path. 47/47 unit tests via Node `tsx --test`.
+- New `src/lib/detectLang.ts` — Devanagari-dominant heuristic (>30% chars in U+0900–U+097F → `'hi'`, else `'en'`). Used by ChatUI to compute `userLang` per assistant message (walks back to most recent user message) for verse-card label routing per locked decision #12.
+- New `src/app/components/VerseCard.tsx` — extracted from ChatUI; collapsed pill is itself the source-tinted badge (saffron Gita / deeper-maroon MBh / cool-indigo Bhagavata) at min-h-11 (44px touch target above the 28px WCAG fail). Expanded card has explicit badge chip in header. Empty Sanskrit (MBh + Bhagavata rows) renders Hindi + English only + a footer caveat in `text-brass-dark/90`.
+
+**Visual identity foundation:**
+- 6 semantic color tokens added to `src/app/globals.css` `@theme inline` block (Tailwind v4 CSS-first config — no JS config file in this codebase). Single tokens + opacity modifiers; no -50/-900 scales. After R1 founder iteration, 2 dark text variants added (`devotional-dark` #7A4F1E, `brass-dark` #7C5F2E) for AA-safe text contexts (devotional + brass at full saturation only pass border/fill, not text on parchment).
+- `src/lib/designTokens.ts` is the typed registry — color hex + role + WCAG ratings + sanctioned `SOURCE_BADGE_CLASSES` + `SOURCE_BADGE_LABEL` (short Hindi/English visible text + descriptive English aria) + typography scale + 44px touch-target constant + motif registry. Documentation-as-code; CSS variables remain the source of truth in globals.css.
+- Noto Sans Devanagari (weights 400/500/700, devanagari subset) + Cormorant Garamond (weights 400/500/600, latin subset) self-hosted via `next/font/google` — auto-self-hosted by Next at build time.
+- 3 Krishna-presence motifs at `src/app/components/motifs/`. Founder iteration mid-phase swapped the SVG `PeacockFeather` for a photographic asset (`public/krishna-peacock-feather.png`, 71.8 KB, 500×500, 1:1 transparent) rendered via `next/image` with explicit `width`/`height` for CLS prevention + `priority` flag for header preload. `Bansuri` (transverse 6-finger-hole flute) + `LotusMandala` (8-petal कमल यंत्र, used as 6%-opacity watermark) remain inline SVG per discipline rule (raster only where founder explicitly opts in).
+- `src/app/design-system/page.tsx` — public reference page showing color swatches with WCAG ratings, typography samples (Hindi paragraph, English Cormorant, UI sans, Sanskrit italic), 3 motifs at multiple sizes + a watermark demo, mock verse cards.
+
+**Atmosphere on /chat:**
+- Body gradient `from-orange-50 via-amber-50 to-amber-100` → `from-parchment to-parchment/95`.
+- Header: PeacockFeather (h-12) at left of Cormorant title with peacock-color accent on "Krishna" + sacred-color "AI", Devanagari subhead.
+- Disclaimer (locked decision #1) repositioned + restyled to `text-sm text-brass-dark`, sits directly under header above the fold at all 3 viewports.
+- Lotus mandala SVG watermark fixed-positioned, `opacity-[0.06]`, behind content, `pointer-events-none aria-hidden`.
+- Verse cards on parchment with brass borders. Bansuri silhouette to left of input (hidden on mobile via `sm:block`). Send button `bg-krishna text-parchment hover:bg-krishna/90`.
+
+**Tooling shipped (reusable in Phase 6+):**
+- `scripts/screenshot-chat.ts` — Playwright driver for repeatable mobile-viewport screenshots. `--query="text|label"` repeatable (chat flow), `--route-only` (static page capture), `--mock` (Playwright `addInitScript` overrides `window.fetch` to intercept `/api/chat` + `/api/onboarding-state` and return canned 3-source fixtures with all 4 ref formats — zero API cost for UI iteration). Used `--mock` for Step 2.5.8 R1-R3 iteration (saved ~₹30-40 vs live), live mode for the genuine 5-query mobile QA matrix.
+- `scripts/cls-slow3g-check.ts` — Playwright + CDP `Network.emulateNetworkConditions` at Slow 3G defaults (50 kbps / 32 kbps / 400 ms latency) + 4× CPU throttle. Loads /chat, observes layout-shift PerformanceObserver entries, reports CLS + peacock-feather rendered dimensions.
+- `scripts/contrast-check.ts` — Programmatic WCAG 2.1 contrast calc with alpha-blended effective backgrounds (the rendered tinted bg over parchment, not the raw token). Outputs a markdown table.
+- `lighthouse` added to devDeps; `npx lighthouse --form-factor=mobile --screen-emulation.mobile=true` invocation pattern documented in QA report. Edge or Playwright's bundled Chromium binary works as the driver via `CHROME_PATH` env var (system Chrome not required).
+
+**Mid-phase iteration history (the lessons worth remembering):**
+- **R1 founder refinement (post Step 2.5.0a aesthetic review):** added `devotional-dark` + `brass-dark` text variants because devotional + brass at full saturation fail AA as text on parchment (2.5–2.6:1). Locked usage discipline in designTokens.ts — devotional + brass for fill/borders/badge tints only; sacred + krishna + peacock work both fill AND text.
+- **Mid-stream content-language fix (caught after first Step 2.5.6 screenshots):** I was using `userLang` to pick the message-body font, but Krishna's first-time greeting is Hindi regardless of user input language → Cormorant fell back to system serif for Devanagari, looked broken. Switched to per-message `detectLang(message.content)` for body font; `userLang` still drives verse-card labels. Worth flagging because the bug only surfaced at screenshot time, not in code review.
+- **Step 2.5.8 R1 MBh badge differentiation:** founder flagged sacred /10 vs devotional /15 reading as similar warm tones at small viewports. Bumped MBh `bg-sacred/10` → `/20` + border `/40` → `/60`. Mock screenshot batch confirmed the deeper maroon stops MBh from reading as soft pink.
+- **Step 2.5.9 fold-out a11y violations (Lighthouse mobile):** ChatUI outer wrapper was a `<div>` (no `<main>` landmark anywhere) and `layout.tsx` had `maximumScale: 1` on the Viewport export (blocking pinch-zoom — WCAG 1.4.4 fail). Both predated Phase 2.5; Phase 2.5 surfaced them. Both fixes were 2 lines each. Re-run accessibility: 92 → 100/100.
+- **Cost discipline correction (mid-phase):** founder spotted that I'd used live API for every iteration screenshot batch (~₹15-20 each). Built `--mock` flag in screenshot-chat.ts; used for all Step 2.5.8 work. Carry-forward principle: live mode for baseline + final QA only; mock for visual iteration.
+
+**QA gates (full Step 2.5.9 report at `test-results/phase2.5-mobile-qa-2026-05-03.md`):**
+- Lighthouse mobile accessibility: **100/100** (target ≥90, exceeded by 10).
+- Lighthouse mobile CLS: **0** (target <0.1).
+- Slow 3G + 4× CPU CLS: **0.0087** (target <0.1, exceeded by ~12×). Peacock feather rendered at 48×48 with no shift.
+- WCAG AA contrast: **9/9 combinations pass**, min 5.44:1 (disclaimer), max 12.41:1 (body + button).
+- Hindi conjuncts (पाण्डुपुत्र / निरहंकारः / श्रीमद्भागवत classical forms) verified via Noto Sans Devanagari.
+- Touch targets ≥ 44×44 px (min-h-11 on collapsed pills).
+- 5-query live retrieval batch surfaced **3 of 5 queries with Bhagavata fallback refs** naturally — `(अंश N)` and `(passage N)` syntax both render correctly in their respective languages.
+
+**Total spend ~₹100** (5 live screenshot batches @ ~₹15-20 + 5-query final mobile QA ~₹25; ₹0 on the 4 mock-mode iteration batches). Mobile QA budget was ₹15-25, came in at ~₹25.
+
+**Phase 11 boundary held:** static Pichwai/Tanjore Krishna avatar work explicitly NOT preempted. Peacock feather + bansuri + lotus mandala motifs are devotional symbology, not avatar. Phase 11 will fit a depicted Krishna character into the design language Phase 2.5 establishes.
+
+**Carry-forward to Phase 3:**
+- Persona prompt should reference verses by intent (locked decision #10) using the new label vocabulary — Krishna says "as I told Arjuna long ago", never "Bhagavad Gita 2.47". The verse cards now surface those numbers via the UI; Krishna himself doesn't speak them.
+- Q1.7.4 query-classifier weakness ("I learn from everything around me" → only `[gratitude]`) carried forward from Phase 2 — surface during Phase 3 systemPrompt iteration.
+
+**Carry-forward to Phase 6:**
+- Re-audit Lighthouse on Vercel production deployment for LCP improvement (currently 2.9 s in dev/prod local; edge caching should trim further).
+- Reuse `cls-slow3g-check.ts` + `contrast-check.ts` + `screenshot-chat.ts --mock` for repeat regression checks before each beta release.
+- Slow 3G load time 76 s is realistic for tier-3 Indian mobile networks; consider a route-level loading skeleton or lighter initial bundle if user feedback at beta confirms this is painful.
+
+---
+
 ## Open issues / known caveats
 
 - Personalization is "previous turn → current turn" via `context_summary`, not deep multi-turn history. Acceptable for v1.

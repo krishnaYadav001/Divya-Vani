@@ -12,11 +12,19 @@ This rule loads when Claude is touching code (src/, scripts/) or corpus data (da
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 h-dvh + bg-linear-to-b gradient; suppressHydrationWarning for Grammarly
+│   ├── layout.tsx                 h-dvh + bg-linear-to-b from-parchment to-parchment/95 (Phase 2.5); registers Geist + Geist_Mono + Cormorant_Garamond + Noto_Sans_Devanagari via next/font/google; suppressHydrationWarning for Grammarly
 │   ├── page.tsx                   Landing page — Hindi headline + "शुरू करें" CTA → /chat
-│   ├── globals.css                Tailwind + fade-up keyframe
+│   ├── globals.css                Tailwind v4 @theme inline — Phase 2.5 added 6 semantic color tokens (devotional, sacred, krishna, brass, parchment, peacock) + 2 dark text variants (devotional-dark, brass-dark) + --font-serif/--font-devanagari aliases; fade-up keyframe
 │   ├── chat/page.tsx              Renders <ChatUI />
-│   ├── components/ChatUI.tsx      Main chat client (header, messages, onboarding, paywall, input, verse cards, safety cards)
+│   ├── design-system/page.tsx     Phase 2.5 reference page — color swatches with WCAG ratings, typography samples, motif catalog, mock verse cards. Public route; not linked from app
+│   ├── components/
+│   │   ├── ChatUI.tsx             Main chat client. Phase 2.5: <main> landmark, lotus-mandala watermark, peacock-feather header, bansuri input motif, krishna-bg Send button. resolveUserLang() walks back to most recent user message for verse-card label routing
+│   │   ├── VerseCard.tsx          Phase 2.5 — extracted from ChatUI. VerseCardList + VerseCard. Renders source-tinted collapsed pill (badge + label) + expanded card with optional Sanskrit panes + empty-Sanskrit footer caveat. Uses formatReferenceLabel + tryParseReference + SOURCE_BADGE_CLASSES
+│   │   ├── SevaPaywall.tsx        Razorpay paywall (Phase 5+)
+│   │   └── motifs/
+│   │       ├── PeacockFeather.tsx Phase 2.5 — next/image wrapping public/krishna-peacock-feather.png. Accepts width/height/priority/title/className. aria-hidden by default
+│   │       ├── Bansuri.tsx        Phase 2.5 — inline SVG, transverse 6-finger-hole flute. currentColor + className API
+│   │       └── LotusMandala.tsx   Phase 2.5 — inline SVG, 8-petal कमल यंत्र. Used as background watermark at low opacity
 │   └── api/
 │       ├── chat/route.ts          Main POST endpoint
 │       ├── seva/create-order/route.ts   Razorpay order creation (Phase 5+)
@@ -30,7 +38,16 @@ src/
     ├── supabase.ts                Client + saveMemory, fetchMemory, etc.
     ├── verses.ts                  Phase 2 retrieval pipeline — fetchCandidates / rerankByTheme / applyDiversityBoost / fetchCandidatesMultiQuery / searchVerses wrapper. Reads RAG_LAYER_* + RAG_THEME_WEIGHT + RAG_CANDIDATES_K + RAG_DIVERSITY_* + RAG_REWRITE_* flags from env. Server-only.
     ├── queryThemes.ts             Phase 2 query-theme classification + LAST-valid-JSON parser. Exports VALID_TAGS / CAUTION_TAGS / QUERY_TAXONOMY_BLOCK / parseThemesFromResponse / filterValidThemes / classifyQueryThemes / rewriteQuery. The chat-route extractMemory piggybacks query-theme classification onto its existing Haiku call (no extra round-trip); standalone classifyQueryThemes is for the regression harness + tests. Server-only.
-    └── badWordFilter.ts           Client-side input filter (Phase 4+)
+    ├── badWordFilter.ts           Client-side input filter (Phase 4+)
+    ├── referenceParser.ts         Phase 2.5 — parseReference + tryParseReference + formatReferenceLabel (8 label combos: 4 ref formats × hi/en) + parva-name maps for all 13 Phase 1.5 parvas (co-located, single file). Throws on unrecognized input
+    ├── detectLang.ts              Phase 2.5 — Devanagari-dominant heuristic (>30% chars in U+0900–U+097F → 'hi'). Used by ChatUI.resolveUserLang for verse-card label routing
+    ├── designTokens.ts            Phase 2.5 — typed registry: COLOR_TOKENS (hex + role + WCAG ratings on parchment) + SOURCE_BADGE_CLASSES (sanctioned per-source styles, post-R1 tuning) + SOURCE_BADGE_LABEL (short hi/en + descriptive aria) + TYPOGRAPHY scale + MIN_TOUCH_TARGET_PX + MOTIFS registry. CSS vars are source of truth; this file is the lookup index
+    └── __tests__/
+        ├── referenceParser.test.ts  37 tests covering all 4 ref formats + 8 label combos + edge cases
+        └── detectLang.test.ts       10 tests covering bilingual + edge cases
+
+public/                            (Next.js static asset directory)
+└── krishna-peacock-feather.png   Phase 2.5 — 500×500 transparent PNG (71.8 KB). Founder-supplied photographic asset; rendered via next/image in PeacockFeather component (motifs/)
 
 scripts/                           (project root, not under src/)
 ├── ingest-gita.ts                 Embed Gita verses into Supabase. npm run ingest:gita(:dry).
@@ -55,7 +72,10 @@ scripts/                           (project root, not under src/)
 ├── tag-spot-check.ts              Phase 2 Step 2.2 follow-up: 20-chunk spot-check (5 random per source × 3 + 1 from each of the 4 caution categories + 1 random caution). Deterministic seeded shuffle. NOT in package.json.
 ├── check-tag-progress.ts          One-off: total / tagged / empty count per source. Used during the Phase 2 tagging run to confirm resume-safety after the laptop-sleep crash. NOT in package.json.
 ├── test-search.ts                 10-query verse retrieval test (Phase 1). npm run test:search.
-└── test-prompt.ts                 Run system prompt against test queries (Phase 3). npm run test:prompt.
+├── test-prompt.ts                 Run system prompt against test queries (Phase 3). npm run test:prompt.
+├── screenshot-chat.ts             Phase 2.5 — Playwright driver for repeatable mobile-viewport screenshots. CLI: --query="text|label" (chat flow), --route-only (static page capture), --mock (intercepts /api/chat + /api/onboarding-state via window.fetch override; uses 3 canned source-mix fixtures with all 4 ref formats — zero API cost), --headed, --out, --url, --path. npm run screenshot:chat.
+├── cls-slow3g-check.ts            Phase 2.5 — Playwright + CDP Network.emulateNetworkConditions at Slow 3G defaults (50 kbps / 32 kbps / 400 ms latency) + 4× CPU throttle. Loads /chat, observes layout-shift PerformanceObserver entries, reports CLS + peacock-feather rendered dimensions. NOT in package.json — invoke via tsx directly.
+└── contrast-check.ts              Phase 2.5 — Programmatic WCAG 2.1 contrast calc with alpha-blended effective backgrounds. Outputs a markdown table of every sanctioned text × background combo. NOT in package.json.
 
 data/                              (project root, not under src/)
 ├── gita.json                      701-verse Gita corpus (Sanskrit + regenerated Hindi + Sivananda English). ~730 KB, committed. See PROJECT_HISTORY.md for sources.

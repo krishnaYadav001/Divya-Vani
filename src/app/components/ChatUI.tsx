@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Message, VerseCitation, SafetyCard } from "@/lib/messages";
+import type { Message, SafetyCard } from "@/lib/messages";
 import { findBannedWord } from "@/lib/badWordFilter";
+import { detectLang } from "@/lib/detectLang";
 import SevaPaywall from "./SevaPaywall";
+import { VerseCardList } from "./VerseCard";
+import Bansuri from "./motifs/Bansuri";
+import LotusMandala from "./motifs/LotusMandala";
+import PeacockFeather from "./motifs/PeacockFeather";
 
 const ONBOARDING_OPTIONS = [
   "मन थोड़ा भारी है",
@@ -99,31 +104,57 @@ export default function ChatUI() {
   const bannedWord = findBannedWord(input);
 
   return (
-    <div className="flex h-full flex-1 flex-col">
-      <header className="border-b border-black/5 bg-white/50 px-6 py-4 backdrop-blur sm:py-5">
-        <div className="mx-auto max-w-[600px] text-center">
-          <h1 className="text-lg font-medium tracking-tight text-zinc-900 sm:text-xl">
-            Krishna AI
-          </h1>
-          <p className="mt-1 text-xs text-zinc-600 sm:text-sm">
-            एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
-          </p>
+    <main className="relative flex h-full flex-1 flex-col">
+      {/* Step 2.5.6 atmosphere — single low-opacity lotus mandala
+          centered behind content. pointer-events-none so it never
+          intercepts clicks; aria-hidden so screen readers skip it. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden"
+      >
+        <LotusMandala className="h-[80vh] max-h-[720px] w-auto text-krishna opacity-[0.06]" />
+      </div>
+
+      <header className="relative z-10 border-b border-brass/30 bg-parchment/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
+        <div className="mx-auto flex max-w-[600px] items-center justify-center gap-3">
+          <PeacockFeather
+            className="h-12 w-auto shrink-0"
+            width={48}
+            height={48}
+            priority
+          />
+          <div className="text-center">
+            <h1 className="font-serif text-2xl font-medium leading-none tracking-tight sm:text-3xl">
+              <span className="text-peacock">Krishna</span>
+              <span className="text-sacred"> AI</span>
+            </h1>
+            <p className="mt-1 font-devanagari text-xs leading-snug text-krishna/70 sm:text-sm">
+              एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
+            </p>
+          </div>
         </div>
       </header>
 
-      <div className="border-b border-black/5 bg-white/30 px-4 py-2 text-center text-[10px] leading-snug text-zinc-600 backdrop-blur sm:text-[11px]">
-        <p className="mx-auto max-w-[600px]">
-          यह AI है जो शास्त्रों के आधार पर श्रीकृष्ण की भूमिका निभा रहा है। यह दिव्य मार्गदर्शन नहीं है।
-          <span className="mx-1.5 text-zinc-400">·</span>
-          This is an AI roleplaying Krishna based on scripture, not divine guidance.
+      {/* Step 2.5.7 disclaimer — bumped to text-sm (was text-[10px]/[11px]),
+          colored text-brass-dark for AA contrast on parchment, sits
+          directly under the header without scrolling. */}
+      <div className="relative z-10 border-b border-brass/30 bg-parchment/40 px-4 py-2.5 text-center backdrop-blur">
+        <p className="mx-auto max-w-[600px] text-sm leading-snug text-brass-dark">
+          <span className="font-devanagari">
+            यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
+          </span>
+          <span aria-hidden className="mx-1.5 text-brass">·</span>
+          <span className="font-serif italic">
+            This is an AI roleplaying Krishna based on scripture, not divine guidance.
+          </span>
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4">
           {isEmpty && (
             <div className="fade-up flex flex-col items-center gap-4 pt-6 sm:pt-10">
-              <p className="text-center text-base italic text-zinc-600 sm:text-lg">
+              <p className="text-center font-devanagari text-base italic leading-relaxed text-krishna/70 sm:text-lg">
                 आज मन कैसा लग रहा है…
               </p>
               {isFirstTime === true && (
@@ -133,7 +164,7 @@ export default function ChatUI() {
                       key={text}
                       type="button"
                       onClick={() => sendMessage(text)}
-                      className="rounded-2xl bg-white px-4 py-3 text-left text-sm text-zinc-800 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:bg-amber-50"
+                      className="rounded-2xl border border-brass/30 bg-parchment px-4 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:bg-devotional/10 hover:ring-2 hover:ring-devotional/30"
                     >
                       {text}
                     </button>
@@ -142,15 +173,16 @@ export default function ChatUI() {
               )}
             </div>
           )}
-          {messages.map((m) => (
+          {messages.map((m, i) => (
             <MessageCard
               key={m.id}
               message={m}
+              userLang={resolveUserLang(messages, i)}
               onPaywallSuccess={() => handlePaywallSuccess(m.id)}
             />
           ))}
           {isSending && (
-            <p className="fade-up text-center text-sm italic text-zinc-500">
+            <p className="fade-up text-center font-devanagari text-sm italic text-krishna/60">
               सोच रहा हूँ...
             </p>
           )}
@@ -158,12 +190,12 @@ export default function ChatUI() {
         </div>
       </div>
 
-      <div className="border-t border-black/5 bg-white/60 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+      <div className="relative z-10 border-t border-brass/30 bg-parchment/70 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
         <div className="mx-auto w-full max-w-[600px]">
           {bannedWord && (
             <p
               role="status"
-              className="mb-2 text-center text-xs text-amber-700"
+              className="mb-2 text-center text-xs text-sacred"
             >
               कृपया उचित भाषा का प्रयोग करें · Please use respectful language
             </p>
@@ -175,34 +207,56 @@ export default function ChatUI() {
             }}
             className="flex items-center gap-2"
           >
+            <Bansuri
+              aria-hidden
+              className="hidden h-5 w-auto shrink-0 text-brass-dark sm:block"
+            />
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="जो मन में है… यहाँ लिख सकते हैं"
+              placeholder="मन में जो है, कहो…"
               disabled={isSending}
               aria-invalid={bannedWord !== null}
-              className="flex-1 rounded-full border border-black/10 bg-white px-5 py-3 text-sm text-zinc-800 shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-amber-300"
+              className="flex-1 rounded-full border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-sm text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
             />
             <button
               type="submit"
               disabled={isSending || !input.trim() || bannedWord !== null}
-              className="rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-zinc-700 disabled:opacity-50"
+              className="rounded-full bg-krishna px-5 py-3 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50"
             >
               Send
             </button>
           </form>
         </div>
       </div>
-    </div>
+    </main>
   );
+}
+
+// Walk back from index `i` to the most recent user message and
+// detect its language. Used to label verse cards in the language
+// the user wrote in (locked decision #12 — Krishna replies match
+// user's input language, so the verse cards should too).
+function resolveUserLang(
+  messages: Message[],
+  i: number,
+): "hi" | "en" {
+  for (let j = i; j >= 0; j--) {
+    if (messages[j].role === "user") {
+      return detectLang(messages[j].content);
+    }
+  }
+  return "hi"; // default before any user message exists
 }
 
 function MessageCard({
   message,
+  userLang,
   onPaywallSuccess,
 }: {
   message: Message;
+  userLang: "hi" | "en";
   onPaywallSuccess: () => void;
 }) {
   const isUser = message.role === "user";
@@ -213,43 +267,38 @@ function MessageCard({
     message.paywall === true &&
     Array.isArray(message.tiers) &&
     message.tiers.length > 0;
+  // Pick font from this message's OWN content language. Krishna's
+  // first-time greeting is always Hindi even when the user wrote
+  // English, so userLang (used for verse-card labels) is the wrong
+  // signal for the body font.
+  const contentLang = detectLang(message.content);
   return (
     <div
       className={
-        "fade-up rounded-2xl px-4 py-3 text-sm leading-relaxed text-zinc-800 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
-        (isUser ? "bg-white" : "bg-amber-50/60")
+        "fade-up rounded-2xl border px-4 py-3 text-sm leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
+        (isUser
+          ? "border-brass/20 bg-parchment/95"
+          : "border-brass/40 bg-parchment")
       }
     >
-      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-brass-dark">
         {isUser ? "You" : "Messenger"}
       </p>
-      <p className="whitespace-pre-wrap">{message.content}</p>
-      {hasVerses && <VerseCardList verses={message.verses!} />}
+      <p
+        className={
+          "whitespace-pre-wrap leading-relaxed " +
+          (contentLang === "hi" ? "font-devanagari" : "font-serif")
+        }
+      >
+        {message.content}
+      </p>
+      {hasVerses && <VerseCardList verses={message.verses!} lang={userLang} />}
       {!isUser && message.safety_card && (
         <SafetyCardView card={message.safety_card} />
       )}
       {showPaywall && (
         <SevaPaywall tiers={message.tiers!} onSuccess={onPaywallSuccess} />
       )}
-    </div>
-  );
-}
-
-function formatRef(ref: string): string {
-  const m = ref.match(/^gita_(\d+)\.(\d+)(?:_(\d+))?$/);
-  if (!m) return ref;
-  const [, ch, v, range] = m;
-  return range
-    ? `भगवद् गीता ${ch}.${v}–${range}`
-    : `भगवद् गीता ${ch}.${v}`;
-}
-
-function VerseCardList({ verses }: { verses: VerseCitation[] }) {
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {verses.map((v) => (
-        <VerseCard key={v.reference} verse={v} />
-      ))}
     </div>
   );
 }
@@ -285,54 +334,3 @@ function SafetyCardView({ card }: { card: SafetyCard }) {
   );
 }
 
-function VerseCard({ verse }: { verse: VerseCitation }) {
-  const [expanded, setExpanded] = useState(false);
-  const label = formatRef(verse.reference);
-
-  if (!expanded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        aria-expanded={false}
-        className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs text-zinc-700 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors hover:bg-amber-50"
-      >
-        <span aria-hidden>📖</span>
-        <span>{label}</span>
-      </button>
-    );
-  }
-
-  return (
-    <div className="mt-1 w-full rounded-2xl border border-amber-100 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-zinc-700">📖 {label}</p>
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          aria-expanded={true}
-          aria-label="Close verse"
-          className="text-xs text-zinc-400 hover:text-zinc-700"
-        >
-          ✕
-        </button>
-      </div>
-      <div className="mt-2 space-y-2 leading-relaxed">
-        <p className="whitespace-pre-wrap text-base text-zinc-900">
-          {verse.sanskrit}
-        </p>
-        {verse.transliteration && (
-          <p className="whitespace-pre-wrap text-xs italic text-zinc-500">
-            {verse.transliteration}
-          </p>
-        )}
-        <p className="whitespace-pre-wrap text-sm text-zinc-800">
-          {verse.hindi}
-        </p>
-        <p className="whitespace-pre-wrap text-sm text-zinc-700">
-          {verse.english}
-        </p>
-      </div>
-    </div>
-  );
-}
