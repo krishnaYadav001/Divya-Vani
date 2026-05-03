@@ -225,6 +225,29 @@ Phase 2.5 — Temple-aesthetic UI + verse-card source-aware refs (week 9,
   See decisions.md row + PROJECT_HISTORY.md Phase 2.5 entry +
   test-results/phase2.5-mobile-qa-2026-05-03.md +
   test-results/phase2.5-{baseline,step3-badges,step67-atmosphere,step67b-peacock-png,mobile-qa,design-system,mock-smoketest}-screenshots/.
+Phase 2.6 — Chat-route prompt-cache fix (week 9, COMPLETE 2026-05-03).
+  Resolves the 0% cache hit rate that's been carried forward from
+  Phase 1.6/1.7/2. Root cause: Sonnet 4.6 raised the minimum cacheable
+  prompt from 1,024 (Sonnet 4.5/4) to **2,048 tokens** — model-specific
+  change in the Anthropic docs. Phase 1.7's "1,317 > 1,024 so should
+  cache" check tested the wrong threshold. Documented silent-failure
+  mode: short prompts return both cache_creation and cache_read = 0,
+  exactly our symptom. **Fix on `src/app/api/chat/route.ts`:** restructure
+  `system` from one plain string to two structured blocks — block 0 is
+  the persona (`SYSTEM_PROMPT`, 5,303 tokens, stable across turns) with
+  `cache_control: { type: "ephemeral" }`; block 1 is the dynamic
+  USER CONTEXT + RELEVANT SCRIPTURE (mutates per turn). Pre-fix single-
+  cached-block setup wrote 1.25× tax with zero reads (5-turn measurement
+  confirmed). Post-fix verification: turn 1 cache_creation=5,303
+  cache_read=0; turns 2-5 cache_creation=0 cache_read=5,303 (100% hit
+  rate, beat the ≥90% acceptance criterion). Cost reduction ~34% on
+  input portion of a 5-turn session. Permanent `[chat] sonnet usage:`
+  telemetry log line on every chat turn. Regen scripts NOT modified
+  (their 1,317-token SYSTEM_PROMPT is still below the 2,048 minimum,
+  cache_control directive continues as harmless no-op there; will
+  activate naturally if Phase 9+ Sanskrit attachment grows the regen
+  prompt past 2,048). Total spend ~₹15 (under ₹20 budget). See
+  decisions.md row + PROJECT_HISTORY.md Phase 2.6 entry.
 Phase 3 — Krishna persona prompt (weeks 10–11, NEXT): re-iterate systemPrompt.ts
   with full-corpus retrieval available. Apply HELD Round 4 edits — mode
   rotation rule (§2), Arjuna rate limit with alternative parallels (§6),

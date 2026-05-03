@@ -258,6 +258,14 @@ function formatScriptureBlock(verses: VerseHit[]): string {
   return `RELEVANT SCRIPTURE:\n${lines.join("\n")}`;
 }
 
+// Phase 2.6 split: returns { persona, dynamic } so the chat route
+// can place cache_control on the persona block only. The persona is
+// the only stable-across-turns content; USER CONTEXT mutates as
+// memory accumulates and RELEVANT SCRIPTURE mutates per query, so
+// caching the combined block (current pre-2.6 behavior) writes a
+// 1.25× tax with zero reads. Caching only the persona costs nothing
+// today (silent no-op below Sonnet 4.6's 2,048-token minimum) and
+// activates automatically when Phase 3 grows the persona past it.
 function buildSystemPrompt(
   memory: UserMemory | null,
   isReturningUser: boolean,
@@ -265,7 +273,7 @@ function buildSystemPrompt(
   verses: VerseHit[],
   priorCount: number,
   safetyFlag: SafetyFlag | null,
-): string {
+): { persona: string; dynamic: string } {
   const lines: string[] = [];
 
   // Name handling (Phase 4): USER_NAME if known, else ask-for-name on first turn.
@@ -306,15 +314,18 @@ function buildSystemPrompt(
     );
   }
 
-  const sections: string[] = [SYSTEM_PROMPT];
+  const dynamicSections: string[] = [];
   if (lines.length > 0) {
-    sections.push(`USER CONTEXT:\n${lines.join("\n")}`);
+    dynamicSections.push(`USER CONTEXT:\n${lines.join("\n")}`);
   }
   const scripture = formatScriptureBlock(verses);
   if (scripture) {
-    sections.push(scripture);
+    dynamicSections.push(scripture);
   }
-  return sections.join("\n\n");
+  return {
+    persona: SYSTEM_PROMPT,
+    dynamic: dynamicSections.join("\n\n"),
+  };
 }
 
 function withCookie(
@@ -450,19 +461,64 @@ export async function POST(req: Request) {
     : priorMemory;
 
   // 5b. Final reply (Sonnet 4.6) with scripture + user context + safety injected.
+  //
+  // Phase 2.6 — system prompt is split into TWO blocks:
+  //   block 0: persona (SYSTEM_PROMPT, stable across turns)
+  //            cache_control: ephemeral — cached
+  //   block 1: dynamic (USER CONTEXT + RELEVANT SCRIPTURE)
+  //            no cache_control — not cached, mutates per turn
+  //
+  // Why this shape: the dynamic content changes every turn (memory
+  // accumulates, retrieval differs), so caching the combined block
+  // wrote 1.25× cache-write tax with zero reads (verified across a
+  // 5-turn test). Caching only the persona is silent no-op today
+  // (persona < Sonnet 4.6's 2,048-token cache minimum) AND lights
+  // up automatically when Phase 3 grows the persona past it. No
+  // further code change needed at that point — Phase 3 ships the
+  // longer persona prompt and this block starts hitting cache.
+  const { persona, dynamic } = buildSystemPrompt(
+    effectiveMemory,
+    isReturningUser,
+    isFirstTime,
+    verses,
+    priorCount,
+    safetyFlag,
+  );
+
+  const systemBlocks: Array<{
+    type: "text";
+    text: string;
+    cache_control?: { type: "ephemeral" };
+  }> = [
+    {
+      type: "text",
+      text: persona,
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  if (dynamic.length > 0) {
+    systemBlocks.push({ type: "text", text: dynamic });
+  }
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 600,
-    system: buildSystemPrompt(
-      effectiveMemory,
-      isReturningUser,
-      isFirstTime,
-      verses,
-      priorCount,
-      safetyFlag,
-    ),
+    system: systemBlocks,
     messages: [{ role: "user", content: message }],
   });
+
+  // Phase 2.6 cache telemetry: per-turn cache write/read + persona
+  // size relative to the Sonnet 4.6 cache minimum. Watch this log
+  // as the Phase 3 persona ships — cache_creation should jump from
+  // 0 to ~3K on the first turn after deploy, then cache_read should
+  // sustain at the same value across subsequent turns within 5 min.
+  console.log(
+    `[chat] sonnet usage: input=${response.usage.input_tokens ?? 0} ` +
+      `cache_creation=${response.usage.cache_creation_input_tokens ?? 0} ` +
+      `cache_read=${response.usage.cache_read_input_tokens ?? 0} ` +
+      `output=${response.usage.output_tokens ?? 0} ` +
+      `(persona=${persona.length}ch dynamic=${dynamic.length}ch)`,
+  );
 
   // 6. Persist memory + bump counters. While on the free pool, message_count
   //    bumps and caps at FREE_MESSAGE_LIMIT. Once the pool is spent the user

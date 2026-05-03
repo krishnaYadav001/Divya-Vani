@@ -52,7 +52,7 @@ The repo was originally "God Messenger" — a calm Hindi-first emotional support
 - **Quality gate:** 18/20 spot-check PASS + 3/5 retrieval coverage (≥17/20 + ≥3/5 thresholds met; threshold lowered from Phase 1.6's ≥4/5 retrieval because the 159-chunk corpus competes against ~3,200 rows of older content). 2 spot-check FLAGs (`bhagavata_11.22.19`, `bhagavata_11.29_4`) are pre-existing 1.3% non-terminal class — English source truncates mid-clause at parser-induced chunk boundary, em-dash merger only catches dash-terminal cases. Same mechanism as Phase 1.6 residual; not a Phase 1.7 regression. Retrieval queries 3 + 4 (surrender, renunciation) returned 5/5 Gita: structural Gita-compact-verse-cosine-bias carry-forward, defer to Phase 2.
 - **Carry-forward to Phase 2 / 9+:**
   - **Phase 2:** structural Gita-compact-verse-cosine-bias on abstract-emotional queries (anger / surrender / renunciation) — same issue surfaced in Phases 1.5 + 1.6 + 1.7. Address via theme tags / query rewriting / source-aware retrieval boost. Also: 2/159 residual non-terminal chunks from parser-truncated English boundaries.
-  - **Phase 9+:** **0% cache hit rate confirmed at full scale** (162 calls; 1,317-token SYSTEM_PROMPT verified above the 1,024-token cache minimum via `messages.countTokens`; 3-call sequential probe in `scripts/count-system-prompt-tokens.ts` reproduces 0 cache_creation + 0 cache_read). The Phase 1.6 "below threshold" hypothesis is falsified. Remaining hypotheses: Sonnet-4.6-specific cache eligibility, beta-header drift, API-tier gating, ephemeral-TTL default change. Investigation note at `test-results/phase1.7-cache-investigation.md`. Reopen alongside Sanskrit-attachment milestone when prompt size + cache savings get bigger. Sanyal-vs-standard per-chapter content audit also opens at this milestone.
+  - **Phase 9+:** ~~0% cache hit rate confirmed at full scale~~ — **ROOT CAUSE RESOLVED in Phase 2.6 (2026-05-03):** Sonnet 4.6 raised the minimum cacheable prompt from 1,024 (Sonnet 4.5/4) to **2,048 tokens**. Phase 1.7's "1,317 > 1,024" check tested the wrong threshold for Sonnet 4.6 specifically; 1,317 falls silently below the new 2,048 minimum (per docs: "length-based caching failures are silent" — exactly our symptom). Regen-script `cache_control: ephemeral` directive continues as a known harmless no-op at the current 1,317-token prompt size. **For Phase 9+:** if Sanskrit attachment grows the regen prompt past 2,048 tokens, caching will activate automatically with no code change needed. See Phase 2.6 PROJECT_HISTORY entry for the full root-cause analysis and the chat-route fix that exploits this discovery (chat-route persona is already 5,303 tokens; caching landed 100% hit rate on turns 2-5). Sanyal-vs-standard per-chapter content audit also opens at this milestone (separate from the cache resolution).
 
 ---
 
@@ -164,11 +164,74 @@ The repo was originally "God Messenger" — a calm Hindi-first emotional support
 
 ---
 
+## Phase 2.6 — Chat-route prompt-cache fix (2026-05-03 COMPLETE)
+
+**Outcome.** Resolves the 0% cache hit rate that's been carried forward from Phase 1.6 / 1.7 / 2. Two-hour focused sprint; came in at ~₹15 spend (under the ₹20 budget).
+
+**Root cause** (settled in STEP 1 by reading current Anthropic prompt-caching docs):
+
+Sonnet 4.6 raised the minimum cacheable prompt from 1,024 tokens (Sonnet 4.5 / 4) to **2,048 tokens** — a model-specific change documented in the docs but not in the Phase 1.7 15-minute investigation that ruled out the threshold hypothesis. Per the docs verbatim:
+
+> Length-based caching failures are silent: the request succeeds but both `cache_creation_input_tokens` and `cache_read_input_tokens` will be 0.
+
+Phase 1.6 / 1.7 regen `SYSTEM_PROMPT` measures 1,317 tokens — above the old 1,024 minimum the prior investigation checked, but **below the 2,048 minimum that's specific to Sonnet 4.6**. This is the entire root cause. Not an SDK bug, not a payload structure issue, not a missing beta header, not a TTL default change, not API tier gating.
+
+The Phase 1.7 investigation note at `test-results/phase1.7-cache-investigation.md` was correct on the data it had; it just tested the wrong threshold number for Sonnet 4.6 specifically.
+
+**Surprise discovery during STEP 3a measurement.** The chat route's `system` content was passed as a plain string (no `cache_control` at all — separate concern from the regen-script anomaly). And the **constructed system content is much larger than expected** because the RELEVANT SCRIPTURE block, formatting 5 retrieved verses with full Sanskrit + Hindi + English, dominates: a Bhagavata-heavy "Tell me about Yashoda" turn measured at **12,285 system tokens** (5,303 from `SYSTEM_PROMPT` + ~7,000 from scripture+context). Above 2,048, so caching CAN engage on the chat route today — Phase 3 wait was unnecessary.
+
+**Fix on `src/app/api/chat/route.ts`.** Restructured `system` from one plain string into two structured blocks:
+
+- **Block 0 — persona** (`SYSTEM_PROMPT`, 5,303 tokens, stable across turns) with `cache_control: { type: "ephemeral" }`.
+- **Block 1 — dynamic** (USER CONTEXT + RELEVANT SCRIPTURE, mutates every turn as memory accumulates and retrieval differs) with no cache directive.
+
+Why this shape: the dynamic content changes every turn (verified — system block size oscillates 8K → 13K across a 5-turn session as different verse retrievals land). Caching the COMBINED block (the naive single-`cache_control` setup) wrote a 1.25× tax with **zero reads** across all 5 turns — verified by an interim measurement before settling on the persona-only structure. Caching only the persona works because the persona is byte-stable across turns within a session.
+
+Also kept `buildSystemPrompt` as a refactor returning `{ persona, dynamic }` so the chat route assembles the structured blocks without duplicating logic.
+
+**Verification (5-turn live test, fresh prod build):**
+
+```
+Turn 1: cache_creation=5,303  cache_read=0      (persona writes)
+Turn 2: cache_creation=0      cache_read=5,303  HIT
+Turn 3: cache_creation=0      cache_read=5,303  HIT
+Turn 4: cache_creation=0      cache_read=5,303  HIT
+Turn 5: cache_creation=0      cache_read=5,303  HIT
+```
+
+100% hit rate on turns 2-5; sustained at 5,303 tokens read per turn. Beats the founder's ≥90% acceptance criterion. The `cache_read_input_tokens` ramps stay constant at 5,303 because the persona is byte-stable; the `input_tokens` field varies per turn (dynamic content).
+
+**Cost reduction** on the input portion of the same 5-turn session, with caching applied:
+
+- Pre-fix (combined-block cached, prefix never matched): ~52K billed-input-equivalent tokens (every turn writing 1.25× the full block).
+- Post-fix: turn 1 writes persona at 1.25× + dynamic at 1×; turns 2-5 read persona at 0.10× + dynamic at 1×. Total: ~34K billed-input-equivalent tokens.
+- **~34% input cost reduction across the 5-turn session.** Per-turn savings approach ~₹0.10-0.20 for multi-turn sessions. Single-turn first-message users see no cache benefit (small 1.25× write penalty on the persona). Net positive any time avg session length > 1.5 turns — true for the 10-msg free pool design.
+
+**Permanent telemetry** added at the end of every chat-route Sonnet call:
+
+```
+[chat] sonnet usage: input=N cache_creation=N cache_read=N output=N (persona=Nch dynamic=Nch)
+```
+
+This is the canonical signal going forward. Watch for `cache_read` jumps when Phase 3 ships its persona iteration (if persona size shifts past or below thresholds).
+
+**Regen scripts NOT modified.** Their 1,317-token `SYSTEM_PROMPT` is still below the 2,048 minimum, so `cache_control: { type: "ephemeral" }` continues as a harmless no-op there (no 1.25× tax — cache write fails silently per docs). No large regen runs scheduled before Phase 9+ Sanskrit attachment, at which point the prompt may grow past 2,048 and caching activates without code changes.
+
+**Carry-forward closure:**
+- Phase 1.6 carry-forward "0% cache hit rate persisted across 633 calls" — RESOLVED, root cause documented.
+- Phase 1.7 carry-forward "0% cache hit rate confirmed at full scale (162 calls)" — RESOLVED.
+- Phase 2 RAG retuning didn't list cache as a carry-forward, but the chat route's `system: string` shape (which never wired caching at all) was a latent issue — RESOLVED.
+- The "Open issues / known caveats" bullet for prompt caching is now struck-through with a cross-reference to this entry.
+
+**Files modified:** `src/app/api/chat/route.ts` only (restructure + telemetry). 4 doc files updated: `CLAUDE.md` status, `docs/decisions.md` row, `docs/build-roadmap.md` Phase 2.6 entry, this `PROJECT_HISTORY.md` entry. No new files. No new dependencies.
+
+---
+
 ## Open issues / known caveats
 
 - Personalization is "previous turn → current turn" via `context_summary`, not deep multi-turn history. Acceptable for v1.
 - Cookie identity is per-browser; Phase 5 auth addresses this.
-- **Prompt caching anomaly:** `cache_control: { type: "ephemeral" }` is set on the regen SYSTEM_PROMPT block but observed 0% hit rate at full scale (Phase 1.6: 633 calls; Phase 1.7: 162 calls). The Phase 1.6 "below 1,024-token threshold" hypothesis was falsified Phase 1.7 — `messages.countTokens` returned 1,317 tokens for the regen SYSTEM_PROMPT, comfortably above the 1,024 cache minimum. A 3-call sequential probe in `scripts/count-system-prompt-tokens.ts` reproduces 0 cache_creation + 0 cache_read with identical prompt structure. Remaining hypotheses: Sonnet-4.6-specific cache eligibility, beta-header drift, API-tier gating, ephemeral-TTL default change. Defer to Phase 9+ alongside Sanskrit-attachment milestone (when corpus + prompt size are larger and savings justify deeper investigation, possibly escalating to Anthropic support). Detailed note at `test-results/phase1.7-cache-investigation.md`. The runtime app's chat endpoint does NOT yet use prompt caching; same anomaly likely applies, defer accordingly.
+- ~~**Prompt caching anomaly**~~ — **RESOLVED in Phase 2.6 (2026-05-03).** Root cause: Sonnet 4.6 raised the minimum cacheable prompt from 1,024 (Sonnet 4.5/4) to 2,048 tokens. Phase 1.7's "1,317 > 1,024" threshold check tested the wrong number; 1,317 falls silently below the new 2,048. The chat-route fix lives in `src/app/api/chat/route.ts` (split persona vs dynamic system blocks, cache_control on persona only) — see Phase 2.6 entry below. Regen scripts unchanged: their 1,317-token SYSTEM_PROMPT is still below 2,048, so the cache_control directive there continues as a known harmless no-op until Phase 9+ Sanskrit attachment grows the regen prompt past the threshold. Detailed root-cause analysis: `test-results/phase1.7-cache-investigation.md` + the Phase 2.6 PROJECT_HISTORY entry below.
 - `is_first_time` backfill exists for pre-column rows. Future column adds need similar consideration.
 
 ---

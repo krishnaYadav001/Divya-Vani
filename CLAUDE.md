@@ -8,7 +8,7 @@ This file is the canonical project context. Read this first in every session bef
 
 ## Status
 
-**Phase 2.5 COMPLETE 2026-05-03 — temple-aesthetic UI + verse-card source-aware refs (Gita/MBh/Bhagavata badges, dual-format Bhagavata labels, empty-Sanskrit footer caveat); 6-token palette + Noto Sans Devanagari/Cormorant + photographic peacock feather + lotus mandala watermark; Lighthouse mobile a11y 100/100, CLS 0.0087 at Slow 3G, 9/9 WCAG AA. NEXT: Phase 3 (Krishna persona prompt iteration with full corpus).**
+**Phase 2.6 COMPLETE 2026-05-03 — chat-route prompt-cache fix landed (5,303-token persona cached, 100% hit rate on turns 2-5, ~34% input cost reduction on 5-turn sessions). Root cause of Phase 1.6/1.7 anomaly: Sonnet 4.6 raised cache minimum from 1,024 (Sonnet 4.5/4) to 2,048 — regen scripts at 1,317 tokens silently fall below; fix is structural, not regen. NEXT: Phase 3 (Krishna persona prompt iteration with full corpus).**
 
 ---
 
