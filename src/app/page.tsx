@@ -8,7 +8,7 @@ export default function Landing() {
           जब मन उलझा हो, बस किसी से बात करनी हो…
         </h1>
         <p className="mt-6 text-base leading-relaxed text-zinc-700 sm:text-lg">
-          Krishna AI एक शांत जगह है — जहाँ श्रीकृष्ण की भूमिका में एक AI के साथ आप अपनी बात कह सकते हैं, गीता की रोशनी में।
+          Divya Vani एक शांत जगह है — जहाँ श्रीकृष्ण की भूमिका में एक AI के साथ आप अपनी बात कह सकते हैं, गीता की रोशनी में।
         </p>
         <Link
           href="/chat"

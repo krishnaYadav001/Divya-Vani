@@ -1,6 +1,6 @@
 @AGENTS.md
 "see docs/decisions.md for canonical list."
-# Krishna AI
+# Divya Vani
 
 > AI-roleplay app. Users chat with a Krishna persona grounded in scripture (Gita, Mahabharata, Bhagavata Purana). Hindi-first, mobile-first, calm tone. Single-user, anonymous-by-default.
 

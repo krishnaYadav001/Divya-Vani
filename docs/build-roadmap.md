@@ -1,4 +1,4 @@
-# Project: Krishna AI
+# Project: Divya Vani
 
 An AI roleplaying Krishna — the character from the Bhagavad Gita, Mahabharata, 
 and Bhagavata Purana — chatting with users about life, emotions, decisions, 

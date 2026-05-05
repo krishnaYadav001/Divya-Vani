@@ -212,8 +212,8 @@ export default function ChatUI() {
           />
           <div className="text-center">
             <h1 className="font-serif text-2xl font-medium leading-none tracking-tight sm:text-3xl">
-              <span className="text-peacock">Krishna</span>
-              <span className="text-sacred"> AI</span>
+              <span className="text-peacock">Divya</span>
+              <span className="text-sacred"> Vani</span>
             </h1>
             <p className="mt-1 font-devanagari text-xs leading-snug text-krishna/70 sm:text-sm">
               एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं

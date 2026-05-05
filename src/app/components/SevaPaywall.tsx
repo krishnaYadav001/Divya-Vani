@@ -106,7 +106,7 @@ export default function SevaPaywall({ tiers, onSuccess }: SevaPaywallProps) {
       key: order.key_id,
       amount: order.amount,
       currency: order.currency,
-      name: "Krishna AI",
+      name: "Divya Vani",
       description: `${tier.displayName} · ${tier.messages} messages`,
       order_id: order.order_id,
       theme: { color: "#92400e" },

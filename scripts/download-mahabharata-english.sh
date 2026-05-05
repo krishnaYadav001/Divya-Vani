@@ -26,7 +26,7 @@ for vol in "${VOLUMES[@]}"; do
 
   echo "Downloading vol${vol} from $url"
   if curl -fL --retry 3 --retry-delay 2 \
-      -A "Krishna AI corpus build (krishnayadav123345@gmail.com)" \
+      -A "Divya Vani corpus build (krishnayadav123345@gmail.com)" \
       -o "$out" "$url"; then
     echo "vol${vol}: ok ($(du -h "$out" | cut -f1))"
   else

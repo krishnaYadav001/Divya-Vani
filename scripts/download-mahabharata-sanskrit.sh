@@ -30,7 +30,7 @@ BORI_PARVAS=(01 02 03 05 06 07 08 09 10 11 12 14 16)
 #   10 = Sauptika (Brahmastra protection of Parikshit 13-18)
 KUMB_PARVAS=(01 02 10)
 
-UA="Krishna AI corpus build (krishnayadav123345@gmail.com)"
+UA="Divya Vani corpus build (krishnayadav123345@gmail.com)"
 
 download_one() {
   local url="$1"

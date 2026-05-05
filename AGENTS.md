@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
-# Krishna AI
+# Divya Vani
 
 For full project context — tech stack, locked product decisions, Supabase schema, chat turn flow, key invariants, file structure, and the build phase plan — see [CLAUDE.md](./CLAUDE.md).
 

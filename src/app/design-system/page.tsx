@@ -47,7 +47,7 @@ function Header() {
       <PeacockFeather className="h-16 w-auto text-peacock" />
       <div>
         <h1 className="font-serif text-3xl font-medium text-sacred sm:text-4xl">
-          Krishna AI · Design System
+          Divya Vani · Design System
         </h1>
         <p className="mt-1 font-devanagari text-sm text-krishna/80">
           फेज 2.5 — मंदिर-दर्शन सौंदर्य
