@@ -49,6 +49,11 @@ export const CAUTION_TAGS = new Set<string>([
 // (which appeared in 3 of 4 examples) and over-rerank toward Gita
 // (heaviest devotion-tagged source). Reverted to the original prompt;
 // canonical for Phase 2 ship.
+//
+// 2026-05-04 — Phase 3 1-example expansion (avadhūta-frame) shipped;
+// regression-clean on 12-query baseline; visible quality lift on Q1.7.4
+// + #24 + #25. 2-example expansion deferred to Phase 7 beta when
+// real-user query distribution surfaces specific gaps to target.
 export const QUERY_TAXONOMY_BLOCK = `Use this fixed taxonomy. Do NOT invent new tags.
 
 GROUP A — Emotional / state (15):
@@ -61,7 +66,12 @@ GROUP C — Caution (4) — apply ONLY when the user's message itself genuinely 
 - caution_devotional_intimacy — user describes intimate / romantic / devotional-rapture content
 - caution_violence — user describes a violent fantasy, intent, or named-warrior killing scenario
 - caution_complex_dharma — user is wrestling with a moral grey-zone where literal-rule ethics fails
-- caution_renunciation_extreme — user expresses wanting to disappear, withdraw, or end engagement with life`;
+- caution_renunciation_extreme — user expresses wanting to disappear, withdraw, or end engagement with life
+
+WORKED EXAMPLE — taxonomic-concept reasoning (extract themes the message is ABOUT, not just words it CONTAINS):
+User: "I learn from everything around me — even from people who hurt me, even from small ordinary moments."
+Themes: ["teacher-student", "equanimity", "householder"]
+Reasoning: "learn from everything" → teacher-student frame (the avadhūta-with-many-gurus pattern). "even from people who hurt me" → equanimity (acceptance regardless of source). "small ordinary moments" → householder (everyday-life as practice ground, not ascetic withdrawal). None of these tags appears as a word in the message — read the conceptual structure, not the surface vocabulary.`;
 
 // Pull the LAST valid `{...}` block. Sonnet sometimes emits the original
 // JSON, then "Wait, X is not in taxonomy" reasoning, then a corrected

@@ -64,8 +64,10 @@ function VerseCard({
 
   if (!expanded) {
     // Collapsed pill IS the badge. Source-tinted background + border
-    // doubles as visual identifier; min-h-11 + py-2 puts the touch
-    // target above the WCAG 44px minimum (was 28px, failed AA).
+    // doubles as visual identifier. Founder shrunk 44 → 32px on
+    // 2026-05-05 for visual density; this re-introduces a WCAG 2.5.5
+    // touch-target fail — bump back to min-h-11 + px-3.5 + py-2 if
+    // mobile mis-tapping shows up in beta.
     return (
       <button
         type="button"
@@ -73,7 +75,7 @@ function VerseCard({
         aria-expanded={false}
         aria-label={`${ariaLabel}: ${label}`}
         className={
-          "inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors hover:brightness-95 " +
+          "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors hover:brightness-95 " +
           (badgeClasses || "border-zinc-200 bg-white text-zinc-700")
         }
       >

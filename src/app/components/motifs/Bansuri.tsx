@@ -1,47 +1,55 @@
-// Bansuri silhouette (बांसुरी) — Krishna's flute. Used as input-area
-// accent: "Krishna is listening through this voice." Six-finger-hole
-// transverse bamboo flute, the canonical North-Indian form.
+// Bansuri (बांसुरी) — Krishna's flute. Used as input-area accent:
+// "Krishna is listening through this voice." Founder-supplied
+// photographic asset at public/flute1.png (383×280, ~46 KB,
+// transparent PNG) — bamboo flute with the canonical mor-pankh
+// (peacock feather) tied at the mouthpiece and a small bead-tassel
+// hanging below. Was inline SVG until 2026-05-05; switched to a
+// real image so the peacock-feather attachment reads at a glance.
+//
+// Performance: served via Next/Image, which auto-converts to
+// WebP/AVIF, generates responsive srcSets, and lazy-loads
+// non-priority instances.
+//
+// Accessibility: aria-hidden by default — the input placeholder
+// already conveys intent for screen readers, so the flute is
+// decorative-only. Pass `title` to switch to a non-decorative
+// <Image alt={title}> rendering for the design-system catalog.
+
+import Image from 'next/image';
 
 type Props = {
   className?: string;
+  /** Provide for non-decorative renderings (e.g. design-system
+   *  catalog). Omit for chat-input / decorative use → aria-hidden. */
   title?: string;
+  /** Intrinsic width Next/Image reserves for layout. Defaults to
+   *  the source asset's native 383px. CSS className still controls
+   *  visual rendered size. */
+  width?: number;
+  /** Intrinsic height. Defaults to the source asset's native 280px. */
+  height?: number;
+  /** Set true above the fold. Tells Next to preload and skip
+   *  lazy-loading. */
+  priority?: boolean;
 };
 
-export default function Bansuri({ className, title }: Props) {
+export default function Bansuri({
+  className,
+  title,
+  width = 383,
+  height = 280,
+  priority = false,
+}: Props) {
   const decorative = title === undefined;
   return (
-    <svg
+    <Image
+      src="/flute1.png"
+      alt={title ?? ''}
+      aria-hidden={decorative}
+      width={width}
+      height={height}
+      priority={priority}
       className={className}
-      viewBox="0 0 80 16"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={decorative ? true : undefined}
-      role={decorative ? undefined : "img"}
-    >
-      {!decorative && <title>{title}</title>}
-      {/* Body of the flute — capsule shape */}
-      <rect
-        x="3"
-        y="6"
-        width="74"
-        height="4.5"
-        rx="2.25"
-        ry="2.25"
-        strokeWidth="1.1"
-        fill="currentColor"
-        fillOpacity="0.08"
-      />
-      {/* Mouthpiece (closed end, left) */}
-      <line x1="9" y1="5.5" x2="9" y2="11" strokeWidth="0.9" />
-      {/* Six finger holes evenly spaced toward the right half */}
-      <circle cx="32" cy="8.25" r="0.9" fill="currentColor" stroke="none" />
-      <circle cx="40" cy="8.25" r="0.9" fill="currentColor" stroke="none" />
-      <circle cx="48" cy="8.25" r="0.9" fill="currentColor" stroke="none" />
-      <circle cx="56" cy="8.25" r="0.9" fill="currentColor" stroke="none" />
-      <circle cx="64" cy="8.25" r="0.9" fill="currentColor" stroke="none" />
-      <circle cx="72" cy="8.25" r="0.9" fill="currentColor" stroke="none" />
-    </svg>
+    />
   );
 }

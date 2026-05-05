@@ -207,10 +207,7 @@ export default function ChatUI() {
             }}
             className="flex items-center gap-2"
           >
-            <Bansuri
-              aria-hidden
-              className="hidden h-5 w-auto shrink-0 text-brass-dark sm:block"
-            />
+            <Bansuri className="hidden h-10 w-auto shrink-0 sm:block" />
             <input
               type="text"
               value={input}
@@ -275,7 +272,7 @@ function MessageCard({
   return (
     <div
       className={
-        "fade-up rounded-2xl border px-4 py-3 text-sm leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
+        "fade-up rounded-2xl border px-4 py-3 text-base leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
         (isUser
           ? "border-brass/20 bg-parchment/95"
           : "border-brass/40 bg-parchment")

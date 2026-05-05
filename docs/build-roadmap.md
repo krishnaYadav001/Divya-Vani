@@ -248,11 +248,22 @@ Phase 2.6 — Chat-route prompt-cache fix (week 9, COMPLETE 2026-05-03).
   activate naturally if Phase 9+ Sanskrit attachment grows the regen
   prompt past 2,048). Total spend ~₹15 (under ₹20 budget). See
   decisions.md row + PROJECT_HISTORY.md Phase 2.6 entry.
-Phase 3 — Krishna persona prompt (weeks 10–11, NEXT): re-iterate systemPrompt.ts
-  with full-corpus retrieval available. Apply HELD Round 4 edits — mode
-  rotation rule (§2), Arjuna rate limit with alternative parallels (§6),
-  Vrindavan/Bal joy example (§4). Re-run test harness end-to-end.
-Phase 4 — Safety + name collection (week 12): self-harm classifier,
+Phase 3 — Krishna persona prompt (weeks 10–11, COMPLETE 2026-05-05): re-
+  iterated systemPrompt.ts with full-corpus retrieval. Round 4 edits
+  shipped (mode rotation §2, Arjuna rate limit §6, Vrindavan/Bal joy
+  example §4) plus Phase 3 close-out additions (§3.5 PARALLEL-MAPPING with
+  eight named life-parallels, §3 HINDI REGISTER tatsama guidance, §4.6
+  SATSANG ARC multi-turn pacing + open-thread ending rule + closure-
+  benediction ban, §12 INCLUSION INVARIANT decoupling persona from Gita
+  Press editorial baggage). 76-case harness (57 baseline + 11 PM + 8
+  inclusion) clean on all invariants. UI polish bundled in: Bansuri inline-
+  SVG → PNG with attached peacock feather, chat body text-sm → text-base,
+  verse-pill compacted to text-xs (WCAG 2.5.5 accepted regression). Phase
+  3.9 (NDJSON streaming + saveMemory defer, transport-only) landed in a
+  follow-up commit; 7/7 acceptance tests pass. Reports:
+  test-results/phase3-3.5b-3.5c-3.6a-combined-2026-05-05.md +
+  test-results/phase3.9-streaming-tests-2026-05-05.md.
+Phase 4 — Safety + name collection (week 12, NEXT): self-harm classifier,
   helpline cards, name flow, content filter, disclaimer bar.
 Phase 5 — Seva donation + auth (week 13): Razorpay one-time UPI checkout
   (Razorpay Subscriptions module NOT integrated). Four seva tiers — Pratham
