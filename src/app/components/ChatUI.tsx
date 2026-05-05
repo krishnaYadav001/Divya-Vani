@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import type { Message, SafetyCard } from "@/lib/messages";
 import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
@@ -44,6 +45,11 @@ export default function ChatUI() {
       role: "user",
       content: text,
     };
+    // assistantId is allocated up-front so error/abort handlers can
+    // check whether a placeholder was already pushed (by reading
+    // prev.find(m=>m.id===assistantId) inside a setMessages updater)
+    // and append, rather than orphaning a partial reply with a fresh id.
+    const assistantId = crypto.randomUUID();
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsSending(true);
@@ -52,35 +58,116 @@ export default function ChatUI() {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Negotiates the NDJSON streaming response shape from
+          // /api/chat. Server falls back to plain JSON for any
+          // caller that does not send this header (test scripts,
+          // playwright mock). See DUAL-MODE RESPONSE CONTRACT block
+          // at the top of src/app/api/chat/route.ts.
+          Accept: "application/x-ndjson",
+        },
         body: JSON.stringify({ message: text }),
       });
-      const data = await res.json();
-      const reply: string = data.reply ?? "Something went quiet. Try again.";
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: reply,
-          paywall: data.paywall === true,
-          tiers: Array.isArray(data.tiers) ? data.tiers : undefined,
-          verses: Array.isArray(data.verses) ? data.verses : undefined,
-          safety_card:
-            data.safety_card && typeof data.safety_card === "object"
-              ? (data.safety_card as SafetyCard)
-              : undefined,
-        },
-      ]);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const contentType = res.headers.get("content-type") ?? "";
+      const isStream =
+        contentType.includes("application/x-ndjson") && res.body !== null;
+
+      if (isStream) {
+        // ── Streaming branch ──────────────────────────────────────
+        // Read response.body as NDJSON. Three frame types:
+        //   {type:"text",delta} — append to assistant content
+        //   {type:"meta",verses,paywall,safety_card} — final metadata
+        //   {type:"error",message} — mid-stream failure; render
+        //                            partial reply + inline affordance
+        //
+        // All state changes go through setMessages((prev) => ...)
+        // updaters that derive next-state from prev. No `let`
+        // mutations across closure boundaries — keeps the React-19
+        // / Next-16 immutability lint rule happy and avoids stale
+        // captures in the streaming loop.
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          // Split on \n; the final element may be a partial line
+          // (no trailing newline yet) — keep it in the buffer for
+          // the next read.
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let frame: Record<string, unknown>;
+            try {
+              frame = JSON.parse(line) as Record<string, unknown>;
+            } catch {
+              // Malformed line — skip rather than crash the stream.
+              continue;
+            }
+            applyFrameToMessages(setMessages, assistantId, frame);
+          }
+        }
+      } else {
+        // ── Plain-JSON branch ────────────────────────────────────
+        // Hit when server returned application/json — e.g. paywall
+        // (no AI call), screenshot mock, or any non-streaming path.
+        // Same shape as pre-Phase-3.9.
+        const data = await res.json();
+        const reply: string = data.reply ?? "Something went quiet. Try again.";
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantId,
+            role: "assistant",
+            content: reply,
+            paywall: data.paywall === true,
+            tiers: Array.isArray(data.tiers) ? data.tiers : undefined,
+            verses: Array.isArray(data.verses) ? data.verses : undefined,
+            safety_card:
+              data.safety_card && typeof data.safety_card === "object"
+                ? (data.safety_card as SafetyCard)
+                : undefined,
+          },
+        ]);
+      }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "I couldn't reach the guide. Please try again.",
-        },
-      ]);
+      // Network failure or non-2xx response. Read whether a partial
+      // reply already exists in state (placeholder pushed mid-stream)
+      // and either append a "connection dropped" affordance to it,
+      // or render a fresh generic error reply.
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === assistantId);
+        const errLine =
+          "_connection dropped — please send your message again._";
+        if (idx >= 0) {
+          const next = [...prev];
+          const cur = next[idx].content;
+          next[idx] = {
+            ...next[idx],
+            content: cur ? `${cur}\n\n${errLine}` : errLine,
+          };
+          return next;
+        }
+        return [
+          ...prev,
+          {
+            id: assistantId,
+            role: "assistant",
+            content: "I couldn't reach the guide. Please try again.",
+          },
+        ];
+      });
     } finally {
       setIsSending(false);
     }
@@ -181,7 +268,12 @@ export default function ChatUI() {
               onPaywallSuccess={() => handlePaywallSuccess(m.id)}
             />
           ))}
-          {isSending && (
+          {isSending && messages[messages.length - 1]?.role === "user" && (
+            // Spinner shows from submit until the assistant placeholder
+            // is pushed (first text delta in streaming mode, or full
+            // response in plain-JSON mode). Once Krishna's bubble appears
+            // the bubble itself becomes the "thinking" indicator as it
+            // grows token-by-token.
             <p className="fade-up text-center font-devanagari text-sm italic text-krishna/60">
               सोच रहा हूँ...
             </p>
@@ -298,6 +390,100 @@ function MessageCard({
       )}
     </div>
   );
+}
+
+// Phase 3.9 streaming-frame dispatcher. Called per NDJSON line during
+// the streaming branch of sendMessage. Module-scope helper so React
+// doesn't re-allocate it on every render and the immutability lint
+// rule sees a clean pure-function shape — every state mutation flows
+// through setMessages((prev) => next) updaters that derive next from
+// prev, never from a captured `let` variable.
+function applyFrameToMessages(
+  setMessages: Dispatch<SetStateAction<Message[]>>,
+  assistantId: string,
+  frame: Record<string, unknown>,
+): void {
+  const type = frame.type;
+
+  if (type === "text" && typeof frame.delta === "string") {
+    const delta = frame.delta;
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === assistantId);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = {
+          ...next[idx],
+          content: next[idx].content + delta,
+        };
+        return next;
+      }
+      // First delta — push the assistant bubble. The "सोच रहा हूँ..."
+      // spinner stops as soon as this lands (it gates on last
+      // message.role === "user").
+      return [
+        ...prev,
+        { id: assistantId, role: "assistant", content: delta },
+      ];
+    });
+    return;
+  }
+
+  if (type === "meta") {
+    setMessages((prev) => {
+      const updates: Partial<Message> = {
+        paywall: frame.paywall === true,
+        verses: Array.isArray(frame.verses)
+          ? (frame.verses as Message["verses"])
+          : undefined,
+        safety_card:
+          frame.safety_card && typeof frame.safety_card === "object"
+            ? (frame.safety_card as SafetyCard)
+            : undefined,
+      };
+      const idx = prev.findIndex((m) => m.id === assistantId);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...updates };
+        return next;
+      }
+      // Edge case: meta arrived without any preceding text (model
+      // produced no text content). Push a placeholder anyway so
+      // verses/safety_card still render.
+      return [
+        ...prev,
+        { id: assistantId, role: "assistant", content: "", ...updates },
+      ];
+    });
+    return;
+  }
+
+  if (type === "error") {
+    const errMsg =
+      typeof frame.message === "string"
+        ? frame.message
+        : "connection dropped — please send your message again.";
+    const errLine = `_${errMsg}_`;
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === assistantId);
+      if (idx >= 0) {
+        const next = [...prev];
+        const cur = next[idx].content;
+        next[idx] = {
+          ...next[idx],
+          content: cur ? `${cur}\n\n${errLine}` : errLine,
+        };
+        return next;
+      }
+      return [
+        ...prev,
+        { id: assistantId, role: "assistant", content: errLine },
+      ];
+    });
+    return;
+  }
+
+  // Unknown frame type — silently skip (forward compat: future frame
+  // types added server-side won't crash old clients).
 }
 
 function SafetyCardView({ card }: { card: SafetyCard }) {

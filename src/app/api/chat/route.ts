@@ -31,6 +31,51 @@ const RETURNING_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
 const FREE_MESSAGE_LIMIT = 10;
 const SAFETY_THRESHOLD = 0.6;
 
+// =============================================================================
+// DUAL-MODE RESPONSE CONTRACT (Phase 3.9 — 2026-05-05)
+// =============================================================================
+// /api/chat negotiates response format via the Accept request header:
+//
+//   Accept: application/x-ndjson  → AI-replied path streams as NDJSON
+//                                   (one JSON object per line). Frame types:
+//                                     {"type":"text","delta":"..."}    each token chunk
+//                                     {"type":"meta",...}              final frame: verses, paywall:false, safety_card
+//                                     {"type":"error","message":"..."} mid-stream failure
+//                                   Used by ChatUI.tsx to render Krishna's
+//                                   reply token-by-token (~1–3s first-token
+//                                   latency on local network vs. ~15s end-of-
+//                                   reply latency under non-streaming).
+//
+//   Accept: application/json (or absent / */*) → plain JSON response, the
+//                                   pre-Phase-3.9 shape:
+//                                     { reply, paywall, verses, tiers?, safety_card? }
+//                                   Used by scripts/test-prompt.ts,
+//                                   scripts/test-chat-e2e.ts, and any other
+//                                   non-browser caller. Test infrastructure
+//                                   stays plain-JSON to keep harness runs
+//                                   uncomplicated.
+//
+// Both modes go through the same pre-AI pipeline (cookie + memory fetch +
+// paywall guard + RAG + extractMemory + safetyClassify + buildSystemPrompt).
+// The only divergence is the final reply step: plain-JSON awaits
+// client.messages.create() before responding; NDJSON pipes
+// client.messages.stream() events into the response stream and defers
+// saveMemory / decrementSevaBalance to fire-and-forget after the meta
+// frame is emitted (so the client sees first-token in 1–3s, not after the
+// Supabase write).
+//
+// Paywall path stays plain JSON in BOTH modes — there is no AI call to
+// stream when the seva paywall is hit. The streaming branch is reached
+// only on the AI-replied path. ChatUI sniffs response Content-Type and
+// routes accordingly.
+//
+// Phase 3 persona work (system prompt, retrieval, safety classifier,
+// caching structure) is unchanged across both modes. Streaming is a
+// transport-layer change only — generation parameters and reply
+// content remain bit-for-bit equivalent, modulo Anthropic API
+// non-determinism that exists at any temperature.
+// =============================================================================
+
 function buildPaywallReply(
   userName: string | null | undefined,
   lastMessage: string,
@@ -355,14 +400,18 @@ export async function POST(req: Request) {
     );
   }
 
-  // 1. Resolve user_id from cookie (or assign one)
+  // 1. Resolve user_id from cookie (or assign one). Captured into a const
+  // (resolvedUserId) after the may-assign branch so inner closures —
+  // notably persistTurnState below — see a strictly-string type rather
+  // than the let-binding's flow-widened string|undefined.
   const jar = await cookies();
-  let userId = jar.get(USER_COOKIE)?.value;
+  let mutableUserId = jar.get(USER_COOKIE)?.value;
   let isNewUser = false;
-  if (!userId) {
-    userId = randomUUID();
+  if (!mutableUserId) {
+    mutableUserId = randomUUID();
     isNewUser = true;
   }
+  const userId: string = mutableUserId;
 
   // 2. Fetch prior memory — needed for paywall check, returning-flag,
   //    onboarding-flag, extraction summary, and message_count increment.
@@ -500,9 +549,215 @@ export async function POST(req: Request) {
     systemBlocks.push({ type: "text", text: dynamic });
   }
 
+  // 6. Persist memory + bump counters. While on the free pool, message_count
+  //    bumps and caps at FREE_MESSAGE_LIMIT. Once the pool is spent the user
+  //    is paying with seva credits — message_count stays at the cap and we
+  //    decrement seva_balance via the atomic stored proc instead. Bump
+  //    even when extraction failed so the limit is enforced uniformly.
+  //
+  // Phase 3.9 — extracted into a helper so both response modes can call it.
+  // Plain-JSON mode awaits this inline before responding (current behavior).
+  // Streaming mode fires it AFTER the meta frame so the client sees first-
+  // token within 1–3s instead of waiting on Supabase. Both modes use the
+  // same writes; only the timing differs.
+  //
+  // Known accepted race (founder-signed, 2026-05-05): with fire-and-forget
+  // persistence, a user who double-sends within ~100–500ms can cause turn N+1
+  // to read the pre-N message_count. Race already exists today (any double-
+  // tap during the existing 15s wait), is fault-tolerant (a few extra free
+  // messages does not break the seva revenue model), and streaming likely
+  // REDUCES double-send rate by giving users an earlier "Krishna is
+  // responding" signal. Revisit in Phase 7+ if beta data shows it as a
+  // real problem — do not gate Phase 3.9 on it.
+  async function persistTurnState(): Promise<void> {
+    const verseRefs = verses.map((v) => v.reference);
+    const newUserName =
+      !priorMemory?.user_name && extracted?.user_name
+        ? extracted.user_name
+        : undefined;
+
+    const usingSevaCredit = priorCount >= FREE_MESSAGE_LIMIT;
+    const nextMessageCount = usingSevaCredit ? undefined : priorCount + 1;
+
+    if (extracted) {
+      await saveMemory(userId, {
+        main_problem: extracted.main_problem,
+        emotion: extracted.emotion,
+        context_summary: extracted.context_summary,
+        message_count: nextMessageCount,
+        is_first_time: false,
+        verses_referenced: verseRefs,
+        user_name: newUserName,
+      });
+    } else {
+      await saveMemory(userId, {
+        message_count: nextMessageCount,
+        is_first_time: false,
+        verses_referenced: verseRefs,
+      });
+    }
+
+    if (usingSevaCredit) {
+      await decrementSevaBalance(userId);
+    }
+  }
+
+  const responseVerses = verses.map((v) => ({
+    reference: v.reference,
+    sanskrit: v.sanskrit,
+    transliteration: v.transliteration,
+    hindi: v.hindi,
+    english: v.english,
+  }));
+  const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
+
+  // 5b. Final reply — branch on Accept header (see DUAL-MODE RESPONSE
+  // CONTRACT block at top of file).
+  //
+  // Safety-card override: when safetyFlag is non-null (self_harm or
+  // harm_others classified above SAFETY_THRESHOLD), force the plain-
+  // JSON path even if the client requested streaming. Reasoning: the
+  // helpline card is an intervention that must land alongside Krishna's
+  // reply, not after a 1–15 second token stream during which the user
+  // may disengage. Krishna still replies in full Bhagavata-mode per
+  // locked decision #7 — the card just rides with the JSON instead of
+  // being deferred to a meta-frame at end-of-stream.
+  const wantsStream =
+    !safetyFlag &&
+    (req.headers.get("accept")?.includes("application/x-ndjson") ?? false);
+
+  if (wantsStream) {
+    // ───────────── Streaming path (NDJSON) ─────────────
+    // Pipe MessageStream events into a ReadableStream as
+    // `{"type":"text","delta":"..."}` lines, then emit one final
+    // `{"type":"meta",...}` frame with verses + safety_card before
+    // closing. Defer persistTurnState to fire-and-forget AFTER the meta
+    // frame so the client UX is not gated on the Supabase write.
+    //
+    // Cancellation: req.signal is forwarded to the SDK so closing the
+    // browser tab cancels the upstream Anthropic call. On abort,
+    // persistTurnState is intentionally NOT run — memory should only
+    // persist completed exchanges.
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const messageStream = client.messages.stream(
+            {
+              model: "claude-sonnet-4-6",
+              max_tokens: 3000,
+              system: systemBlocks,
+              messages: [{ role: "user", content: message }],
+            },
+            { signal: req.signal },
+          );
+
+          messageStream.on("text", (delta) => {
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  JSON.stringify({ type: "text", delta }) + "\n",
+                ),
+              );
+            } catch {
+              // Controller closed (client disconnected). Swallow —
+              // the SDK will surface abort via its own error path.
+            }
+          });
+
+          const finalMsg = await messageStream.finalMessage();
+
+          // Same cache telemetry as the plain-JSON path so the log
+          // shape stays grep-stable across both modes. Phase 2.6
+          // cache invariant: cache_creation drops to 0 after the
+          // first call within 5 min, cache_read sustains at persona
+          // size for subsequent turns. Tagged "(stream)" so the two
+          // paths can be distinguished in logs.
+          console.log(
+            `[chat] sonnet usage (stream): input=${finalMsg.usage.input_tokens ?? 0} ` +
+              `cache_creation=${finalMsg.usage.cache_creation_input_tokens ?? 0} ` +
+              `cache_read=${finalMsg.usage.cache_read_input_tokens ?? 0} ` +
+              `output=${finalMsg.usage.output_tokens ?? 0} ` +
+              `(persona=${persona.length}ch dynamic=${dynamic.length}ch)`,
+          );
+
+          const metaLine =
+            JSON.stringify({
+              type: "meta",
+              verses: responseVerses,
+              paywall: false,
+              safety_card: safetyCard ?? null,
+            }) + "\n";
+          try {
+            controller.enqueue(encoder.encode(metaLine));
+          } catch {
+            // Controller closed mid-meta — client disconnected after
+            // text but before meta landed. saveMemory still runs below
+            // because the model call completed successfully.
+          }
+          controller.close();
+
+          // Fire-and-forget — does NOT block the response stream.
+          persistTurnState().catch((e) => {
+            console.error("[chat] deferred persistTurnState failed:", e);
+          });
+        } catch (e) {
+          // Two distinct failure modes:
+          //   1. Client aborted (closed tab) — req.signal.aborted = true.
+          //      Do NOT persist memory; that turn never completed.
+          //   2. Upstream error (Anthropic 5xx, rate limit, etc.) —
+          //      surface a {"type":"error",...} frame so the UI can
+          //      render whatever partial reply was received and prompt
+          //      the user to resend.
+          if (req.signal.aborted) {
+            console.log(
+              "[chat] stream aborted by client; not persisting turn state",
+            );
+          } else {
+            console.error("[chat] stream errored:", e);
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  JSON.stringify({
+                    type: "error",
+                    message:
+                      "connection dropped — please send your message again.",
+                  }) + "\n",
+                ),
+              );
+            } catch {
+              // Controller already closed; nothing more we can do.
+            }
+          }
+          try {
+            controller.close();
+          } catch {
+            // Already closed.
+          }
+        }
+      },
+    });
+
+    const res = new NextResponse(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        // Disable upstream proxy buffering (e.g. nginx) so tokens
+        // reach the client as they arrive, not in a single dump.
+        "X-Accel-Buffering": "no",
+      },
+    });
+    return withCookie(res, isNewUser, userId);
+  }
+
+  // ───────────── Plain-JSON path (pre-Phase-3.9 behavior) ─────────────
+  // Used by test-prompt.ts, test-chat-e2e.ts, and any non-browser
+  // caller that does not request NDJSON. Synchronous: awaits the full
+  // model reply and saveMemory before returning.
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 600,
+    max_tokens: 3000,
     system: systemBlocks,
     messages: [{ role: "user", content: message }],
   });
@@ -520,54 +775,10 @@ export async function POST(req: Request) {
       `(persona=${persona.length}ch dynamic=${dynamic.length}ch)`,
   );
 
-  // 6. Persist memory + bump counters. While on the free pool, message_count
-  //    bumps and caps at FREE_MESSAGE_LIMIT. Once the pool is spent the user
-  //    is paying with seva credits — message_count stays at the cap and we
-  //    decrement seva_balance via the atomic stored proc instead. Bump
-  //    even when extraction failed so the limit is enforced uniformly.
-  const verseRefs = verses.map((v) => v.reference);
-  const newUserName =
-    !priorMemory?.user_name && extracted?.user_name
-      ? extracted.user_name
-      : undefined;
-
-  const usingSevaCredit = priorCount >= FREE_MESSAGE_LIMIT;
-  const nextMessageCount = usingSevaCredit ? undefined : priorCount + 1;
-
-  if (extracted) {
-    await saveMemory(userId, {
-      main_problem: extracted.main_problem,
-      emotion: extracted.emotion,
-      context_summary: extracted.context_summary,
-      message_count: nextMessageCount,
-      is_first_time: false,
-      verses_referenced: verseRefs,
-      user_name: newUserName,
-    });
-  } else {
-    await saveMemory(userId, {
-      message_count: nextMessageCount,
-      is_first_time: false,
-      verses_referenced: verseRefs,
-    });
-  }
-
-  if (usingSevaCredit) {
-    await decrementSevaBalance(userId);
-  }
+  await persistTurnState();
 
   const reply =
     response.content.find((b) => b.type === "text")?.text.trim() ?? "";
-
-  const responseVerses = verses.map((v) => ({
-    reference: v.reference,
-    sanskrit: v.sanskrit,
-    transliteration: v.transliteration,
-    hindi: v.hindi,
-    english: v.english,
-  }));
-
-  const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
 
   return withCookie(
     NextResponse.json({
