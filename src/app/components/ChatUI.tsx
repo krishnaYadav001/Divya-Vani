@@ -299,7 +299,7 @@ export default function ChatUI() {
             }}
             className="flex items-center gap-2"
           >
-            <Bansuri className="hidden h-10 w-auto shrink-0 sm:block" />
+            <Bansuri className="hidden h-16 w-auto shrink-0 sm:block" />
             <input
               type="text"
               value={input}
@@ -307,7 +307,7 @@ export default function ChatUI() {
               placeholder="मन में जो है, कहो…"
               disabled={isSending}
               aria-invalid={bannedWord !== null}
-              className="flex-1 rounded-full border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-sm text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
+              className="flex-1 rounded-full border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
             />
             <button
               type="submit"
@@ -364,7 +364,7 @@ function MessageCard({
   return (
     <div
       className={
-        "fade-up rounded-2xl border px-4 py-3 text-base leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
+        "fade-up rounded-2xl border px-4 py-3 text-lg leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
         (isUser
           ? "border-brass/20 bg-parchment/95"
           : "border-brass/40 bg-parchment")
