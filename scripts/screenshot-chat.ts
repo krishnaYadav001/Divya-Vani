@@ -41,6 +41,20 @@
 //                         in the browser, return canned fixtures.
 //                         Zero API cost. Use for pure-UI iteration.
 //   --headed              run with browser UI for debugging
+//
+// STREAMING-UI WAIT LOGIC — learned during Phase 4.5 mobile QA
+// (2026-05-05): the chat UI streams replies token-by-token via NDJSON.
+// Naïve waits don't work reliably:
+//   - Fixed timeout (e.g. 750ms post-landmark): too short on long
+//     replies, captures truncated mid-stream content.
+//   - 2-second text-stability poll: race condition on mid-stream
+//     model pauses; the stability window can fire before the stream
+//     is actually complete.
+//   - Deterministic signal (recommended): wait for input.disabled
+//     to toggle false → true → false. ChatUI's isSending state
+//     drives `disabled={isSending}` on the input (ChatUI.tsx:308),
+//     so the rising edge marks stream start and the falling edge
+//     marks stream complete. Reliable, no race.
 
 import { chromium, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';

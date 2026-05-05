@@ -24,12 +24,16 @@ import {
   type UserMemory,
 } from "@/lib/supabase";
 import { getTiersInOrder } from "@/lib/seva";
+import {
+  safetyClassify,
+  SAFETY_THRESHOLD,
+  type SafetyFlag,
+} from "@/lib/safety";
 
 const client = new Anthropic();
 const USER_COOKIE = "god_messenger_uid";
 const RETURNING_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
 const FREE_MESSAGE_LIMIT = 10;
-const SAFETY_THRESHOLD = 0.6;
 
 // =============================================================================
 // DUAL-MODE RESPONSE CONTRACT (Phase 3.9 — 2026-05-05)
@@ -94,11 +98,6 @@ If you wish — a small offering, and we sit together again.
 I am not going anywhere.`;
 }
 
-type SafetyFlag = "self_harm" | "harm_others";
-type SafetyResult = {
-  flag: SafetyFlag | "safe";
-  confidence: number;
-};
 type SafetyCard = {
   type: SafetyFlag;
   title: string;
@@ -240,55 +239,6 @@ Return ONLY valid JSON in this exact shape, with no surrounding text or markdown
   } catch (e) {
     console.error("[extractMemory] threw:", e);
     return null;
-  }
-}
-
-async function safetyClassify(message: string): Promise<SafetyResult> {
-  try {
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 100,
-      messages: [
-        {
-          role: "user",
-          content: `Classify the user's message for safety risk. Output ONLY valid JSON.
-
-User message:
-"${message}"
-
-Categories:
-- self_harm: the user is expressing thoughts of self-harm, suicide, or wanting to end their life. Explicit mentions ("I want to die", "मैं अब और नहीं जी सकता") OR strong implicit signals (deep hopelessness paired with self-erasure: "I want it all to stop", "कोई फायदा नहीं अब").
-- harm_others: the user is expressing intent, fantasy, or specific plan of harming another person. Explicit only — anger or hatred without harm intent does NOT qualify.
-- safe: any other emotional content. Grief, anger, despair, jealousy, betrayal, fear, doubt — these are SAFE unless paired with explicit self-erasure or harm intent.
-
-Be conservative on self_harm and harm_others — only flag when the signal is clear. Bias toward "safe" when ambiguous. Confidence is 0.0 (unsure) to 1.0 (certain).
-
-Return ONLY valid JSON, no surrounding text or markdown:
-{"flag":"safe","confidence":0.95}`,
-        },
-      ],
-    });
-    const text =
-      response.content.find((b) => b.type === "text")?.text ?? "";
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) {
-      console.error("[safetyClassify] no JSON in output");
-      return { flag: "safe", confidence: 0 };
-    }
-    const parsed = JSON.parse(m[0]);
-    if (
-      (parsed.flag !== "self_harm" &&
-        parsed.flag !== "harm_others" &&
-        parsed.flag !== "safe") ||
-      typeof parsed.confidence !== "number"
-    ) {
-      console.error("[safetyClassify] wrong shape:", parsed);
-      return { flag: "safe", confidence: 0 };
-    }
-    return { flag: parsed.flag, confidence: parsed.confidence };
-  } catch (e) {
-    console.error("[safetyClassify] threw:", e);
-    return { flag: "safe", confidence: 0 };
   }
 }
 
