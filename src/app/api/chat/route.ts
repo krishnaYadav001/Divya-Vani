@@ -380,6 +380,8 @@ export async function POST(req: Request) {
         reply: buildPaywallReply(priorMemory?.user_name, message),
         paywall: true,
         tiers: getTiersInOrder(),
+        message_count: priorCount,
+        seva_balance: sevaBalance,
       }),
       isNewUser,
       userId,
@@ -561,6 +563,21 @@ export async function POST(req: Request) {
   }));
   const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
 
+  // Phase 5.4: post-mutation counter values surfaced to the client so the
+  // diya panel updates in lockstep with the DB write performed by
+  // persistTurnState. Uses the same usingSevaCredit semantics — bump
+  // message_count on the free pool, decrement seva_balance once spending
+  // credits. In the streaming path persistTurnState fires-and-forgets
+  // after these values are sent, so the response races slightly ahead
+  // of the DB write (same accepted race documented above persistTurnState).
+  const usingSevaCreditForResponse = priorCount >= FREE_MESSAGE_LIMIT;
+  const responseMessageCount = usingSevaCreditForResponse
+    ? priorCount
+    : priorCount + 1;
+  const responseSevaBalance = usingSevaCreditForResponse
+    ? Math.max(0, sevaBalance - 1)
+    : sevaBalance;
+
   // 5b. Final reply — branch on Accept header (see DUAL-MODE RESPONSE
   // CONTRACT block at top of file).
   //
@@ -637,6 +654,8 @@ export async function POST(req: Request) {
               verses: responseVerses,
               paywall: false,
               safety_card: safetyCard ?? null,
+              message_count: responseMessageCount,
+              seva_balance: responseSevaBalance,
             }) + "\n";
           try {
             controller.enqueue(encoder.encode(metaLine));
@@ -736,6 +755,8 @@ export async function POST(req: Request) {
       paywall: false,
       verses: responseVerses,
       safety_card: safetyCard,
+      message_count: responseMessageCount,
+      seva_balance: responseSevaBalance,
     }),
     isNewUser,
     userId,

@@ -5,9 +5,12 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Message, SafetyCard } from "@/lib/messages";
 import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
+import { getTiersInOrder } from "@/lib/seva";
+import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
 import Bansuri from "./motifs/Bansuri";
+import DiyaIcon from "./motifs/DiyaIcon";
 import LotusMandala from "./motifs/LotusMandala";
 import PeacockFeather from "./motifs/PeacockFeather";
 
@@ -17,11 +20,25 @@ const ONBOARDING_OPTIONS = [
   "बस किसी से बात करनी है",
 ];
 
+// Phase 5.4 — static tier list for the diya seva panel. TIER_CONFIG is a
+// frozen const so this is computed once at module load (avoids handing
+// the panel a fresh array on every render and triggering useless work).
+const TIERS = getTiersInOrder();
+
 export default function ChatUI() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
+  // Phase 5.4 — diya seva panel visibility + counter state. counterState
+  // seeds from /api/me on mount and updates from each chat response's
+  // message_count + seva_balance fields (both streaming meta frames and
+  // plain-JSON paths). The panel reads these as props.
+  const [isDiyaOpen, setIsDiyaOpen] = useState(false);
+  const [counterState, setCounterState] = useState<{
+    message_count: number;
+    seva_balance: number;
+  }>({ message_count: 0, seva_balance: 0 });
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +50,28 @@ export default function ChatUI() {
       .then((r) => r.json())
       .then((d) => setIsFirstTime(d.isFirstTime === true))
       .catch(() => setIsFirstTime(false));
+  }, []);
+
+  // Phase 5.4 — seed the counter on mount so the diya panel shows the
+  // right number before any chat turn lands. /api/me silent-fails to
+  // {0, 0, 10} for fresh visitors, so this is safe even pre-cookie.
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (
+          typeof d.message_count === "number" &&
+          typeof d.seva_balance === "number"
+        ) {
+          setCounterState({
+            message_count: d.message_count,
+            seva_balance: d.seva_balance,
+          });
+        }
+      })
+      .catch(() => {
+        /* silent — counter stays at 0/0 until first chat response */
+      });
   }, []);
 
   async function sendMessage(textOverride?: string) {
@@ -115,6 +154,17 @@ export default function ChatUI() {
               // Malformed line — skip rather than crash the stream.
               continue;
             }
+            // Phase 5.4 — surface message_count + seva_balance from
+            // meta frames into counterState in lockstep with the message
+            // list update below. Kept here (not inside applyFrameToMessages)
+            // so the module-scope helper stays single-purpose.
+            if (frame.type === "meta") {
+              const mc = frame.message_count;
+              const sb = frame.seva_balance;
+              if (typeof mc === "number" && typeof sb === "number") {
+                setCounterState({ message_count: mc, seva_balance: sb });
+              }
+            }
             applyFrameToMessages(setMessages, assistantId, frame);
           }
         }
@@ -124,6 +174,17 @@ export default function ChatUI() {
         // (no AI call), screenshot mock, or any non-streaming path.
         // Same shape as pre-Phase-3.9.
         const data = await res.json();
+        // Phase 5.4 — counter update mirrors the streaming meta-frame
+        // path so the diya panel stays in sync regardless of mode.
+        if (
+          typeof data.message_count === "number" &&
+          typeof data.seva_balance === "number"
+        ) {
+          setCounterState({
+            message_count: data.message_count,
+            seva_balance: data.seva_balance,
+          });
+        }
         const reply: string = data.reply ?? "Something went quiet. Try again.";
         setMessages((prev) => [
           ...prev,
@@ -202,7 +263,7 @@ export default function ChatUI() {
         <LotusMandala className="h-[80vh] max-h-[720px] w-auto text-krishna opacity-[0.06]" />
       </div>
 
-      <header className="relative z-10 border-b border-brass/30 bg-parchment/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
+      <header className="relative z-20 border-b border-brass/30 bg-parchment/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
         <div className="mx-auto flex max-w-[600px] items-center justify-center gap-3">
           <PeacockFeather
             className="h-12 w-auto shrink-0"
@@ -219,6 +280,32 @@ export default function ChatUI() {
               एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
             </p>
           </div>
+        </div>
+        {/* Phase 5.4 — diya seva trigger + panel. Wrapper is absolute
+            inside the relative header (top-right corner). The panel is
+            in turn absolute relative to this wrapper via right-0 top-full,
+            so it slides down directly under the icon. */}
+        <div className="absolute right-3 top-3 sm:right-5 sm:top-4">
+          <button
+            type="button"
+            aria-label="Seva · सेवा"
+            aria-expanded={isDiyaOpen}
+            onClick={() => setIsDiyaOpen((prev) => !prev)}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+          >
+            <DiyaIcon className="h-6 w-6" />
+          </button>
+          <DiyaSevaPanel
+            isOpen={isDiyaOpen}
+            onClose={() => setIsDiyaOpen(false)}
+            messageCount={counterState.message_count}
+            sevaBalance={counterState.seva_balance}
+            inputLanguage={resolveUserLang(messages, messages.length - 1)}
+            tiers={TIERS}
+            onPurchaseSuccess={(newBalance) =>
+              setCounterState((prev) => ({ ...prev, seva_balance: newBalance }))
+            }
+          />
         </div>
       </header>
 
