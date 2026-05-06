@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# vercel env import file — contains live secrets, never commit
+scripts/vercel-env.txt
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
