@@ -24,6 +24,8 @@ export interface PaymentRow {
   status: PaymentStatus;
   created_at?: string;
   verified_at?: string | null;
+  refunded_at?: string | null;
+  razorpay_refund_id?: string | null;
 }
 
 let cachedClient: SupabaseClient | null = null;
@@ -187,6 +189,33 @@ export async function findPaymentByOrderId(
 }
 
 /**
+ * Looks up a payment row by Razorpay payment id. Used by the webhook
+ * handler when a refund.created event arrives — the refund payload
+ * references the payment id, not the order id.
+ */
+export async function findPaymentByPaymentId(
+  paymentId: string,
+): Promise<PaymentRow | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client
+      .from("payments")
+      .select("*")
+      .eq("razorpay_payment_id", paymentId)
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] findPaymentByPaymentId error:", error);
+      return null;
+    }
+    return (data as PaymentRow | null) ?? null;
+  } catch (e) {
+    console.error("[supabase] findPaymentByPaymentId threw:", e);
+    return null;
+  }
+}
+
+/**
  * Atomic state transition: 'created' → 'verified'. Sets razorpay_payment_id
  * and verified_at on success. Returns the updated row, or null if no row
  * matched (race: another verify already ran, or order not in 'created').
@@ -241,6 +270,40 @@ export async function markPaymentFailed(orderId: string): Promise<boolean> {
     return true;
   } catch (e) {
     console.error("[supabase] markPaymentFailed threw:", e);
+    return false;
+  }
+}
+
+/**
+ * Marks a payment as refunded. Idempotent on refund_id: re-delivery of
+ * the same refund webhook updates harmlessly; a different refund_id for
+ * an already-refunded order is rejected by the WHERE clause (guards
+ * against partial-then-full refund races overwriting the first record).
+ * v1 only tracks the refund — seva_balance is NOT auto-debited; refunds
+ * are handled manually until Phase 6+.
+ */
+export async function markPaymentRefunded(
+  orderId: string,
+  refundId: string,
+): Promise<boolean> {
+  try {
+    const client = getClient();
+    if (!client) return false;
+    const { error } = await client
+      .from("payments")
+      .update({
+        refunded_at: new Date().toISOString(),
+        razorpay_refund_id: refundId,
+      })
+      .eq("razorpay_order_id", orderId)
+      .or(`razorpay_refund_id.is.null,razorpay_refund_id.eq.${refundId}`);
+    if (error) {
+      console.error("[supabase] markPaymentRefunded error:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[supabase] markPaymentRefunded threw:", e);
     return false;
   }
 }
@@ -319,5 +382,67 @@ export async function fetchMemory(
   } catch (e) {
     console.error("[supabase] fetchMemory threw:", e);
     return null;
+  }
+}
+
+/**
+ * Returns true if a webhook_events row already exists for `eventId`.
+ * The Razorpay webhook handler short-circuits on duplicate delivery —
+ * x-razorpay-event-id is unique per event and reused on retries.
+ */
+export async function hasProcessedEvent(eventId: string): Promise<boolean> {
+  try {
+    const client = getClient();
+    if (!client) return false;
+    const { data, error } = await client
+      .from("webhook_events")
+      .select("event_id")
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] hasProcessedEvent error:", error);
+      return false;
+    }
+    return data !== null;
+  } catch (e) {
+    console.error("[supabase] hasProcessedEvent threw:", e);
+    return false;
+  }
+}
+
+/**
+ * Records a webhook event via INSERT ... ON CONFLICT DO NOTHING (supabase-js
+ * upsert with ignoreDuplicates). Returns true if the row was inserted (new
+ * event), false if it was a duplicate or on error. Combined with
+ * hasProcessedEvent at the top of the handler this is belt-and-braces
+ * idempotency against concurrent retries.
+ */
+export async function recordEvent(
+  eventId: string,
+  eventType: string,
+  payload: unknown,
+): Promise<boolean> {
+  try {
+    const client = getClient();
+    if (!client) return false;
+    const { data, error } = await client
+      .from("webhook_events")
+      .upsert(
+        {
+          event_id: eventId,
+          event_type: eventType,
+          payload,
+        },
+        { onConflict: "event_id", ignoreDuplicates: true },
+      )
+      .select("event_id");
+    if (error) {
+      console.error("[supabase] recordEvent error:", error);
+      return false;
+    }
+    return Array.isArray(data) && data.length > 0;
+  } catch (e) {
+    console.error("[supabase] recordEvent threw:", e);
+    return false;
   }
 }

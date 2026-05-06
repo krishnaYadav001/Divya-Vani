@@ -56,6 +56,35 @@ Index: `ivfflat` on `embedding` using `vector_cosine_ops`.
 
 `message_id`, `user_id`, `rating` (up/down), `text`, `created_at`.
 
+## `payments` (Phase 5+)
+
+One row per Razorpay order. Created at `/api/seva/create-order`, transitioned to `verified` by `/api/seva/verify` (synchronous client path) or by the `payment.captured` webhook (async safety net) — whichever wins. `markPaymentVerifiedAtomic` enforces a `WHERE status = 'created'` clause so the two paths cannot double-credit.
+
+| column | type | default | purpose |
+|---|---|---|---|
+| `id` | uuid | `gen_random_uuid()` | PK |
+| `user_id` | text not null | — | Cookie UUID (matches `users_memory.user_id`) |
+| `razorpay_order_id` | text unique not null | — | Razorpay's order id; UNIQUE enables idempotent lookup |
+| `razorpay_payment_id` | text | null | Set by verify or `payment.captured` webhook |
+| `amount_paise` | int not null | — | Tier price in paise (e.g. 1100 for ₹11) |
+| `tier` | text not null | — | Seva tier id (`pratham_seva` / `anjali` / `bhakti` / `param`) |
+| `status` | text not null | — | `'created'` \| `'verified'` \| `'failed'` |
+| `created_at` | timestamptz | `now()` | Order creation timestamp |
+| `verified_at` | timestamptz | null | Set when status flips to `'verified'` |
+| `refunded_at` | timestamptz | null | Set by `refund.created` webhook (Phase 5.3+) |
+| `razorpay_refund_id` | text | null | Refund id from `refund.created` payload (Phase 5.3+) |
+
+## `webhook_events` (Phase 5.3+)
+
+Audit + idempotency table for Razorpay webhook deliveries. The handler short-circuits on duplicate `event_id` (Razorpay reuses `x-razorpay-event-id` on retries — exponential backoff up to ~24h). `payload` retains the full event for forensic replay.
+
+| column | type | default | purpose |
+|---|---|---|---|
+| `event_id` | text primary key | — | Razorpay's `x-razorpay-event-id`; PK enforces single-processing |
+| `event_type` | text not null | — | e.g. `'payment.captured'`, `'payment.failed'`, `'refund.created'` |
+| `received_at` | timestamptz not null | `now()` | Server receive timestamp |
+| `payload` | jsonb | — | Full event JSON |
+
 **RLS:** enabled on all tables, no policies (locks anonymous access). Service role bypasses; service role key is server-only.
 
-**Migrations:** manual `ALTER TABLE` via Supabase SQL Editor. No tooling. Schema changes ALWAYS paired with the SQL given to the founder for manual execution.
+**Migrations:** manual `ALTER TABLE` via Supabase SQL Editor. No tooling. Schema changes ALWAYS paired with the SQL given to the founder for manual execution. Phase 5.3 manual SQL adds `payments.refunded_at`, `payments.razorpay_refund_id`, and the `webhook_events` table — all idempotent (`IF NOT EXISTS`).

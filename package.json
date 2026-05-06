@@ -32,6 +32,7 @@
     "ingest:bhagavata:canto11": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json",
     "ingest:bhagavata:canto11:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json --dry-run",
     "screenshot:chat": "tsx scripts/screenshot-chat.ts",
+    "smoke:webhook": "tsx --env-file=.env.local scripts/smoke-test-webhook.ts",
     "test": "tsx --test src/lib/__tests__/*.test.ts"
   },
   "dependencies": {
