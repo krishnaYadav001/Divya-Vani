@@ -29,6 +29,7 @@ import {
   SAFETY_THRESHOLD,
   type SafetyFlag,
 } from "@/lib/safety";
+import { detectLang } from "@/lib/detectLang";
 
 const client = new Anthropic();
 const USER_COOKIE = "god_messenger_uid";
@@ -268,8 +269,20 @@ function buildSystemPrompt(
   verses: VerseHit[],
   priorCount: number,
   safetyFlag: SafetyFlag | null,
+  conversationLang: "hi" | "en",
 ): { persona: string; dynamic: string } {
   const lines: string[] = [];
+
+  // Phase 5.5 — sticky conversation language. Per-message detection in
+  // an otherwise Hindi conversation can flip to English on a single
+  // ambiguous reply (a name, "ok"). The route computes the effective
+  // language via detectLang(message, priorLang) where priorLang is
+  // derived from priorMemory.context_summary, and surfaces it here so
+  // persona §3 LANGUAGE rule resolves consistently across the thread.
+  const langLabel = conversationLang === "hi" ? "Hindi" : "English";
+  lines.push(
+    `- Conversation language: ${langLabel} — reply in ${langLabel} per §3 LANGUAGE, even if this single message is short or in another script. The conversation's running language is the source of truth for ambiguous turns.`,
+  );
 
   // Name handling (Phase 4): USER_NAME if known, else ask-for-name on first turn.
   const userName = memory?.user_name?.trim();
@@ -477,6 +490,17 @@ export async function POST(req: Request) {
   // up automatically when Phase 3 grows the persona past it. No
   // further code change needed at that point — Phase 3 ships the
   // longer persona prompt and this block starts hitting cache.
+  // Phase 5.5 — sticky language. Derive priorLang from the user's
+  // running context_summary (extractMemory writes it in whatever
+  // language the conversation was in), then resolve the effective
+  // language for this turn. Single-word ambiguous messages inherit
+  // priorLang; clear-signal messages use per-message detection.
+  // First turn (no priorMemory) → priorLang undefined → falls back
+  // to per-message detection, same as before.
+  const priorSummary = priorMemory?.context_summary?.trim();
+  const priorLang = priorSummary ? detectLang(priorSummary) : undefined;
+  const conversationLang = detectLang(message, priorLang);
+
   const { persona, dynamic } = buildSystemPrompt(
     effectiveMemory,
     isReturningUser,
@@ -484,6 +508,7 @@ export async function POST(req: Request) {
     verses,
     priorCount,
     safetyFlag,
+    conversationLang,
   );
 
   const systemBlocks: Array<{

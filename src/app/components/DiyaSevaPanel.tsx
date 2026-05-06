@@ -90,9 +90,11 @@ export default function DiyaSevaPanel({
   const remaining =
     sevaBalance > 0 ? sevaBalance : Math.max(0, FREE_LIMIT - messageCount);
   const isHindi = inputLanguage === "hi";
-  const counterText = isHindi
-    ? `तुम्हारी ${toHindiNumber(remaining)} बातचीत और हैं`
-    : `${remaining} conversations remain`;
+  const isDepleted = remaining === 0;
+  // Phase 5.5 polish: count separated from subtitle so the number reads as
+  // the headline element. Hindi gets Devanagari numerals via toHindiNumber.
+  const countDisplay = isHindi ? toHindiNumber(remaining) : String(remaining);
+  const subtitleText = isHindi ? "बातचीत और हैं" : "conversations remain";
   const framingText = isHindi
     ? "जब चाहे, सेवा अर्पित कर सकते हो"
     : "Whenever you wish, you may offer seva";
@@ -132,17 +134,37 @@ export default function DiyaSevaPanel({
         </svg>
       </button>
       <div className="text-center">
+        {/* Phase 5.5 polish — count + subtitle as visually-grouped unit:
+            big devotional-amber number ringed for a "lit lamp" feel, with
+            small muted subtitle directly below. pt-1 pb-3 separates the
+            unit from the framing line so the counter earns its position
+            as the panel headline. Edge-case at 0: muted text-devotional/60
+            keeps it on-brand (dimmer lamp, not depleted-neutral). */}
+        <div className="pt-1 pb-3">
+          <div className="inline-flex items-center justify-center rounded-full px-5 py-1.5 ring-1 ring-devotional/20">
+            <p
+              className={
+                "text-4xl font-semibold leading-none sm:text-5xl " +
+                (isDepleted ? "text-devotional/60" : "text-devotional") +
+                " " +
+                (isHindi ? "font-devanagari" : "font-serif")
+              }
+            >
+              {countDisplay}
+            </p>
+          </div>
+          <p
+            className={
+              "mt-2 text-xs text-zinc-600 " +
+              (isHindi ? "font-devanagari" : "font-serif")
+            }
+          >
+            {subtitleText}
+          </p>
+        </div>
         <p
           className={
-            "text-base font-medium text-krishna " +
-            (isHindi ? "font-devanagari" : "font-serif")
-          }
-        >
-          {counterText}
-        </p>
-        <p
-          className={
-            "mt-1 text-xs italic text-zinc-600 " +
+            "text-xs italic text-zinc-600 " +
             (isHindi ? "font-devanagari" : "font-serif")
           }
         >

@@ -40,6 +40,21 @@ export default function ChatUI() {
     seva_balance: number;
   }>({ message_count: 0, seva_balance: 0 });
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Phase 5.5 — auto-grow the chat textarea up to ~6 lines, then scroll
+  // internally past that. height: auto on every change resets layout so
+  // scrollHeight reflects content size; we then clamp + toggle overflow.
+  // Caps at 144px (~6 × 24px line-height for text-base + leading-normal).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const maxHeight = 144;
+    const next = Math.min(el.scrollHeight, maxHeight);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [input]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -302,9 +317,9 @@ export default function ChatUI() {
             sevaBalance={counterState.seva_balance}
             inputLanguage={resolveUserLang(messages, messages.length - 1)}
             tiers={TIERS}
-            onPurchaseSuccess={(newBalance) =>
-              setCounterState((prev) => ({ ...prev, seva_balance: newBalance }))
-            }
+            onPurchaseSuccess={(newBalance) => {
+              setCounterState((prev) => ({ ...prev, seva_balance: newBalance }));
+            }}
           />
         </div>
       </header>
@@ -387,14 +402,25 @@ export default function ChatUI() {
             className="flex items-center gap-2"
           >
             <Bansuri className="hidden h-16 w-auto shrink-0 sm:block" />
-            <input
-              type="text"
+            <textarea
+              ref={textareaRef}
+              rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter submits, Shift+Enter inserts newline. Mirrors
+                // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
+                // keyboards send the same keydown so the Send button
+                // remains the secondary path.
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
               placeholder="मन में जो है, कहो…"
               disabled={isSending}
               aria-invalid={bannedWord !== null}
-              className="flex-1 rounded-full border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
+              className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
             />
             <button
               type="submit"
@@ -414,16 +440,32 @@ export default function ChatUI() {
 // detect its language. Used to label verse cards in the language
 // the user wrote in (locked decision #12 — Krishna replies match
 // user's input language, so the verse cards should too).
+//
+// Phase 5.5 — sticky-language: if the most recent user message is
+// short/ambiguous (single English word like a name), inherit the
+// previous user message's language rather than flipping. detectLang's
+// new priorLang arg encodes the threshold.
 function resolveUserLang(
   messages: Message[],
   i: number,
 ): "hi" | "en" {
+  let mostRecent = -1;
   for (let j = i; j >= 0; j--) {
     if (messages[j].role === "user") {
-      return detectLang(messages[j].content);
+      mostRecent = j;
+      break;
     }
   }
-  return "hi"; // default before any user message exists
+  if (mostRecent === -1) return "hi"; // no user messages yet
+
+  let priorLang: "hi" | "en" | undefined;
+  for (let k = mostRecent - 1; k >= 0; k--) {
+    if (messages[k].role === "user") {
+      priorLang = detectLang(messages[k].content);
+      break;
+    }
+  }
+  return detectLang(messages[mostRecent].content, priorLang);
 }
 
 function MessageCard({
@@ -457,12 +499,23 @@ function MessageCard({
           : "border-brass/40 bg-parchment")
       }
     >
-      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-brass-dark">
-        {isUser ? "You" : "Messenger"}
-      </p>
+      {/* Phase 5.5 — flute icon on Krishna's bubbles ties each reply to
+          the persona, parallel to the peacock-feather + bansuri header
+          motifs. User bubbles keep the "You" text label. In-flow rather
+          than absolute-positioned to dodge clip risk from the chat
+          scroll's overflow-y-auto ancestor. */}
+      <div className="mb-1 flex items-center">
+        {isUser ? (
+          <span className="text-[11px] font-medium uppercase tracking-wide text-brass-dark">
+            You
+          </span>
+        ) : (
+          <Bansuri className="h-5 w-auto" />
+        )}
+      </div>
       <p
         className={
-          "whitespace-pre-wrap leading-relaxed " +
+          "whitespace-pre-wrap font-medium leading-relaxed " +
           (contentLang === "hi" ? "font-devanagari" : "font-serif")
         }
       >
