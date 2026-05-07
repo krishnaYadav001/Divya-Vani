@@ -228,7 +228,7 @@ export default function TermsPage() {
             <ul className="ml-5 list-disc space-y-2">
               <li>
                 <strong>Technical failure</strong> — if a seva was charged
-                but the corresponding messages were not credited within 24
+                but the corresponding messages were not credited within 72
                 hours, you can request a full refund. Refunds in this case
                 are processed within 7 working days of the request.
               </li>
