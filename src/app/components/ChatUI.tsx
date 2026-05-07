@@ -515,8 +515,10 @@ function MessageCard({
       </div>
       <p
         className={
-          "whitespace-pre-wrap font-medium leading-relaxed " +
-          (contentLang === "hi" ? "font-devanagari" : "font-serif")
+          "whitespace-pre-wrap leading-relaxed " +
+          (contentLang === "hi"
+            ? "font-medium font-devanagari"
+            : "font-semibold font-serif")
         }
       >
         {message.content}
