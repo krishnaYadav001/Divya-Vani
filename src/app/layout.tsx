@@ -31,9 +31,25 @@ const notoDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://divyavani.co.in"),
   title: "Divya Vani",
   description:
     "An AI roleplaying Krishna — speak about life, emotions, and dharma. Grounded in the Bhagavad Gita.",
+  openGraph: {
+    type: "website",
+    url: "https://divyavani.co.in",
+    siteName: "Divya Vani",
+    title: "Divya Vani",
+    description:
+      "An AI roleplaying Krishna — speak about life, emotions, and dharma. Grounded in the Bhagavad Gita.",
+  },
+  alternates: {
+    canonical: "https://divyavani.co.in",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 // maximumScale removed in Phase 2.5 — blocking user zoom is a
