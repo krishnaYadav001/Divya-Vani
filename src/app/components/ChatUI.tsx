@@ -39,6 +39,13 @@ export default function ChatUI() {
     message_count: number;
     seva_balance: number;
   }>({ message_count: 0, seva_balance: 0 });
+  // Phase 6.x — disclaimer starts expanded on mount, auto-collapses to a
+  // chip after 5s. Re-arms whenever the user re-expands by tapping the
+  // chip, so each expansion gets its own 5s read window before collapsing.
+  // Locked decision #1 ("permanent visible disclaimer bar near avatar")
+  // is satisfied by the chip — the disclaimer surface stays present, just
+  // compacted; tap surfaces the full text in the same position.
+  const [disclaimerExpanded, setDisclaimerExpanded] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,6 +66,16 @@ export default function ChatUI() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, isSending]);
+
+  // Phase 6.x — re-arm the auto-collapse timer every time disclaimerExpanded
+  // flips back to true. Mount fires once with true → 5s → false. Tapping the
+  // chip flips back to true → another 5s → false. Cleanup clears the pending
+  // timer if state changes (or component unmounts) before it fires.
+  useEffect(() => {
+    if (!disclaimerExpanded) return;
+    const t = setTimeout(() => setDisclaimerExpanded(false), 5000);
+    return () => clearTimeout(t);
+  }, [disclaimerExpanded]);
 
   useEffect(() => {
     fetch("/api/onboarding-state")
@@ -323,19 +340,57 @@ export default function ChatUI() {
         </div>
       </header>
 
-      {/* Step 2.5.7 disclaimer — bumped to text-sm (was text-[10px]/[11px]),
-          colored text-brass-dark for AA contrast on parchment, sits
-          directly under the header without scrolling. */}
-      <div className="relative z-10 border-b border-brass/30 bg-parchment/40 px-4 py-2.5 text-center backdrop-blur">
-        <p className="mx-auto max-w-[600px] text-sm leading-snug text-brass-dark">
-          <span className="font-devanagari">
-            यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
-          </span>
-          <span aria-hidden className="mx-1.5 text-brass">·</span>
-          <span className="font-serif italic">
-            This is an AI roleplaying Krishna based on scripture, not divine guidance.
-          </span>
-        </p>
+      {/* Phase 6.x disclaimer — collapse-to-chip. Two stacked grid blocks
+          cross-fade via grid-template-rows (1fr ↔ 0fr) so height animates
+          smoothly without a fixed magic-number max-height. Full bilingual
+          bar shows on mount for 5s, then morphs into a centered "ⓘ
+          अस्वीकरण · disclaimer" chip; tapping the chip re-expands. Locked
+          decision #1 stays satisfied — the chip is permanent and sits in
+          the same row directly under the avatar header. */}
+      <div className="relative z-10 border-b border-brass/30 bg-parchment/40 px-4 backdrop-blur">
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out ${
+            disclaimerExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <p className="mx-auto max-w-[600px] py-2.5 text-center text-sm leading-snug text-brass-dark">
+              <span className="font-devanagari">
+                यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
+              </span>
+              <span aria-hidden className="mx-1.5 text-brass">·</span>
+              <span className="font-serif italic">
+                This is an AI roleplaying Krishna based on scripture, not divine guidance.
+              </span>
+            </p>
+          </div>
+        </div>
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out ${
+            disclaimerExpanded ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+          }`}
+        >
+          <div className="flex justify-center overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDisclaimerExpanded(true)}
+              aria-label="Show disclaimer · अस्वीकरण देखें"
+              className="my-1.5 inline-flex items-center gap-1.5 rounded-full border border-brass/30 bg-parchment/60 px-2.5 py-1 text-xs text-brass-dark transition-colors hover:border-brass/50 hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-brass/40"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                className="h-3 w-3"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 12.5A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 0 11zM8 6.5a.75.75 0 0 0-.75.75v3.5a.75.75 0 0 0 1.5 0v-3.5A.75.75 0 0 0 8 6.5zm0-2a.875.875 0 1 0 0 1.75A.875.875 0 0 0 8 4.5z" />
+              </svg>
+              <span className="font-devanagari">अस्वीकरण</span>
+              <span aria-hidden className="text-brass">·</span>
+              <span className="font-serif italic">disclaimer</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
