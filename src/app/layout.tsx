@@ -6,6 +6,7 @@ import {
   Noto_Sans_Devanagari,
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -76,6 +77,27 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <footer className="shrink-0 py-2 text-center text-xs text-brass-dark">
+          <Link
+            href="/privacy"
+            className="hover:underline underline-offset-2"
+          >
+            Privacy
+          </Link>
+          <span aria-hidden className="mx-2 text-brass">
+            ·
+          </span>
+          <Link
+            href="/terms"
+            className="hover:underline underline-offset-2"
+          >
+            Terms
+          </Link>
+          <span aria-hidden className="mx-2 text-brass">
+            ·
+          </span>
+          <span>© 2026 Divya Vani</span>
+        </footer>
         <Analytics />
       </body>
     </html>
