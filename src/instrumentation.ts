@@ -14,6 +14,12 @@ export async function register() {
   }
 }
 
+// flush(2000) is required on Vercel: the serverless lambda freezes its
+// execution context as soon as the request handler returns, which strands
+// the queued event in the SDK's outbound buffer. Without flush, only the
+// first event after a cold start makes it to Sentry — every subsequent
+// event is dropped on freeze. 2s is conservative (typical drain is
+// 100-300ms) and well under Vercel's 10s default function timeout.
 export const onRequestError: Instrumentation.onRequestError = async (
   err,
   request,
@@ -21,4 +27,5 @@ export const onRequestError: Instrumentation.onRequestError = async (
 ) => {
   const Sentry = await import("@sentry/nextjs");
   Sentry.captureRequestError(err, request, context);
+  await Sentry.flush(2000);
 };
