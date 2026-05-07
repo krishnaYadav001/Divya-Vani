@@ -40,6 +40,10 @@ yarn-error.log*
 # vercel env import file — contains live secrets, never commit
 scripts/vercel-env.txt
 
+# phase 6.2 snapshot helper + outputs — local-only, never commit
+scripts/phase6-2-snapshot.ts
+scripts/phase6-2-*-snapshot.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
