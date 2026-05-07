@@ -44,3 +44,74 @@ test('Single Devanagari character → hi', () => {
 test('Sanskrit-style Devanagari → hi', () => {
   assert.equal(detectLang('कर्मण्येवाधिकारस्ते'), 'hi');
 });
+
+// Phase 5.5 sticky priorLang regression coverage.
+test('Sticky: 1-word "Krishna" with priorLang=hi → hi', () => {
+  assert.equal(detectLang('Krishna', 'hi'), 'hi');
+});
+
+test('Sticky: 1-word "ok" with priorLang=hi → hi', () => {
+  assert.equal(detectLang('ok', 'hi'), 'hi');
+});
+
+test('Sticky: 1-word "yes" with priorLang=hi → hi', () => {
+  assert.equal(detectLang('yes', 'hi'), 'hi');
+});
+
+test('Sticky: 1-word "Krishna" with priorLang=en → en', () => {
+  assert.equal(detectLang('Krishna', 'en'), 'en');
+});
+
+test('Sticky: 1-word "Krishna" with no priorLang → en', () => {
+  assert.equal(detectLang('Krishna'), 'en');
+});
+
+// Phase 6.X Hinglish layer — Latin-script Hindi → 'hi'.
+test('Hinglish: "main bahut khush hu" → hi', () => {
+  assert.equal(detectLang('main bahut khush hu'), 'hi');
+});
+
+test('Hinglish: "aaj kaam kiya" → hi', () => {
+  assert.equal(detectLang('aaj kaam kiya'), 'hi');
+});
+
+test('Hinglish: "kya karu samajh nahi aata" → hi', () => {
+  assert.equal(detectLang('kya karu samajh nahi aata'), 'hi');
+});
+
+test('Hinglish: founder case — long mixed-case sentence → hi', () => {
+  assert.equal(
+    detectLang(
+      'Aaj ban bahut khush hai, kyunki aaj maine bahut mehnat ka lagan se apna kaam kiya hai',
+    ),
+    'hi',
+  );
+});
+
+test('Hinglish: "Krishna ji aap kaise hain" → hi', () => {
+  assert.equal(detectLang('Krishna ji aap kaise hain'), 'hi');
+});
+
+test('Hinglish: "Bhai kya kar rahe ho" → hi', () => {
+  assert.equal(detectLang('Bhai kya kar rahe ho'), 'hi');
+});
+
+test('Hinglish: "main udaas hu kyunki kuch samajh nahi aa raha" → hi', () => {
+  assert.equal(
+    detectLang('main udaas hu kyunki kuch samajh nahi aa raha'),
+    'hi',
+  );
+});
+
+// Phase 6.X negative cases — pure English must remain 'en'.
+test('English: "I am very happy today" → en', () => {
+  assert.equal(detectLang('I am very happy today'), 'en');
+});
+
+test('English: "Bhagavad Gita is a beautiful book" → en (proper nouns do not trip vocab)', () => {
+  assert.equal(detectLang('Bhagavad Gita is a beautiful book'), 'en');
+});
+
+test('English: "What is the meaning of life" → en', () => {
+  assert.equal(detectLang('What is the meaning of life'), 'en');
+});
