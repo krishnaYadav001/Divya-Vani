@@ -165,31 +165,31 @@ export default function SevaTierPicker({
               onClick={() => handleTierTap(tier)}
               disabled={isDisabledByOther || isPending}
               aria-busy={isPending}
-              className="group relative flex flex-col items-center rounded-2xl border border-amber-100 bg-white px-3 py-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50/40 hover:shadow-[0_4px_12px_rgba(146,64,14,0.08)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-amber-100 disabled:hover:bg-white disabled:hover:shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+              className="group relative flex flex-col items-center rounded-xl border border-brass/30 bg-parchment/70 px-3 py-4 text-center shadow-[0_1px_2px_rgba(124,95,46,0.05)] transition-[background-color,border-color,box-shadow] duration-200 hover:border-devotional/50 hover:bg-devotional/[0.06] hover:shadow-[0_4px_14px_-2px_rgba(232,155,60,0.18)] focus:outline-none focus-visible:border-devotional/60 focus-visible:ring-2 focus-visible:ring-devotional/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="text-2xl leading-none" aria-hidden>
                 {tier.symbol}
               </span>
-              <span className="mt-2 text-sm font-medium text-zinc-900">
+              <span className="mt-2 font-serif text-sm font-medium text-krishna">
                 {tier.displayNameHi}
               </span>
-              <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+              <span className="text-[10px] uppercase tracking-[0.08em] text-brass-dark">
                 {tier.displayName}
               </span>
-              <span className="mt-3 text-xl font-semibold text-amber-800">
+              <span className="mt-3 font-serif text-xl font-semibold tabular-nums text-devotional-dark">
                 ₹{tier.priceInr}
               </span>
-              <span className="mt-0.5 text-[11px] text-zinc-600">
-                <span className="font-serif">
+              <span className="mt-0.5 text-[11px] text-brass-dark">
+                <span className="font-serif tabular-nums">
                   {tier.messages} messages
                 </span>
-                <span aria-hidden className="mx-1 text-brass">
+                <span aria-hidden className="mx-1 text-brass/70">
                   ·
                 </span>
                 <span className="font-devanagari">संदेश</span>
               </span>
               {isPending && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80 text-xs text-amber-700 backdrop-blur-sm">
+                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-parchment/85 text-xs text-devotional-dark backdrop-blur-sm">
                   …
                 </span>
               )}
@@ -199,7 +199,10 @@ export default function SevaTierPicker({
       </div>
 
       {errorMessage && (
-        <p role="alert" className="mt-3 text-center text-xs text-amber-700">
+        <p
+          role="alert"
+          className="mt-3 text-center text-xs font-medium text-sacred"
+        >
           {errorMessage}
         </p>
       )}
