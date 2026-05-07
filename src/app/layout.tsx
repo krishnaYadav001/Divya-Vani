@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
+import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,17 +33,15 @@ const notoDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://divyavani.co.in"),
-  title: "Divya Vani",
-  description:
-    "An AI roleplaying Krishna — speak about life, emotions, and dharma. Grounded in the Bhagavad Gita.",
+  metadataBase: new URL(BRAND.url),
+  title: BRAND.name.en,
+  description: BRAND.description.en,
   openGraph: {
     type: "website",
-    url: "https://divyavani.co.in",
-    siteName: "Divya Vani",
-    title: "Divya Vani",
-    description:
-      "An AI roleplaying Krishna — speak about life, emotions, and dharma. Grounded in the Bhagavad Gita.",
+    url: BRAND.url,
+    siteName: BRAND.name.en,
+    title: BRAND.name.en,
+    description: BRAND.description.en,
   },
   // Phase 6.6 Stage C-1 — canonical removed from root layout. Each page
   // declares its own alternates.canonical so /chat / /privacy / /terms
@@ -99,7 +98,7 @@ export default function RootLayout({
           <span aria-hidden className="mx-2 text-brass">
             ·
           </span>
-          <span>© 2026 Divya Vani</span>
+          <span>{BRAND.copyright.text}</span>
         </footer>
         <Analytics />
       </body>

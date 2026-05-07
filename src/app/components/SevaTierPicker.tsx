@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TierId, TierConfig } from "@/lib/seva";
+import { BRAND } from "@/lib/brand";
 
 interface RazorpayResponse {
   razorpay_order_id: string;
@@ -114,7 +115,7 @@ export default function SevaTierPicker({
       key: order.key_id,
       amount: order.amount,
       currency: order.currency,
-      name: "Divya Vani",
+      name: BRAND.name.en,
       description: `${tier.displayName} · ${tier.messages} messages`,
       order_id: order.order_id,
       theme: { color: "#92400e" },

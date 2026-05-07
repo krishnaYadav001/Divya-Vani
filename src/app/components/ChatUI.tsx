@@ -7,6 +7,14 @@ import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
 import { getTiersInOrder } from "@/lib/seva";
 import { clearSession, loadSession, saveSession } from "@/lib/chatStorage";
+import { BRAND } from "@/lib/brand";
+
+// Phase 6.9.1 — split-color brand spans derive their text from BRAND
+// rather than hardcoding "Divya" / "Vani". The brand name is a 2-word
+// string; if a future rename produces a different word count, the
+// rest.join(" ") fallback still renders the full name (just with all
+// non-first words sharing the second color).
+const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
@@ -367,8 +375,8 @@ export default function ChatUI() {
           />
           <div className="text-center">
             <h1 className="font-serif text-2xl font-medium leading-none tracking-tight sm:text-3xl">
-              <span className="text-peacock">Divya</span>
-              <span className="text-sacred"> Vani</span>
+              <span className="text-peacock">{BRAND_HEAD}</span>
+              <span className="text-sacred"> {BRAND_TAIL.join(" ")}</span>
             </h1>
             <p className="mt-1 font-devanagari text-xs leading-snug text-krishna/70 sm:text-sm">
               एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं

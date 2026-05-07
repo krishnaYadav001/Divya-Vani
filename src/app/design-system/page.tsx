@@ -19,6 +19,7 @@ import {
   SOURCE_BADGE_CLASSES,
   SOURCE_BADGE_LABEL,
 } from '@/lib/designTokens';
+import { BRAND } from '@/lib/brand';
 
 // Internal reference page — not linked from the public app, must NOT be
 // indexed by search engines. Robots noindex + a self-canonical so any
@@ -56,7 +57,7 @@ function Header() {
       <PeacockFeather className="h-16 w-auto text-peacock" />
       <div>
         <h1 className="font-serif text-3xl font-medium text-sacred sm:text-4xl">
-          Divya Vani · Design System
+          {BRAND.name.en} · Design System
         </h1>
         <p className="mt-1 font-devanagari text-sm text-krishna/80">
           फेज 2.5 — मंदिर-दर्शन सौंदर्य

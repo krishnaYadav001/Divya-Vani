@@ -10,6 +10,8 @@ import {
   creditSevaBalance,
   hasProcessedEvent,
   recordEvent,
+  fetchMemory,
+  saveMemory,
 } from "@/lib/supabase";
 
 interface RazorpayPaymentEntity {
@@ -20,6 +22,7 @@ interface RazorpayPaymentEntity {
 interface RazorpayRefundEntity {
   id?: string;
   payment_id?: string;
+  amount?: number;
 }
 
 interface RazorpayWebhookEvent {
@@ -204,12 +207,71 @@ export async function POST(req: Request) {
           break;
         }
         await markPaymentRefunded(row.razorpay_order_id, refundId);
-        // TODO Phase 6+: auto-debit seva_balance proportional to refund.amount.
-        // v1 logs only; refunds handled manually.
         console.log("[razorpay/webhook] refund recorded:", {
           orderId: row.razorpay_order_id,
           refundId,
         });
+
+        // Phase 6.9.1 — auto-debit seva_balance on FULL refund only.
+        // Razorpay's refund.amount is in paise; compare against the
+        // original payments.amount_paise to detect partial vs full.
+        // Partial refunds are logged but not debited (proportional
+        // partial-refund logic is Phase 7+).
+        //
+        // Read-modify-write debit. The race window is vanishingly
+        // small — refunds are operator-triggered events serialized via
+        // webhook; the same user is unlikely to be purchasing/messaging
+        // at the millisecond their refund webhook lands. Atomicity via
+        // a debit_seva_balance stored proc would be cleaner but
+        // requires a SQL migration; deferred to Phase 7+ if telemetry
+        // shows races. The whole block sits inside the case after the
+        // hasProcessedEvent idempotency check at line 73, so it runs
+        // at most once per refund event.
+        const refundAmountPaise =
+          typeof refund.amount === "number" ? refund.amount : null;
+        if (
+          refundAmountPaise !== null &&
+          refundAmountPaise === row.amount_paise
+        ) {
+          let tier;
+          try {
+            tier = getTier(row.tier);
+          } catch {
+            console.error(
+              "[razorpay/webhook] refund.created: stored payment has unknown tier, skipping auto-debit:",
+              row.tier,
+            );
+            break;
+          }
+          const memory = await fetchMemory(row.user_id);
+          const currentBalance = memory?.seva_balance ?? 0;
+          const newBalance = Math.max(0, currentBalance - tier.messages);
+          await saveMemory(row.user_id, { seva_balance: newBalance });
+          console.log(
+            "[razorpay/webhook] full refund — auto-debited seva:",
+            {
+              user_id: row.user_id,
+              refundId,
+              tier: tier.id,
+              debited: tier.messages,
+              previousBalance: currentBalance,
+              newBalance,
+            },
+          );
+        } else if (
+          refundAmountPaise !== null &&
+          refundAmountPaise < row.amount_paise
+        ) {
+          console.log(
+            "[razorpay/webhook] partial refund detected — manual review required, no auto-debit:",
+            {
+              payment_id: refundedPaymentId,
+              refundId,
+              refund_paise: refundAmountPaise,
+              original_paise: row.amount_paise,
+            },
+          );
+        }
         break;
       }
       default:
