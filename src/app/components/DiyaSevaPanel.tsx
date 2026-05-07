@@ -4,22 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import type { TierConfig } from "@/lib/seva";
 import SevaTierPicker from "./SevaTierPicker";
 
-const HI_DIGITS = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
 const FREE_LIMIT = 10;
-
-function toHindiNumber(n: number): string {
-  return String(n)
-    .split("")
-    .map((d) => HI_DIGITS[Number(d)] ?? d)
-    .join("");
-}
 
 interface DiyaSevaPanelProps {
   isOpen: boolean;
   onClose: () => void;
   messageCount: number;
   sevaBalance: number;
-  inputLanguage: "hi" | "en";
   tiers: TierConfig[];
   onPurchaseSuccess: (newBalance: number) => void;
 }
@@ -29,7 +20,6 @@ export default function DiyaSevaPanel({
   onClose,
   messageCount,
   sevaBalance,
-  inputLanguage,
   tiers,
   onPurchaseSuccess,
 }: DiyaSevaPanelProps) {
@@ -89,21 +79,11 @@ export default function DiyaSevaPanel({
 
   const remaining =
     sevaBalance > 0 ? sevaBalance : Math.max(0, FREE_LIMIT - messageCount);
-  const isHindi = inputLanguage === "hi";
   const isDepleted = remaining === 0;
-  // Phase 5.5 polish: count separated from subtitle so the number reads as
-  // the headline element. Hindi gets Devanagari numerals via toHindiNumber.
-  const countDisplay = isHindi ? toHindiNumber(remaining) : String(remaining);
-  const subtitleText = isHindi ? "बातचीत और हैं" : "conversations remain";
-  const framingText = isHindi
-    ? "जब चाहे, सेवा अर्पित कर सकते हो"
-    : "Whenever you wish, you may offer seva";
-  const confirmationText =
-    confirmedCount !== null
-      ? isHindi
-        ? `${toHindiNumber(confirmedCount)} बातचीत जुड़ गई`
-        : `${confirmedCount} messages added`
-      : null;
+  // Phase 6.x — always Latin digits (was Devanagari in Hindi mode). Latin
+  // digits at the same point size are visually lighter, the count reads
+  // faster, and bilingual users get a consistent number across modes.
+  const countDisplay = String(remaining);
 
   return (
     <div
@@ -120,7 +100,7 @@ export default function DiyaSevaPanel({
     >
       <button
         type="button"
-        aria-label={isHindi ? "बंद करें" : "Close"}
+        aria-label="Close · बंद करें"
         onClick={onClose}
         className="absolute right-1 top-1 flex min-h-11 min-w-11 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
       >
@@ -134,53 +114,56 @@ export default function DiyaSevaPanel({
         </svg>
       </button>
       <div className="text-center">
-        {/* Phase 5.5 polish — count + subtitle as visually-grouped unit:
+        {/* Phase 5.5 polish — count + subtitle as a visually-grouped unit:
             big devotional-amber number ringed for a "lit lamp" feel, with
-            small muted subtitle directly below. pt-1 pb-3 separates the
-            unit from the framing line so the counter earns its position
-            as the panel headline. Edge-case at 0: muted text-devotional/60
-            keeps it on-brand (dimmer lamp, not depleted-neutral). */}
+            a small bilingual subtitle directly below. Edge-case at 0:
+            muted text-devotional/60 keeps it on-brand (dimmer lamp).
+            Phase 6.x — Latin digits always; Cormorant matches the temple
+            aesthetic without the visual heft of Devanagari at this size. */}
         <div className="pt-1 pb-3">
           <div className="inline-flex items-center justify-center rounded-full px-5 py-1.5 ring-1 ring-devotional/20">
             <p
               className={
-                "text-4xl font-semibold leading-none sm:text-5xl " +
-                (isDepleted ? "text-devotional/60" : "text-devotional") +
-                " " +
-                (isHindi ? "font-devanagari" : "font-serif")
+                "font-serif text-4xl font-semibold leading-none sm:text-5xl " +
+                (isDepleted ? "text-devotional/60" : "text-devotional")
               }
             >
               {countDisplay}
             </p>
           </div>
-          <p
-            className={
-              "mt-2 text-xs text-zinc-600 " +
-              (isHindi ? "font-devanagari" : "font-serif")
-            }
-          >
-            {subtitleText}
+          <p className="mt-2 text-xs text-zinc-600">
+            <span className="font-devanagari">बातचीत और हैं</span>
+            <span aria-hidden className="mx-1.5 text-brass">
+              ·
+            </span>
+            <span className="font-serif">conversations remain</span>
           </p>
         </div>
-        <p
-          className={
-            "text-xs italic text-zinc-600 " +
-            (isHindi ? "font-devanagari" : "font-serif")
-          }
-        >
-          {framingText}
+        <p className="text-xs italic text-zinc-600">
+          <span className="font-devanagari">
+            जब चाहे, सेवा अर्पित कर सकते हो
+          </span>
+          <span aria-hidden className="mx-1.5 not-italic text-brass">
+            ·
+          </span>
+          <span className="font-serif">
+            Whenever you wish, you may offer seva
+          </span>
         </p>
       </div>
 
-      {confirmationText !== null ? (
+      {confirmedCount !== null ? (
         <div
           role="status"
-          className={
-            "mt-4 rounded-xl bg-amber-50 px-3 py-3 text-center text-sm text-amber-800 ring-1 ring-amber-200/70 " +
-            (isHindi ? "font-devanagari" : "font-serif")
-          }
+          className="mt-4 rounded-xl bg-amber-50 px-3 py-3 text-center text-sm text-amber-800 ring-1 ring-amber-200/70"
         >
-          {confirmationText}
+          <span className="font-devanagari">
+            {confirmedCount} बातचीत जुड़ गई
+          </span>
+          <span aria-hidden className="mx-1.5 text-brass">
+            ·
+          </span>
+          <span className="font-serif">{confirmedCount} messages added</span>
         </div>
       ) : (
         <div className="mt-4">

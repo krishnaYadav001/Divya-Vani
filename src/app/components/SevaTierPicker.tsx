@@ -180,7 +180,13 @@ export default function SevaTierPicker({
                 ₹{tier.priceInr}
               </span>
               <span className="mt-0.5 text-[11px] text-zinc-600">
-                {tier.messages} संदेश
+                <span className="font-serif">
+                  {tier.messages} messages
+                </span>
+                <span aria-hidden className="mx-1 text-brass">
+                  ·
+                </span>
+                <span className="font-devanagari">संदेश</span>
               </span>
               {isPending && (
                 <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80 text-xs text-amber-700 backdrop-blur-sm">

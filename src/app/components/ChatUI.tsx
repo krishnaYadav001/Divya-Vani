@@ -315,7 +315,6 @@ export default function ChatUI() {
             onClose={() => setIsDiyaOpen(false)}
             messageCount={counterState.message_count}
             sevaBalance={counterState.seva_balance}
-            inputLanguage={resolveUserLang(messages, messages.length - 1)}
             tiers={TIERS}
             onPurchaseSuccess={(newBalance) => {
               setCounterState((prev) => ({ ...prev, seva_balance: newBalance }));
