@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const LAST_UPDATED = "2026-05-07";
+const LAST_UPDATED = "2026-05-08";
 
 export default function PrivacyPage() {
   return (
@@ -87,6 +87,17 @@ export default function PrivacyPage() {
                 emotional thread (current concern, current emotion, running
                 summary across turns) so subsequent conversations have
                 continuity.
+              </li>
+              <li>
+                <strong>Local chat history.</strong> To keep your
+                conversation visible if you refresh the page or return
+                later, the messages shown in your chat are stored in
+                your browser&apos;s localStorage. This data stays on your
+                device only — it is <strong>not</strong> sent to our
+                servers, <strong>not</strong> synced across devices, and
+                is automatically removed when you clear your browser
+                data. We retain only the AI-generated summary described
+                above on the server, never verbatim message logs.
               </li>
               <li>
                 <strong>Payment metadata.</strong> When you make a seva

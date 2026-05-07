@@ -6,6 +6,7 @@ import type { Message, SafetyCard } from "@/lib/messages";
 import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
 import { getTiersInOrder } from "@/lib/seva";
+import { clearSession, loadSession, saveSession } from "@/lib/chatStorage";
 import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
@@ -46,6 +47,18 @@ export default function ChatUI() {
   // is satisfied by the chip — the disclaimer surface stays present, just
   // compacted; tap surfaces the full text in the same position.
   const [disclaimerExpanded, setDisclaimerExpanded] = useState(true);
+  // Phase 6.8 — userId comes from /api/me on mount and scopes the
+  // localStorage chat-history key. The god_messenger_uid cookie itself
+  // is HttpOnly so the value has to round-trip through the server to
+  // become readable here. priorUserIdRef catches the rare case of cookie
+  // rotation (different identity returned on a later /api/me call) so
+  // the previous identity's history doesn't bleed into the new session.
+  // sentryReportedRef ensures we capture localStorage write failures
+  // at most once per session — the persistence effect runs frequently
+  // and we don't want to spam Sentry on a quota-bound device.
+  const [userId, setUserId] = useState<string | null>(null);
+  const priorUserIdRef = useRef<string | null>(null);
+  const sentryReportedRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -87,6 +100,11 @@ export default function ChatUI() {
   // Phase 5.4 — seed the counter on mount so the diya panel shows the
   // right number before any chat turn lands. /api/me silent-fails to
   // {0, 0, 10} for fresh visitors, so this is safe even pre-cookie.
+  //
+  // Phase 6.8 — also captures user_id (added to /api/me response) and
+  // hydrates the message list from localStorage scoped to that id.
+  // Hydration only fires once on mount; persistence is handled by a
+  // separate effect below that listens to [messages, isSending, userId].
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
@@ -100,11 +118,55 @@ export default function ChatUI() {
             seva_balance: d.seva_balance,
           });
         }
+        const incomingId: string | null =
+          typeof d.user_id === "string" ? d.user_id : null;
+        if (incomingId) {
+          // Cookie rotation guard: if a different identity comes back,
+          // wipe the previous identity's persisted history before the
+          // new hydrate. Practically never fires — cookie is 1y with
+          // no rotation logic — but cheap insurance.
+          if (
+            priorUserIdRef.current &&
+            priorUserIdRef.current !== incomingId
+          ) {
+            clearSession(priorUserIdRef.current);
+          }
+          priorUserIdRef.current = incomingId;
+          setUserId(incomingId);
+          const restored = loadSession(incomingId);
+          if (restored && restored.length > 0) {
+            setMessages(restored);
+          }
+        }
       })
       .catch(() => {
         /* silent — counter stays at 0/0 until first chat response */
       });
   }, []);
+
+  // Phase 6.8 — persist messages to localStorage on turn boundaries.
+  // The isSending guard skips writes during streaming (a 100-delta turn
+  // would otherwise produce 100 stringify+write cycles); we only persist
+  // once a turn fully lands. saveSession itself silent-fails on quota /
+  // private-browsing / security-policy errors; we capture once per session
+  // via Sentry if it throws (sentryReportedRef avoids spamming).
+  useEffect(() => {
+    if (!userId) return;
+    if (isSending) return;
+    if (messages.length === 0) return;
+    try {
+      saveSession(userId, messages);
+    } catch (e) {
+      if (!sentryReportedRef.current) {
+        sentryReportedRef.current = true;
+        import("@sentry/nextjs")
+          .then((Sentry) => Sentry.captureException(e))
+          .catch(() => {
+            /* swallow — Sentry import failure shouldn't surface */
+          });
+      }
+    }
+  }, [messages, isSending, userId]);
 
   async function sendMessage(textOverride?: string) {
     const text = (textOverride ?? input).trim();
