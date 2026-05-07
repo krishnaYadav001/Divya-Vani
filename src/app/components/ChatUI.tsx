@@ -323,17 +323,20 @@ export default function ChatUI() {
         </div>
       </header>
 
-      {/* Step 2.5.7 disclaimer — Phase 6.x: tucked into an info-tag
-          affordance. On mount the disclaimer rolls out horizontally
-          from the icon (~500ms ease-out), stays readable for ~6s,
-          then slowly retracts back into the icon (~1000ms ease-in).
-          User can click the icon to re-open or close at any time.
-          Locked decision #1 (permanently visible disclaimer near
-          avatar) is satisfied via the always-present info icon —
-          the disclaimer text remains accessible at all times, just
-          collapsed into a glanceable affordance after the initial
-          reveal. */}
-      <Disclaimer />
+      {/* Step 2.5.7 disclaimer — bumped to text-sm (was text-[10px]/[11px]),
+          colored text-brass-dark for AA contrast on parchment, sits
+          directly under the header without scrolling. */}
+      <div className="relative z-10 border-b border-brass/30 bg-parchment/40 px-4 py-2.5 text-center backdrop-blur">
+        <p className="mx-auto max-w-[600px] text-sm leading-snug text-brass-dark">
+          <span className="font-devanagari">
+            यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
+          </span>
+          <span aria-hidden className="mx-1.5 text-brass">·</span>
+          <span className="font-serif italic">
+            This is an AI roleplaying Krishna based on scripture, not divine guidance.
+          </span>
+        </p>
+      </div>
 
       <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4">
@@ -650,77 +653,6 @@ function SafetyCardView({ card }: { card: SafetyCard }) {
             </span>
           </a>
         ))}
-      </div>
-    </div>
-  );
-}
-
-// Phase 6.x — disclaimer rendered as an info-tag affordance. On mount
-// the panel renders collapsed; a 60ms-deferred state flip plays the
-// roll-out (the CSS transition fires because the second render
-// changes the from/to values), then a 6500ms timer plays the slow
-// roll-in. User can click the icon to toggle at any time. The icon
-// is always visible — the disclaimer is never hidden, only collapsed.
-function Disclaimer() {
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    const expandT = setTimeout(() => setExpanded(true), 60);
-    const collapseT = setTimeout(() => setExpanded(false), 6500);
-    return () => {
-      clearTimeout(expandT);
-      clearTimeout(collapseT);
-    };
-  }, []);
-
-  return (
-    <div className="relative z-10 border-b border-brass/30 bg-parchment/40 backdrop-blur">
-      <div className="mx-auto flex max-w-[640px] items-center gap-3 px-4 py-2">
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-label={
-            expanded
-              ? "Hide disclaimer · सूचना छिपाएँ"
-              : "Show disclaimer · सूचना देखें"
-          }
-          aria-expanded={expanded}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-devotional/10 text-brass-dark ring-1 ring-brass/40 transition-colors duration-200 hover:bg-devotional/20 hover:text-krishna focus:outline-none focus-visible:ring-2 focus-visible:ring-devotional/50"
-        >
-          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
-            <circle cx="8" cy="4.8" r="0.95" fill="currentColor" />
-            <path
-              d="M 7.4 7.2 L 8 7.2 L 8 11.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </svg>
-        </button>
-        <div
-          aria-hidden={!expanded}
-          className={
-            "min-w-0 origin-left overflow-hidden transition-[max-width,max-height,opacity,transform] " +
-            (expanded
-              ? "max-h-20 max-w-[600px] translate-x-0 opacity-100 duration-500 ease-out"
-              : "max-h-0 max-w-0 -translate-x-1 opacity-0 duration-1000 ease-in")
-          }
-        >
-          <p className="whitespace-normal py-0.5 text-sm leading-snug text-brass-dark">
-            <span className="font-devanagari">
-              यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय
-              मार्गदर्शन नहीं।
-            </span>
-            <span aria-hidden className="mx-1.5 text-brass">
-              ·
-            </span>
-            <span className="font-serif italic">
-              This is an AI roleplaying Krishna based on scripture, not divine
-              guidance.
-            </span>
-          </p>
-        </div>
       </div>
     </div>
   );
