@@ -375,7 +375,7 @@ export default function ChatUI() {
               type="button"
               onClick={() => setDisclaimerExpanded(true)}
               aria-label="Show disclaimer · अस्वीकरण देखें"
-              className="my-1.5 inline-flex items-center gap-1.5 rounded-full border border-brass/30 bg-parchment/60 px-2.5 py-1 text-xs text-brass-dark transition-colors hover:border-brass/50 hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-brass/40"
+              className="my-1 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-brass/30 bg-parchment/60 px-3.5 text-xs text-brass-dark transition-colors hover:border-brass/50 hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-brass/40"
             >
               <svg
                 viewBox="0 0 16 16"

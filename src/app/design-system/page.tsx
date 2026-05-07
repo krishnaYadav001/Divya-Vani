@@ -9,6 +9,7 @@
 // with bg-parchment so the new palette shows in isolation, the
 // way it will read once Step 2.5.6 swaps the layout gradient.
 
+import type { Metadata } from 'next';
 import Bansuri from '@/app/components/motifs/Bansuri';
 import LotusMandala from '@/app/components/motifs/LotusMandala';
 import PeacockFeather from '@/app/components/motifs/PeacockFeather';
@@ -18,6 +19,14 @@ import {
   SOURCE_BADGE_CLASSES,
   SOURCE_BADGE_LABEL,
 } from '@/lib/designTokens';
+
+// Internal reference page — not linked from the public app, must NOT be
+// indexed by search engines. Robots noindex + a self-canonical so any
+// scraper that does land here resolves to the same URL it visited.
+export const metadata: Metadata = {
+  alternates: { canonical: '/design-system' },
+  robots: { index: false, follow: false },
+};
 
 export default function DesignSystemPage() {
   return (

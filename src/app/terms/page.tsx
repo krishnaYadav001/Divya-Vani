@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Terms of Service — Divya Vani",
   description:
     "Terms governing the use of Divya Vani, including acceptable use, seva contributions, and refund policy.",
+  alternates: { canonical: "/terms" },
   robots: { index: true, follow: true },
 };
 

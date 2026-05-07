@@ -79,7 +79,12 @@ export default function DiyaSevaPanel({
       ref={panelRef}
       role="dialog"
       aria-label="Seva · सेवा"
-      aria-hidden={!isOpen}
+      // Phase 6.6 Stage C-1 — `inert` (not aria-hidden) when closed.
+      // inert removes children from the accessibility tree AND the focus
+      // order (aria-hidden only does the former), fixing the WCAG
+      // violation where tab focus jumped to invisible tier-card buttons.
+      // React 19 supports inert as a boolean prop natively.
+      inert={!isOpen}
       className={
         "absolute right-0 top-full z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl bg-parchment px-5 py-5 shadow-[0_12px_32px_-8px_rgba(124,95,46,0.18),0_4px_12px_-2px_rgba(124,95,46,0.08)] ring-1 ring-brass/30 transition-all duration-200 sm:w-80 " +
         (isOpen
@@ -91,7 +96,11 @@ export default function DiyaSevaPanel({
         type="button"
         aria-label="Close · बंद करें"
         onClick={onClose}
-        className="absolute right-1 top-1 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full text-brass-dark transition-colors hover:bg-brass/10 hover:text-krishna focus:outline-none focus:ring-2 focus:ring-devotional/40"
+        // Phase 6.6 Stage C-1 — h-12 w-12 (48×48) for unambiguous Apple
+        // HIG / Google MWG tap target. min-h-11 measured 42px on iPhone
+        // 14 Pro at scale factor 3 due to sub-pixel rounding; explicit
+        // h-12 w-12 sidesteps the issue.
+        className="absolute right-1 top-1 z-10 flex h-12 w-12 items-center justify-center rounded-full text-brass-dark transition-colors hover:bg-brass/10 hover:text-krishna focus:outline-none focus:ring-2 focus:ring-devotional/40"
       >
         <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
           <path

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Privacy Policy — Divya Vani",
   description:
     "How Divya Vani collects, uses, and protects your data. Notice issued under India's Digital Personal Data Protection Act 2023.",
+  alternates: { canonical: "/privacy" },
   robots: { index: true, follow: true },
 };
 

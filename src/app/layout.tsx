@@ -44,9 +44,9 @@ export const metadata: Metadata = {
     description:
       "An AI roleplaying Krishna — speak about life, emotions, and dharma. Grounded in the Bhagavad Gita.",
   },
-  alternates: {
-    canonical: "https://divyavani.co.in",
-  },
+  // Phase 6.6 Stage C-1 — canonical removed from root layout. Each page
+  // declares its own alternates.canonical so /chat / /privacy / /terms
+  // don't all collapse to the root URL in search-engine indexes.
   robots: {
     index: true,
     follow: true,
@@ -77,19 +77,22 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
-        <footer className="shrink-0 py-2 text-center text-xs text-brass-dark">
+        {/* Phase 6.6 Stage C-1 — text-sm + py-3 on footer, each link sized
+            to inline-flex min-h-11 (44px) so the tap target meets Apple
+            HIG and Google MWG. Static © text stays inline. */}
+        <footer className="shrink-0 py-3 text-center text-sm text-brass-dark">
           <Link
             href="/privacy"
-            className="hover:underline underline-offset-2"
+            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
           >
             Privacy
           </Link>
-          <span aria-hidden className="mx-2 text-brass">
+          <span aria-hidden className="text-brass">
             ·
           </span>
           <Link
             href="/terms"
-            className="hover:underline underline-offset-2"
+            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
           >
             Terms
           </Link>
