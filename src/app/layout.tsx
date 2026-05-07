@@ -5,6 +5,8 @@ import {
   Geist_Mono,
   Noto_Sans_Devanagari,
 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -59,6 +61,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
