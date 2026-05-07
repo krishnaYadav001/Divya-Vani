@@ -121,7 +121,7 @@ export default function DiyaSevaPanel({
           <div className="relative inline-flex items-baseline justify-center rounded-full bg-parchment/60 px-6 py-1.5 ring-1 ring-devotional/30 backdrop-blur-[1px]">
             <p
               className={
-                "font-serif text-5xl font-semibold leading-none tracking-tight tabular-nums sm:text-6xl " +
+                "font-sans text-5xl font-semibold leading-none tracking-tight tabular-nums sm:text-6xl " +
                 (isDepleted ? "text-devotional/60" : "text-devotional-dark")
               }
             >

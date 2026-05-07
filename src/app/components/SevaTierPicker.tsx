@@ -176,11 +176,11 @@ export default function SevaTierPicker({
               <span className="text-[10px] uppercase tracking-[0.08em] text-brass-dark">
                 {tier.displayName}
               </span>
-              <span className="mt-3 font-serif text-xl font-semibold tabular-nums text-devotional-dark">
+              <span className="mt-3 font-sans text-xl font-semibold tabular-nums text-devotional-dark">
                 ₹{tier.priceInr}
               </span>
               <span className="mt-0.5 text-[11px] text-brass-dark">
-                <span className="font-serif tabular-nums">
+                <span className="font-sans tabular-nums">
                   {tier.messages} messages
                 </span>
                 <span aria-hidden className="mx-1 text-brass/70">
