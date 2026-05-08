@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
+import { waitUntil } from "@vercel/functions";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
 import {
   fetchCandidates,
@@ -716,9 +717,16 @@ export async function POST(req: Request) {
           controller.close();
 
           // Fire-and-forget — does NOT block the response stream.
-          persistTurnState(replyText).catch((e) => {
-            console.error("[chat] deferred persistTurnState failed:", e);
-          });
+          // Wrapped in waitUntil so Vercel keeps the function alive
+          // until the writes (saveMemory + logSafetyEvent + logChatTurn
+          // + decrementSevaBalance) resolve, even after the streaming
+          // response has closed. Without this, message_count lags
+          // behind actual turn count and breaks paywall logic.
+          waitUntil(
+            persistTurnState(replyText).catch((e) => {
+              console.error("[chat] deferred persistTurnState failed:", e);
+            }),
+          );
         } catch (e) {
           // Two distinct failure modes:
           //   1. Client aborted (closed tab) — req.signal.aborted = true.
