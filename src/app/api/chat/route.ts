@@ -22,6 +22,7 @@ import {
   touchActivity,
   decrementSevaBalance,
   logSafetyEvent,
+  logChatTurn,
   type UserMemory,
 } from "@/lib/supabase";
 import { getTiersInOrder } from "@/lib/seva";
@@ -586,6 +587,16 @@ export async function POST(req: Request) {
       confidence: safety.confidence,
       replyText,
       versesReferenced: verseRefs,
+    });
+
+    await logChatTurn({
+      userId,
+      userMessage: message,
+      replyText,
+      language: conversationLang,
+      versesReferenced: verseRefs,
+      safetyFlag: safety.flag,
+      messageCountAfter: priorCount + 1,
     });
   }
 

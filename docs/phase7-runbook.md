@@ -24,7 +24,27 @@ CREATE INDEX IF NOT EXISTS idx_safety_events_created_at ON safety_events (create
 CREATE INDEX IF NOT EXISTS idx_safety_events_user_id ON safety_events (user_id);
 ```
 
-Verify the table exists in the Supabase Table Editor before sending the first onboarding message.
+```sql
+CREATE TABLE IF NOT EXISTS chat_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  user_message TEXT NOT NULL,
+  reply_text TEXT NOT NULL,
+  language TEXT,
+  verses_referenced TEXT[],
+  safety_flag TEXT,
+  message_count_after INT,
+  turn_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE chat_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_chat_logs_user_id ON chat_logs (user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_logs_turn_at ON chat_logs (turn_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_logs_user_turn ON chat_logs (user_id, turn_at);
+```
+
+Verify both tables (safety_events and chat_logs) exist in the Supabase Table Editor before sending the first onboarding message.
 
 ## Wave structure
 
@@ -72,12 +92,12 @@ Pick Wave 1 for *signal density*, not friendship. Bluntest, most-likely-to-text-
 Run these queries against Supabase via the SQL editor. Read-only.
 
 ```sql
--- New users in last 24h
+-- Recently-arrived users (proxy: low message count + active in last 24h; users_memory has no created_at)
 select user_id, user_name, message_count, seva_balance,
        main_problem, emotion, last_active_at
 from users_memory
-where created_at > now() - interval '1 day'
-order by created_at desc;
+where message_count <= 3 and last_active_at > now() - interval '1 day'
+order by last_active_at desc;
 
 -- Active conversations
 select user_id, user_name, message_count, seva_balance,
@@ -97,11 +117,19 @@ select user_id, message_text, flag, confidence, reply_text, verses_referenced, c
 from safety_events
 where created_at > now() - interval '1 day'
 order by created_at desc;
+
+-- Today's conversations — full chat history from last 24h, grouped by user in turn order.
+-- This is the primary source for the beta-review-rubric. Read user-by-user, top to bottom.
+select user_id, message_count_after as turn,
+       user_message, reply_text, language, safety_flag, turn_at
+from chat_logs
+where turn_at > now() - interval '1 day'
+order by user_id, turn_at asc;
 ```
 
 ### Note on conversation visibility
 
-`users_memory` captures rolling summaries (`context_summary`, `main_problem`, `emotion`) but NOT raw turn-by-turn message text. `safety_events` captures only flag != 'safe' rows. For full conversation review (banned-phrase leaks, modern-noun checks, satsang-arc validation, register-mirroring sanity), you'll need to ask testers to share their localStorage chat history directly — paste of the chat or screenshots. Build this into your weekly check-in cadence with each tester.
+`users_memory` captures rolling summaries (`context_summary`, `main_problem`, `emotion`). `safety_events` captures only flag != 'safe' rows. `chat_logs` captures every turn (user message + Krishna reply + language + verses + safety flag) and is the primary source for full conversation review. The `chat_logs` table is beta-only; before Phase 8 public launch, decide whether to (a) disable writes and rely on tester-shared snippets again, or (b) add a /privacy disclosure and keep logging on.
 
 ### What to look for, in priority order
 

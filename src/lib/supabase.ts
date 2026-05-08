@@ -480,3 +480,38 @@ export async function logSafetyEvent(params: {
     console.error("[supabase] logSafetyEvent threw:", e);
   }
 }
+
+/**
+ * Phase 7.0 — full conversation log for beta visibility. Written from
+ * persistTurnState for every turn that produces a Krishna reply (paywall
+ * replies are NOT logged — they short-circuit before persistTurnState).
+ * Silent-fail per ops invariant.
+ */
+export async function logChatTurn(params: {
+  userId: string;
+  userMessage: string;
+  replyText: string;
+  language?: string;
+  versesReferenced?: string[];
+  safetyFlag?: string;
+  messageCountAfter?: number;
+}): Promise<void> {
+  try {
+    const client = getClient();
+    if (!client) return;
+    const { error } = await client.from("chat_logs").insert({
+      user_id: params.userId,
+      user_message: params.userMessage,
+      reply_text: params.replyText,
+      language: params.language ?? null,
+      verses_referenced: params.versesReferenced ?? [],
+      safety_flag: params.safetyFlag ?? null,
+      message_count_after: params.messageCountAfter ?? null,
+    });
+    if (error) {
+      console.error("[supabase] logChatTurn error:", error);
+    }
+  } catch (e) {
+    console.error("[supabase] logChatTurn threw:", e);
+  }
+}

@@ -85,6 +85,41 @@ Audit + idempotency table for Razorpay webhook deliveries. The handler short-cir
 | `received_at` | timestamptz not null | `now()` | Server receive timestamp |
 | `payload` | jsonb | — | Full event JSON |
 
+## `safety_events` (Phase 7+)
+
+Beta-only audit table for safety-classifier-flagged turns. Written from the chat route via `logSafetyEvent` only when `flag !== 'safe'`. Captures user input, classifier result, Krishna reply, and verses retrieved for that turn so the founder can review distress patterns during 7.2 daily review.
+
+| column | type | default | purpose |
+|---|---|---|---|
+| `id` | uuid | `gen_random_uuid()` | PK |
+| `user_id` | text not null | — | Cookie UUID |
+| `message_text` | text not null | — | Raw user input that triggered the classifier |
+| `flag` | text not null | — | `'safe'` / `'self_harm'` / `'harm_others'` (raw classifier output, not UI-clamped) |
+| `confidence` | numeric | null | Classifier confidence |
+| `reply_text` | text | null | Full Krishna reply text |
+| `verses_referenced` | text[] | null | Verses retrieved for that turn |
+| `created_at` | timestamptz not null | `now()` | Turn timestamp |
+
+Indexes: `idx_safety_events_created_at` (DESC), `idx_safety_events_user_id`. RLS enabled, no policies (matches Phase 5+ pattern).
+
+## `chat_logs` (Phase 7+)
+
+Beta-only full conversation log. Written from the chat route via `logChatTurn` for every turn that produces a Krishna reply (paywall replies are NOT logged — they short-circuit before persistTurnState). Used during 7.2 daily review to read every conversation against the beta-review-rubric. Phase 8 public launch will either disable writes or add a /privacy disclosure.
+
+| column | type | default | purpose |
+|---|---|---|---|
+| `id` | uuid | `gen_random_uuid()` | PK |
+| `user_id` | text not null | — | Cookie UUID |
+| `user_message` | text not null | — | Raw user input |
+| `reply_text` | text not null | — | Full Krishna reply |
+| `language` | text | null | Resolved input language: `'hi'` / `'en'` / `'hinglish'` / `'sanskrit'` |
+| `verses_referenced` | text[] | null | Verses retrieved for that turn |
+| `safety_flag` | text | null | Raw classifier output (mirror of `safety_events.flag` for cross-reference) |
+| `message_count_after` | int | null | The user's `message_count` after this turn — for turn-ordering within a user |
+| `turn_at` | timestamptz not null | `now()` | Turn timestamp |
+
+Indexes: `idx_chat_logs_user_id`, `idx_chat_logs_turn_at` (DESC), `idx_chat_logs_user_turn` (user_id, turn_at). RLS enabled, no policies.
+
 **RLS:** enabled on all tables, no policies (locks anonymous access). Service role bypasses; service role key is server-only.
 
 **Migrations:** manual `ALTER TABLE` via Supabase SQL Editor. No tooling. Schema changes ALWAYS paired with the SQL given to the founder for manual execution. Phase 5.3 manual SQL adds `payments.refunded_at`, `payments.razorpay_refund_id`, and the `webhook_events` table — all idempotent (`IF NOT EXISTS`).
