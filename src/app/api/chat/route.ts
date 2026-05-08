@@ -21,6 +21,7 @@ import {
   saveMemory,
   touchActivity,
   decrementSevaBalance,
+  logSafetyEvent,
   type UserMemory,
 } from "@/lib/supabase";
 import { getTiersInOrder } from "@/lib/seva";
@@ -546,7 +547,7 @@ export async function POST(req: Request) {
   // REDUCES double-send rate by giving users an earlier "Krishna is
   // responding" signal. Revisit in Phase 7+ if beta data shows it as a
   // real problem — do not gate Phase 3.9 on it.
-  async function persistTurnState(): Promise<void> {
+  async function persistTurnState(replyText: string): Promise<void> {
     const verseRefs = verses.map((v) => v.reference);
     const newUserName =
       !priorMemory?.user_name && extracted?.user_name
@@ -577,6 +578,15 @@ export async function POST(req: Request) {
     if (usingSevaCredit) {
       await decrementSevaBalance(userId);
     }
+
+    await logSafetyEvent({
+      userId,
+      messageText: message,
+      flag: safety.flag,
+      confidence: safety.confidence,
+      replyText,
+      versesReferenced: verseRefs,
+    });
   }
 
   const responseVerses = verses.map((v) => ({
@@ -673,6 +683,9 @@ export async function POST(req: Request) {
               `(persona=${persona.length}ch dynamic=${dynamic.length}ch)`,
           );
 
+          const replyText =
+            finalMsg.content.find((b) => b.type === "text")?.text ?? "";
+
           const metaLine =
             JSON.stringify({
               type: "meta",
@@ -692,7 +705,7 @@ export async function POST(req: Request) {
           controller.close();
 
           // Fire-and-forget — does NOT block the response stream.
-          persistTurnState().catch((e) => {
+          persistTurnState(replyText).catch((e) => {
             console.error("[chat] deferred persistTurnState failed:", e);
           });
         } catch (e) {
@@ -769,10 +782,10 @@ export async function POST(req: Request) {
       `(persona=${persona.length}ch dynamic=${dynamic.length}ch)`,
   );
 
-  await persistTurnState();
-
   const reply =
     response.content.find((b) => b.type === "text")?.text.trim() ?? "";
+
+  await persistTurnState(reply);
 
   return withCookie(
     NextResponse.json({

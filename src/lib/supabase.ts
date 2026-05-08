@@ -446,3 +446,37 @@ export async function recordEvent(
     return false;
   }
 }
+
+/**
+ * Phase 7.0 — audit row for safety-classifier-flagged turns. No-ops on
+ * `flag === 'safe'` so route.ts can call unconditionally. Silent-fail on
+ * insert error per ops invariant; chat must keep working even if the
+ * table is missing or RLS misconfigured.
+ */
+export async function logSafetyEvent(params: {
+  userId: string;
+  messageText: string;
+  flag: string;
+  confidence?: number;
+  replyText?: string;
+  versesReferenced?: string[];
+}): Promise<void> {
+  if (params.flag === "safe") return;
+  try {
+    const client = getClient();
+    if (!client) return;
+    const { error } = await client.from("safety_events").insert({
+      user_id: params.userId,
+      message_text: params.messageText,
+      flag: params.flag,
+      confidence: params.confidence ?? null,
+      reply_text: params.replyText ?? null,
+      verses_referenced: params.versesReferenced ?? [],
+    });
+    if (error) {
+      console.error("[supabase] logSafetyEvent error:", error);
+    }
+  } catch (e) {
+    console.error("[supabase] logSafetyEvent threw:", e);
+  }
+}
