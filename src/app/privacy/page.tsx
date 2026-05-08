@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LotusMandala from "../components/motifs/LotusMandala";
+import LotusBackground from "../components/LotusBackground";
 import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         aria-hidden
         className="pointer-events-none absolute inset-0 flex items-start justify-center pt-32 opacity-[0.04]"
       >
-        <LotusMandala className="h-[640px] w-[640px] text-krishna" />
+        <LotusBackground className="h-[640px] w-[640px] text-krishna" />
       </div>
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">

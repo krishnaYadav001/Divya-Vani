@@ -2,7 +2,15 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Phase 6.9.2 — opt into AVIF (modern Chrome / Firefox / Safari 16.1+).
+  // ~30-50% smaller than WebP at the same visual quality. Older browsers
+  // automatically fall back to WebP, then PNG. The order here is the
+  // negotiation priority: AVIF first, WebP as fallback. Affects every
+  // image served via next/image, including the peacock-feather PNG that
+  // dominates the chat page header.
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
 };
 
 export default withSentryConfig(nextConfig, {

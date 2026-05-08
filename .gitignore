@@ -49,7 +49,11 @@ scripts/phase6-2-*-snapshot.json
 next-env.d.ts
 
 # phase 3 prompt iteration outputs (founder copies preserved ones into docs/)
-/test-results
+/test-results/*
+# phase 6.9.2 — un-ignore the perf summary markdown so deltas are committed
+# alongside the code, but keep the bulky raw Lighthouse JSON local-only
+!/test-results/phase6.9.2-baseline.md
+!/test-results/phase6.9.2-results.md
 
 # claude code session state — ignore local cache + personal settings,
 # but allow team-shared memory rules + project CLAUDE.md
