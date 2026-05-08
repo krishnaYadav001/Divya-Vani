@@ -227,6 +227,83 @@ This is the canonical signal going forward. Watch for `cache_read` jumps when Ph
 
 ---
 
+## Phase 6 — Production deploy + monitoring + legal + domain + mobile QA + perf (2026-05-06 → 2026-05-08 COMPLETE)
+
+**Outcome.** Production-ready surface for Phase 7 closed beta. Live at https://divyavani.co.in with monitoring, analytics, privacy + terms, custom domain, mobile-validated, chat history persistence, sitemap+robots, brand centralization, refund auto-debit, and a deterministic 70-103 KiB per-page bundle reduction from Sentry SDK pruning. 8 of 9 sub-phases shipped; 6.10 (KYC live-keys flip) parked pending Razorpay Full Access upgrade.
+
+**6.1 Vercel deploy.** Test-mode keys, region pinned to bom1 (Mumbai) via vercel.json so latency to Indian users stays in single-digit-ms territory. Production URL divya-vani-phi.vercel.app live before custom domain landed.
+
+**6.2 Real Razorpay webhook validation (Phase 5.5 carry-forward closed).** Smoke test from Phase 5 only exercised a programmatic harness signing payloads with the local secret. Phase 6.2 validated with real Razorpay-delivered traffic: 5/5 synthetic + 2 real failed events + 1 real captured event end-to-end, including HMAC-SHA256 signature verify, event_id idempotency short-circuit on duplicate, and race-loser no-op when synchronous /api/seva/verify and async webhook arrive in either order. Founder added missing event subscriptions in the Razorpay dashboard mid-phase (payment.captured + refund.processed weren't subscribed by default).
+
+**6.X Hinglish detection.** Romanized Hindi ("main bahut khush hu", "aaj kaam kiya") was detecting as English under the previous Devanagari-dominant heuristic, so persona §3 LANGUAGE rule replied in English to a Hindi-thinking user. detectLang.ts gained a 317-token Romanized-Hindi vocabulary + 40% match threshold + sticky priorLang preserved (clear-signal messages still bypass; <3-word ambiguous turns inherit). 25 detectLang tests + 37 reference tests pass.
+
+**6.3 Sentry + Analytics.** @sentry/nextjs 10.51 wired with the 4-file instrumentation pattern Next 15+ requires: `instrumentation.ts` (router) + `instrumentation-client.ts` (browser) + `sentry.server.config.ts` (Node) + `sentry.edge.config.ts` (Edge runtime — currently zero edge routes, file present for future). Errors-only configuration: tracesSampleRate=0, replaysSessionSampleRate=0, replaysOnErrorSampleRate=0, sendDefaultPii=false. Source maps uploaded to Sentry then deleted from public via `sourcemaps.deleteSourcemapsAfterUpload: true`. Release tagged via VERCEL_GIT_COMMIT_SHA. /monitoring tunnel route added so adblockers (uBlock, Brave Shields) that block *.sentry.io don't drop error envelopes. **flush(2000) fix on serverless `onRequestError`:** without it, Vercel lambda freezes before Sentry's batched envelope ships, dropping events silently — found via missing entries in Sentry dashboard during a deliberate test-error pass. Vercel Web Analytics enabled (free tier — anonymized aggregate page views). Speed Insights skipped (~$10/mo, deferred to Phase 8 once real-user volume justifies).
+
+**6.5 Custom domain.** divyavani.co.in purchased through Hostinger (12-month + 12-month free, ₹1,432 incl. tax). Hostinger DNS retained (over Vercel nameserver swap) so other Hostinger services on the same account stay working. A record `@` → `216.150.1.1` (Vercel anycast). Apex + www both resolve. Per-page canonicals introduced in 6.5 had a bug where root canonical in layout collapsed every page (`/`, `/chat`, `/privacy`, `/terms`) to one URL in search-engine indexes. Fix landed in Phase 6.6 Stage C-1: removed canonical from root layout, each page declares its own `alternates.canonical` in its own metadata.
+
+**6.4 Privacy + Terms.** /privacy (12 sections — about, data we collect, third-party processors, cross-border transfer per DPDP Section 16, user rights per DPDP, children's data 18+, retention windows, security, changes policy, contact + grievance officer at krishnayadav123345@gmail.com) + /terms (16 sections — acceptance, what Divya Vani is/is not, AI safety acknowledgment with iCALL + Vandrevala + 112 helplines, account, prohibited use, pricing, refund policy with two named exceptions, IP, warranties, liability cap to seva contributions in last 30 days, indemnification, modifications, governing law Kanpur UP India, severability, contact). Both pages have a Devanagari summary card at top. Refund window widened from 24h to 72h to absorb Razorpay reconciliation lag without forcing manual review. Footer added to root layout linking both.
+
+**6.6 Real-device mobile QA.** Stage A automated (Lighthouse + Playwright tap targets) → Stage B manual on real device (UPI handoff to PhonePe + GPay + Paytm, virtual keyboard, Hindi IME, screen-rotation, page-refresh) → Stage C-1 fixes (per-page canonicals, `inert` attribute on seva panel when collapsed so screen readers skip it, tap targets bumped to 44px+ where any failed). PhonePe deeplink failure surfaced — Razorpay's PhonePe-intent URL opens PhonePe but lands on a generic balance screen rather than the seva amount screen; GPay and Paytm work cleanly. Carried forward to Phase 8 prep as a Razorpay support ticket. Razorpay account upgrade Limited → Full pending support response.
+
+**6.8 Chat history persistence.** Refresh-survives chat list via localStorage scoped to the cookie identity. /api/me extended with `user_id` field so the client can scope the storage key (`divya-vani-chat:<uuid>`). New `src/lib/chatStorage.ts` utility module — `loadSession` / `saveSession` / `clearSession` with version-check + 30-day age prune + 100-msg ring buffer + quota-retry-to-50 + SSR-safe + all writes silent-fail (private browsing, security policy, quota errors must never break the chat UI). Persistence effect in ChatUI gated by `isSending` so streaming deltas don't trigger 100 stringify+writes per turn. Privacy disclosure paragraph added to /privacy explicitly framing this as device-only storage, not server-side, and not synced across devices.
+
+**6.9.1 Sitemap + robots + brand + refund auto-debit.** Four hygiene items bundled. `src/app/sitemap.ts` (Next 16 metadata-route default-export, 4 URLs: /, /chat, /privacy, /terms — excludes /design-system noindex + /api/*) + `src/app/robots.ts` (disallow /design-system + /api/ + /monitoring/, references /sitemap.xml) + `src/lib/brand.ts` (frozen `BRAND` constant: name.en/hi, url, description.en/hi, tagline.hi, disclaimer.en/hi, contact.founder/email/location, copyright.year/text — `as const` for narrow types) refactored across 7 files (layout / page / privacy / terms / design-system / SevaTierPicker / ChatUI). The ChatUI brand-header keeps its split-color treatment via `BRAND.name.en.split(" ")` at module scope. Refund auto-debit lands on full refunds (refund.amount === payments.amount_paise) via read-modify-write through fetchMemory + saveMemory({ seva_balance: max(0, current - tier.messages) }); partial refunds logged-only with manual-review marker. Atomic alternative would require a `debit_seva_balance` stored proc — deferred to Phase 7+ if telemetry shows races.
+
+**6.9.2 Performance.** Three changes targeting the Phase 6.6 audit's "forced-reflow + heavy initial JS" findings:
+- **Sentry SDK pruning** — `defaultIntegrations: false` + minimal explicit integration list (client: breadcrumbs / dedupe / functionToString / globalHandlers / httpContext / linkedErrors; server: dedupe / functionToString / inboundFilters / linkedErrors / onUncaughtException / onUnhandledRejection / contextLines / requestData). Replay + browserTracing + Profiling intentionally absent (sample rates already 0). **Deterministic 70-103 KiB drop per page** confirmed via Lighthouse `total-byte-weight`.
+- **AVIF on next/image** — `images.formats: ["image/avif", "image/webp"]` in next.config.ts. Confirmed live: `Content-Type: image/avif` on the peacock-feather PNG when requested with `Accept: image/avif`. Modern browsers serve AVIF, older fall back to WebP, ancient fall back to PNG.
+- **Lotus mandala lazy-load on /privacy + /terms** — new `src/app/components/LotusBackground.tsx` client wrapper using `dynamic({ ssr: false })`. Required because `dynamic({ssr: false})` cannot be called from a Server Component in App Router. Privacy and terms pages stay Server Components so article text renders in initial HTML and becomes the LCP; the lotus hydrates ~100-200ms after first paint as decoration.
+
+**LCP/TBT measurements showed run-to-run Lighthouse variance of 700-1715ms on identical deployed code** — same URL, three runs apart, LCP swung 1130ms on `/`, 1440ms on `/privacy`. Single-run baseline-vs-after deltas are noise-dominated. Bundle reduction (deterministic) is the headline win; LCP/TBT data should be revisited in Phase 7+ with a multi-run median harness (Lighthouse CI `--collect.numberOfRuns=5`). Forced-reflow trace deferred — most plausible source is the textarea auto-grow effect at `ChatUI.tsx:56-64` (style-write → scrollHeight-read → style-write), but chasing it without a confirmed Performance trace risks a regression for no measurable gain. Phase 7+ candidate.
+
+**6.10 KYC live-keys flip — PARKED.** Razorpay account currently Limited Access; awaiting support response on Full Access upgrade. Closed beta in Phase 7 runs on test keys (test mode is fine for friends-only traffic; Razorpay test keys never charge real cards). Live-keys flip is 4 env-var swaps + 1 webhook URL change in the Razorpay dashboard:
+- `RAZORPAY_KEY_ID` test → live
+- `RAZORPAY_KEY_SECRET` test → live
+- `RAZORPAY_WEBHOOK_SECRET` test → live
+- Razorpay dashboard webhook URL → `https://divyavani.co.in/api/razorpay/webhook`
+
+Will run as a mini-pass before Phase 8 public launch when Full Access is granted. Smoke-test plan: real ₹11 Pratham Seva purchase from a different device, verify webhook delivery + counter increment, confirm refund path triggers auto-debit.
+
+**Persona cache invariant.** 10,065 tokens unchanged across all of Phase 6. No persona-prompt edits. The Phase 6.X Hinglish detection lives in `detectLang.ts`, not in `systemPrompt.ts`. Cache_read sustains on turn 2+ as before.
+
+**Files added (Phase 6):** `src/instrumentation.ts`, `src/instrumentation-client.ts`, `src/sentry.server.config.ts`, `src/sentry.edge.config.ts`, `vercel.json`, `src/app/privacy/page.tsx`, `src/app/terms/page.tsx`, `src/lib/chatStorage.ts`, `src/lib/brand.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/components/LotusBackground.tsx`.
+
+**Files modified (Phase 6):** `next.config.ts` (withSentryConfig + AVIF), `src/app/layout.tsx` (footer + canonical fix + BRAND), `src/app/page.tsx` (BRAND), `src/app/api/chat/route.ts` (Sentry capture only — cache_control structure preserved from Phase 2.6), `src/app/api/me/route.ts` (user_id field), `src/app/api/razorpay/webhook/route.ts` (refund auto-debit), `src/app/components/ChatUI.tsx` (hydration + persistence + BRAND header split), `src/app/components/SevaTierPicker.tsx` (BRAND), `src/app/design-system/page.tsx` (BRAND), `src/lib/detectLang.ts` (Hinglish vocab).
+
+---
+
+## Phase 7 carry-forwards
+
+Work that runs in parallel with Phase 7 closed beta (50 friends on test keys), ordered roughly by likelihood-of-need:
+
+- **STT input via Web Speech API** — founder will implement if beta tests show typing friction (especially among older / less-typing-fluent devotees). Browser-native, no backend cost.
+- **Email-OTP authentication** — locked decision #14. Phase 7+ if device-switching pain emerges; mandatory before Phase 9 subscriptions. Adds cookie-OR-auth-id resolution + cross-device chat history sync (replaces localStorage-only with optional server-side messages table behind auth).
+- **PhonePe UPI deeplink failure** — file Razorpay support ticket pre-Phase 8 launch (PhonePe intent URL opens PhonePe but lands on generic balance screen; GPay + Paytm work cleanly). Currently a real-user friction point for ~46% of UPI market share in India.
+- **Lawyer review of /privacy + /terms** — in-house drafted pages must be reviewed by a real Indian lawyer before Phase 8 public launch. DPDP Act 2023 compliance language + grievance officer + cross-border transfer language all need professional sign-off.
+- **queryThemes.ts inclusion-category retrieval down-weighting** — Phase 3 carry-forward. Inclusion category was added to keep variety in the top-5 retrieval but occasionally surfaces off-topic chunks; needs metric to tune.
+- **Soft meta-listening violation fix** — Phase 4 mobile QA carry-forward. Persona §10 banned "I see / I hear" tokens but a negation form ("I haven't heard / I have only felt") slipped through the harness invariant grep. Phase 3.10+: add meta-listening to harness invariant grep + decide whether to tighten persona §10 or accept the negation form.
+- **Forced-reflow fix in ChatUI textarea auto-grow** — Phase 6.9.2 deferral. Most plausible source of the Phase 6.6 forced-reflow audit failure: `ChatUI.tsx:56-64` does `style.height = "auto"` → read `scrollHeight` → write `style.height = "${next}px"`. Classic layout thrash. Fix is to defer the read into a `requestAnimationFrame` callback, but only after a confirmed Performance trace shows this is the actual culprit (without confirmation, the fix risks regressing the auto-grow behavior).
+- **5–7 persona harness gap-fill cases** — surfaced during Phase 4 + Phase 6 manual QA: foreign settlement, property disputes, business decisions, own-health questions, horoscope/astrology requests, litigation, black magic refusals. Each needs a sample query + expected persona shape + acceptance criterion before being added to the harness.
+- **grievance@divyavani.co.in mailbox setup** — pre-Phase 8 prep. Privacy policy and terms both name `krishnayadav123345@gmail.com` as the contact + grievance address; switch to a branded address before public launch for credibility.
+
+---
+
+## Phase 8 launch-prep checklist
+
+Sequenced for the run-up to public launch:
+
+- [ ] **KYC Limited → Full Access upgrade** (parallel — depends on Razorpay support response)
+- [ ] **Razorpay live-keys flip (Phase 6.10 mini-pass)** — 4 env-var swaps + Razorpay dashboard webhook URL → `https://divyavani.co.in/api/razorpay/webhook`. Smoke-test with a real ₹11 Pratham purchase from a different device + verify webhook delivery + counter increment + refund path triggers auto-debit. Triggered when Full Access granted.
+- [ ] **Lawyer review of /privacy + /terms** — DPDP Act 2023 language + grievance officer + cross-border transfer + indemnification + liability cap all need professional sign-off.
+- [ ] **grievance@divyavani.co.in mailbox** — switch /privacy + /terms contact addresses from `krishnayadav123345@gmail.com` to the branded address.
+- [ ] **Plausible upgrade decision** — Vercel Web Analytics free tier covers anonymized aggregate page views; if Phase 7 traffic justifies funnel + per-event analytics, evaluate Plausible (~$9/mo for 10k pageviews) vs Vercel Speed Insights ($10/mo). Decide based on Phase 7 traffic volume + analytics need.
+- [ ] **Cloudflare proxy decision** — only if Phase 7 traffic surfaces DDoS or scraping observations. Adds bot-protection + free TLS + caching but introduces a layer in the request path. Defer until empirical evidence justifies.
+- [ ] **PhonePe deeplink Razorpay support ticket** — file before Phase 8 launch so the resolution lands or a workaround is documented.
+- [ ] **Persona harness gap-fill cases** — at least 5 of the 7 surfaced gaps should land before Phase 8 (foreign-settlement, property, business, own-health, horoscope are highest priority; litigation + black magic can land in Phase 8.x).
+- [ ] **Lighthouse multi-run median harness** — Phase 6.9.2 measurement noise made single-run comparisons useless. Set up `lighthouse-ci` with `--collect.numberOfRuns=5` so deltas are computed against medians, ideally on a CI machine with constant CPU.
+
+---
+
 ## Open issues / known caveats
 
 - Personalization is "previous turn → current turn" via `context_summary`, not deep multi-turn history. Acceptable for v1.
