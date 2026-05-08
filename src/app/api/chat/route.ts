@@ -24,6 +24,7 @@ import {
   decrementSevaBalance,
   logSafetyEvent,
   logChatTurn,
+  fetchLastChatLanguage,
   type UserMemory,
 } from "@/lib/supabase";
 import { getTiersInOrder } from "@/lib/seva";
@@ -500,8 +501,11 @@ export async function POST(req: Request) {
   // priorLang; clear-signal messages use per-message detection.
   // First turn (no priorMemory) → priorLang undefined → falls back
   // to per-message detection, same as before.
+  const lastChatLang = await fetchLastChatLanguage(userId);
   const priorSummary = priorMemory?.context_summary?.trim();
-  const priorLang = priorSummary ? detectLang(priorSummary) : undefined;
+  const priorLang =
+    lastChatLang ??
+    (priorSummary ? detectLang(priorSummary) : undefined);
   const conversationLang = detectLang(message, priorLang);
 
   const { persona, dynamic } = buildSystemPrompt(

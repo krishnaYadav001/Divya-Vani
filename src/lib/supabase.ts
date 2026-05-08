@@ -515,3 +515,39 @@ export async function logChatTurn(params: {
     console.error("[supabase] logChatTurn threw:", e);
   }
 }
+
+/**
+ * Phase 7.0 Recommendation C — read the resolved conversation language
+ * from the most recent chat_logs row for a user, used as a deterministic
+ * priorLang signal in route.ts (replacing the unreliable Haiku-summary
+ * derivation that 0b2cce7 tried to fix via prompt instruction).
+ *
+ * Returns undefined if the user has no chat_logs rows yet (new user, or
+ * pre-854772c user whose chats predate the table). Caller should fall
+ * back to the existing context_summary-based derivation in that case.
+ */
+export async function fetchLastChatLanguage(
+  userId: string,
+): Promise<"hi" | "en" | undefined> {
+  try {
+    const client = getClient();
+    if (!client) return undefined;
+    const { data, error } = await client
+      .from("chat_logs")
+      .select("language")
+      .eq("user_id", userId)
+      .order("turn_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] fetchLastChatLanguage error:", error);
+      return undefined;
+    }
+    if (!data || !data.language) return undefined;
+    const lang = data.language;
+    return lang === "hi" || lang === "en" ? lang : undefined;
+  } catch (e) {
+    console.error("[supabase] fetchLastChatLanguage threw:", e);
+    return undefined;
+  }
+}
