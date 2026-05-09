@@ -1,5 +1,28 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * Phase 7.0 — names commonly mistaken by Haiku's extractMemory for user names
+ * but are actually acknowledgments / greetings / common particles. Used as a
+ * deny-list at both write (saveMemory) and read (fetchMemory) sides to handle
+ * incoming bad extractions AND clean existing bad data already saved.
+ */
+const BANNED_USER_NAMES: ReadonlySet<string> = new Set([
+  "han", "haan", "haa", "hmm", "hm", "mhm", "mm",
+  "ok", "okay", "yes", "no", "nahi", "nahin",
+  "achha", "accha", "acha", "theek", "thik",
+  "namaste", "namaskar", "pranam", "pranaam",
+  "hello", "hi", "hey",
+  "bye", "goodbye", "alvida",
+  "kya", "kyon", "kyun", "kaise",
+  "tum", "aap", "main", "mai", "tu",
+  "thanks", "thank", "shukriya", "dhanyavad", "dhanyawad",
+]);
+
+function isBannedName(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return BANNED_USER_NAMES.has(name.trim().toLowerCase());
+}
+
 export interface UserMemory {
   main_problem?: string | null;
   emotion?: string | null;
@@ -100,7 +123,15 @@ export async function saveMemory(
       payload.verses_referenced = fields.verses_referenced ?? [];
     }
     if (fields.user_name !== undefined) {
-      payload.user_name = fields.user_name ?? null;
+      if (isBannedName(fields.user_name)) {
+        console.log(
+          "[supabase] saveMemory skipped banned user_name:",
+          fields.user_name,
+        );
+        // do not include user_name in the update payload
+      } else {
+        payload.user_name = fields.user_name ?? null;
+      }
     }
     const { error } = await client
       .from("users_memory")
@@ -378,7 +409,11 @@ export async function fetchMemory(
       console.error("[supabase] fetchMemory error:", error);
       return null;
     }
-    return data ?? null;
+    if (!data) return null;
+    if (isBannedName(data.user_name)) {
+      return { ...data, user_name: null };
+    }
+    return data;
   } catch (e) {
     console.error("[supabase] fetchMemory threw:", e);
     return null;
