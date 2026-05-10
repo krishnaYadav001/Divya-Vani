@@ -561,11 +561,20 @@ export default function ChatUI() {
           branches use one form, one set of handlers, one autogrow effect. */}
       {isEmpty ? (
         <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
-          <div className="fade-up flex w-full max-w-[600px] flex-col items-center gap-6">
-            <p className="text-center font-devanagari text-base italic leading-relaxed text-krishna/70 sm:text-lg">
+          {/* Orchestrated page-load — single high-impact moment per
+              Anthropic's frontend-design skill ("one well-orchestrated
+              page load with staggered reveals creates more delight than
+              scattered micro-interactions"). Greeting → input → suggestion
+              list cascade in sequence on first paint. animation-fill-mode
+              backwards holds each child at its pre-animation state during
+              the delay so there's no flash-then-fade. */}
+          <div className="flex w-full max-w-[600px] flex-col items-center gap-6">
+            <p className="fade-up text-center font-devanagari text-base italic leading-relaxed text-krishna/70 [animation-delay:0ms] [animation-fill-mode:backwards] sm:text-lg">
               आज मन कैसा लग रहा है…
             </p>
-            {inputBlock}
+            <div className="fade-up w-full [animation-delay:180ms] [animation-fill-mode:backwards]">
+              {inputBlock}
+            </div>
             {/* Phase 7.0 iter — suggestion list visually attached to the
                 input row (YouTube-search-history pattern). -mt-6 cancels
                 the parent's gap-6 so the list sits flush at the row's
@@ -576,7 +585,7 @@ export default function ChatUI() {
                 interior padding so row text aligns with where typed input
                 would sit. */}
             {isFirstTime === true && (
-              <div className="-mt-6 mx-auto flex w-full max-w-[600px] flex-col overflow-hidden rounded-b-2xl border border-t-0 border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+              <div className="fade-up -mt-6 mx-auto flex w-full max-w-[600px] flex-col overflow-hidden rounded-b-2xl border border-t-0 border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
                 {ONBOARDING_OPTIONS.map((text, i) => (
                   <button
                     key={text}
