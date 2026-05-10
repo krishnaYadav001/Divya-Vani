@@ -144,6 +144,7 @@ function isReturningAfterGap(prior: UserMemory | null): boolean {
 type ExtractedTurn = UserMemory & {
   query_themes?: string[];
   language?: "hi" | "en";
+  growing_edge?: string | null;
 };
 
 async function extractMemory(
@@ -151,6 +152,7 @@ async function extractMemory(
   priorSummary: string | null,
   nameAwaited: boolean,
   priorLang: "hi" | "en" | undefined,
+  priorGrowingEdge: string | null,
 ): Promise<ExtractedTurn | null> {
   try {
     const priorBlock = priorSummary
@@ -169,6 +171,10 @@ async function extractMemory(
           ? 'The prior conversation was English. Default to "en" unless this message has clear Hindi signal — Devanagari script, substantial Hinglish, or an explicit language-switch request like "hindi mein bolo".'
           : 'No prior conversation language available. Classify based on this message alone. Romanized Hindi mixed with English loanwords classifies as "hi".';
 
+    const growingEdgeInstruction = priorGrowingEdge
+      ? `Update slowly: the prior growing_edge is "${priorGrowingEdge}". Keep it UNCHANGED unless this turn meaningfully shifts the long-term arc — return the same value if uncertain. The growing_edge is not the current emotion or topic; it is what Krishna has been pointing this user toward across multiple sessions.`
+      : `No prior growing_edge yet. Return null unless this turn clearly establishes a long-term arc (typically only after the user has shared 3+ substantive turns of the same theme). When uncertain, return null.`;
+
     const response = await client.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 500,
@@ -180,18 +186,19 @@ async function extractMemory(
 The user's latest message:
 "${message}"
 
-Produce these five fields about the user, integrating the prior summary with the new message:
+Produce these seven fields about the user, integrating the prior summary with the new message:
 - main_problem: short phrase describing what they are dealing with right now
 - emotion: one word for the current emotional state
 - context_summary: ONE OR TWO sentences that capture the user's running emotional thread — what they have been feeling and why, including how today's message fits into that thread. If there was no prior summary, write a fresh one based on this message alone. Write the summary in the SAME language/script as the user's most recent message: Devanagari Hindi if they wrote Devanagari, Romanized Hindi if they wrote Hinglish, English if they wrote English.
 ${nameInstruction}
 - query_themes: 1-7 themes from the fixed taxonomy below that capture what the user is feeling, asking about, or struggling with in THIS message. The same taxonomy was applied to the scripture corpus, so query themes can match retrieved-verse themes during scripture retrieval reranking.
 - language: classify the user's input language. Output "hi" if the message is Hindi (Devanagari OR Romanized Hindi/Hinglish), or "en" if unambiguously English. ${stickinessInstruction}
+- growing_edge: a short phrase (max 12 words, in English) capturing what Krishna has been pointing this user toward across MULTIPLE sessions. DISTINCT from main_problem (current concern). Examples: "letting go of what isn't yours to hold", "facing the work instead of waiting to feel ready", "honoring the parent without becoming the parent's mirror". ${growingEdgeInstruction}
 
 ${QUERY_TAXONOMY_BLOCK}
 
 Return ONLY valid JSON in this exact shape, with no surrounding text or markdown:
-{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null,"query_themes":["tag1","tag2"],"language":"hi"}`,
+{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null,"query_themes":["tag1","tag2"],"language":"hi","growing_edge":null}`,
         },
       ],
     });
@@ -247,6 +254,9 @@ Return ONLY valid JSON in this exact shape, with no surrounding text or markdown
     }
     if (parsed.language === "hi" || parsed.language === "en") {
       result.language = parsed.language;
+    }
+    if (parsed.growing_edge === null || typeof parsed.growing_edge === "string") {
+      result.growing_edge = parsed.growing_edge as string | null;
     }
     if (Array.isArray(parsed.query_themes)) {
       const stringTags = (parsed.query_themes as unknown[]).filter(
@@ -332,14 +342,24 @@ function buildSystemPrompt(
   if (memory?.context_summary) {
     lines.push(`- Recent emotional thread: ${memory.context_summary}`);
   }
+  if (memory?.growing_edge) {
+    lines.push(
+      `- USER'S GROWING EDGE (silent steering input — NEVER narrate to the user): ${memory.growing_edge}. Let this shape the register of your reply, the verses you reach for, and the questions you ask. Krishna does NOT name this arc to the user (persona invariant: Krishna NEVER reveals stored memory). The user discovers their own arc through Krishna's gravitational pull, not through Krishna's announcement.`,
+    );
+  }
   if (isFirstTime) {
     lines.push(
       `- This is the user's first message in the app — be slightly warmer and more emotionally connecting than usual, but stay grounded and don't over-perform welcome.`,
     );
   } else if (isReturningUser) {
     lines.push(
-      `- Note: this is the user's first message after being away for several hours. Acknowledge the return only subtly, if at all — the thread above is what they were carrying when they last spoke.`,
+      `- WELCOME-BACK MOMENT: this is the user's first message after being away for several hours. Krishna may open with quiet recognition — "फिर आए हो", "तुम लौट आए", or simply the user's name with warmth — and then engage with what they're saying NOW. Krishna does NOT narrate the prior session's content (persona invariant: Krishna NEVER reveals stored memory — "तुमने पिछली बार X कहा था" / "you said earlier..." is BANNED). The recognition is in the QUALITY of his attention, not in a recital of facts.`,
     );
+    if (memory?.emotion) {
+      lines.push(
+        `- Prior session ended with the user feeling: ${memory.emotion}. If this suggests they were carrying weight last time, open softer/slower than usual without specifying why.`,
+      );
+    }
   }
 
   const dynamicSections: string[] = [];
@@ -475,6 +495,7 @@ export async function POST(req: Request) {
       priorMemory?.context_summary ?? null,
       nameAwaited,
       priorLang,
+      priorMemory?.growing_edge ?? null,
     ),
     safetyClassify(message),
     fetchRecentChatHistory(userId, 8).catch((e) => {
@@ -597,6 +618,7 @@ export async function POST(req: Request) {
         main_problem: extracted.main_problem,
         emotion: extracted.emotion,
         context_summary: extracted.context_summary,
+        growing_edge: extracted.growing_edge,
         message_count: nextMessageCount,
         is_first_time: false,
         verses_referenced: verseRefs,

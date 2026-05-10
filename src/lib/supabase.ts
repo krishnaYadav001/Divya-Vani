@@ -33,6 +33,7 @@ export interface UserMemory {
   is_first_time?: boolean | null;
   verses_referenced?: string[] | null;
   user_name?: string | null;
+  growing_edge?: string | null;
 }
 
 export type PaymentStatus = "created" | "verified" | "failed";
@@ -79,6 +80,7 @@ type SaveMemoryFields = Partial<
     | "is_first_time"
     | "verses_referenced"
     | "user_name"
+    | "growing_edge"
   >
 >;
 
@@ -132,6 +134,9 @@ export async function saveMemory(
       } else {
         payload.user_name = fields.user_name ?? null;
       }
+    }
+    if (fields.growing_edge !== undefined) {
+      payload.growing_edge = fields.growing_edge ?? null;
     }
     const { error } = await client
       .from("users_memory")
@@ -401,7 +406,7 @@ export async function fetchMemory(
     const { data, error } = await client
       .from("users_memory")
       .select(
-        "main_problem, emotion, context_summary, last_active_at, message_count, seva_balance, is_first_time, verses_referenced, user_name",
+        "main_problem, emotion, context_summary, last_active_at, message_count, seva_balance, is_first_time, verses_referenced, user_name, growing_edge",
       )
       .eq("user_id", userId)
       .maybeSingle();
