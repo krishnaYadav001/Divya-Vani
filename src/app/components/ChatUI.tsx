@@ -400,41 +400,80 @@ export default function ChatUI() {
             "कृपया उचित भाषा का प्रयोग करें · Please use respectful language"}
         </p>
       )}
+      {/* YouTube-style layout: Bansuri (left) + [textarea stacked over
+          suggestion list] (middle) + Send (right). items-start aligns
+          all three children to the top so the textarea, Bansuri and
+          Send share a top edge; Bansuri is h-12 to match the textarea's
+          natural height — no overflow below the textarea, no visual
+          collision with the suggestion list. The suggestion list
+          inherits the textarea's column width exactly, so the unit
+          mirrors YouTube's search-input + dropdown footprint. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           sendMessage();
         }}
-        className="flex items-center gap-2"
+        className="flex items-start gap-2"
       >
-        <Bansuri className="hidden h-16 w-auto shrink-0 sm:block" />
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            if (serverModerationWarning) setServerModerationWarning(null);
-          }}
-          onKeyDown={(e) => {
-            // Enter submits, Shift+Enter inserts newline. Mirrors
-            // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
-            // keyboards send the same keydown so the Send button
-            // remains the secondary path.
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
-          placeholder="मन में जो है, कहो…"
-          disabled={isSending}
-          aria-invalid={bannedWord !== null}
-          className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
-        />
+        <Bansuri className="hidden h-12 w-auto shrink-0 sm:block" />
+        <div className="flex flex-1 flex-col">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              if (serverModerationWarning) setServerModerationWarning(null);
+            }}
+            onKeyDown={(e) => {
+              // Enter submits, Shift+Enter inserts newline. Mirrors
+              // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
+              // keyboards send the same keydown so the Send button
+              // remains the secondary path.
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="मन में जो है, कहो…"
+            disabled={isSending}
+            aria-invalid={bannedWord !== null}
+            className={`w-full resize-none overflow-hidden border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred ${
+              isEmpty && isFirstTime === true
+                ? "rounded-t-3xl rounded-b-none border-b-0"
+                : "rounded-3xl"
+            }`}
+          />
+          {/* Suggestion list nested under the textarea so it shares
+              the textarea's column width exactly. Top border is removed
+              + textarea's bottom border is removed so the seam reads as
+              one continuous container with a single internal divider.
+              border-brass/40 + bg-parchment match the textarea's chrome.
+              fade-up [animation-delay:360ms] keeps the staggered page-
+              load cascade: greeting 0ms → input row 180ms → list 360ms. */}
+          {isEmpty && isFirstTime === true && (
+            <div className="fade-up flex w-full flex-col overflow-hidden rounded-b-3xl border border-t-0 border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
+              {ONBOARDING_OPTIONS.map((text, i) => (
+                <button
+                  key={text}
+                  type="button"
+                  onClick={() => sendMessage(text)}
+                  className={`flex w-full items-center px-5 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna/70 transition-colors hover:bg-devotional/5 hover:text-krishna ${
+                    i < ONBOARDING_OPTIONS.length - 1
+                      ? "border-b border-brass/15"
+                      : ""
+                  }`}
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="submit"
           disabled={isSending || !input.trim() || bannedWord !== null}
-          className="rounded-full bg-krishna px-5 py-3 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50"
+          className="min-h-12 rounded-full bg-krishna px-5 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50"
         >
           Send
         </button>
@@ -575,33 +614,6 @@ export default function ChatUI() {
             <div className="fade-up w-full [animation-delay:180ms] [animation-fill-mode:backwards]">
               {inputBlock}
             </div>
-            {/* Phase 7.0 iter — suggestion list visually attached to the
-                input row (YouTube-search-history pattern). -mt-6 cancels
-                the parent's gap-6 so the list sits flush at the row's
-                bottom edge. border-t-0 + matching brass/40 border colour
-                + bg-parchment let the list read as one continuous parchment
-                surface with the textarea above it; rounded-b-2xl closes
-                the unit cleanly. Padding px-5 py-3 matches the textarea's
-                interior padding so row text aligns with where typed input
-                would sit. */}
-            {isFirstTime === true && (
-              <div className="fade-up -mt-6 mx-auto flex w-full max-w-[600px] flex-col overflow-hidden rounded-b-2xl border border-t-0 border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
-                {ONBOARDING_OPTIONS.map((text, i) => (
-                  <button
-                    key={text}
-                    type="button"
-                    onClick={() => sendMessage(text)}
-                    className={`flex w-full items-center px-5 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna/70 transition-colors hover:bg-devotional/5 hover:text-krishna ${
-                      i < ONBOARDING_OPTIONS.length - 1
-                        ? "border-b border-brass/15"
-                        : ""
-                    }`}
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       ) : (
