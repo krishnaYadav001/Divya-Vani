@@ -438,21 +438,18 @@ export default function ChatUI() {
             placeholder="मन में जो है, कहो…"
             disabled={isSending}
             aria-invalid={bannedWord !== null}
-            className={`w-full resize-none overflow-hidden border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred ${
-              isEmpty && isFirstTime === true
-                ? "rounded-t-3xl rounded-b-none border-b-0"
-                : "rounded-3xl"
-            }`}
+            className="w-full resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
           />
           {/* Suggestion list nested under the textarea so it shares
-              the textarea's column width exactly. Top border is removed
-              + textarea's bottom border is removed so the seam reads as
-              one continuous container with a single internal divider.
-              border-brass/40 + bg-parchment match the textarea's chrome.
-              fade-up [animation-delay:360ms] keeps the staggered page-
-              load cascade: greeting 0ms → input row 180ms → list 360ms. */}
+              the textarea's column width exactly. mt-2 (8px) gap
+              keeps the two halves as distinct containers — input is
+              its own pill, list is its own rounded card — but the
+              separation is thin enough that they still read as a
+              single visual cluster. fade-up [animation-delay:360ms]
+              keeps the staggered cascade: greeting 0ms → input 180ms
+              → list 360ms. */}
           {isEmpty && isFirstTime === true && (
-            <div className="fade-up flex w-full flex-col overflow-hidden rounded-b-3xl border border-t-0 border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
+            <div className="fade-up mt-2 flex w-full flex-col overflow-hidden rounded-2xl border border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
               {ONBOARDING_OPTIONS.map((text, i) => (
                 <button
                   key={text}
