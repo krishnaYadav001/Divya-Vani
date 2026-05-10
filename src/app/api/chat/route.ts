@@ -25,6 +25,7 @@ import {
   logSafetyEvent,
   logChatTurn,
   fetchLastChatLanguage,
+  fetchRecentChatHistory,
   type UserMemory,
 } from "@/lib/supabase";
 import { getTiersInOrder } from "@/lib/seva";
@@ -140,12 +141,16 @@ function isReturningAfterGap(prior: UserMemory | null): boolean {
 // Phase 2 piggyback: extract memory + classify the user's query into the
 // 34-tag taxonomy in ONE Haiku call. The query themes feed Layer-1
 // theme-overlap reranking against the chunks pre-tagged in Step 2.2.
-type ExtractedTurn = UserMemory & { query_themes?: string[] };
+type ExtractedTurn = UserMemory & {
+  query_themes?: string[];
+  language?: "hi" | "en";
+};
 
 async function extractMemory(
   message: string,
   priorSummary: string | null,
   nameAwaited: boolean,
+  priorLang: "hi" | "en" | undefined,
 ): Promise<ExtractedTurn | null> {
   try {
     const priorBlock = priorSummary
@@ -156,6 +161,13 @@ async function extractMemory(
     const nameInstruction = nameAwaited
       ? `- detected_user_name: Krishna asked the user their name in his previous reply. The user has now responded. If this message is plausibly the user's name — a single word that looks name-shaped (e.g. "Krishna", "कृष्णा", "Anjali"), a sentence stating their name (e.g. "मेरा नाम कृष्णा है", "I'm Anjali"), or anything similar — return that name as a string. If the user ignored the question and brought up a new topic instead, return null. Bias toward returning the name when the message is short and could plausibly be one. Do NOT capture as user_name any of these even if the user types them: han, haan, hmm, ok, yes, no, nahi, achha, accha, theek, namaste, namaskar, hello, hi, hey, kya, tum, aap. These are common Hindi/Hinglish acknowledgments, particles, or greetings — never names. Capture user_name ONLY when the user explicitly introduces themselves (e.g., 'mera naam X hai', 'main X hoon', 'I'm X') or responds with what is clearly a name to a direct name question.`
       : `- detected_user_name: if and only if the user CLEARLY stated their OWN name in THIS message (e.g., "मेरा नाम कृष्णा है", "I'm Anjali"), return that name as a string. Otherwise return null. Names of other people mentioned in passing must NOT be returned. Be conservative. Do NOT capture as user_name any of these even if the user types them: han, haan, hmm, ok, yes, no, nahi, achha, accha, theek, namaste, namaskar, hello, hi, hey, kya, tum, aap. These are common Hindi/Hinglish acknowledgments, particles, or greetings — never names. Capture user_name ONLY when the user explicitly introduces themselves (e.g., 'mera naam X hai', 'main X hoon', 'I'm X') or responds with what is clearly a name to a direct name question.`;
+
+    const stickinessInstruction =
+      priorLang === "hi"
+        ? 'The prior conversation was Hindi. Default to "hi" unless this message is unambiguously English with ZERO Hindi tokens (no "hai", "hain", "kya", "tum", "main", "mera", "ki", "ko", "ka", "ke", no Devanagari, no Hindi verb inflections like "-na", "-ta", "-rahi", "-rahe", "-kar"). Romanized Hindi mixed with English loanwords (project, time, office, manager) is HINGLISH and classifies as "hi", not "en".'
+        : priorLang === "en"
+          ? 'The prior conversation was English. Default to "en" unless this message has clear Hindi signal — Devanagari script, substantial Hinglish, or an explicit language-switch request like "hindi mein bolo".'
+          : 'No prior conversation language available. Classify based on this message alone. Romanized Hindi mixed with English loanwords classifies as "hi".';
 
     const response = await client.messages.create({
       model: "claude-haiku-4-5",
@@ -174,11 +186,12 @@ Produce these five fields about the user, integrating the prior summary with the
 - context_summary: ONE OR TWO sentences that capture the user's running emotional thread — what they have been feeling and why, including how today's message fits into that thread. If there was no prior summary, write a fresh one based on this message alone. Write the summary in the SAME language/script as the user's most recent message: Devanagari Hindi if they wrote Devanagari, Romanized Hindi if they wrote Hinglish, English if they wrote English.
 ${nameInstruction}
 - query_themes: 1-7 themes from the fixed taxonomy below that capture what the user is feeling, asking about, or struggling with in THIS message. The same taxonomy was applied to the scripture corpus, so query themes can match retrieved-verse themes during scripture retrieval reranking.
+- language: classify the user's input language. Output "hi" if the message is Hindi (Devanagari OR Romanized Hindi/Hinglish), or "en" if unambiguously English. ${stickinessInstruction}
 
 ${QUERY_TAXONOMY_BLOCK}
 
 Return ONLY valid JSON in this exact shape, with no surrounding text or markdown:
-{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null,"query_themes":["tag1","tag2"]}`,
+{"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null,"query_themes":["tag1","tag2"],"language":"hi"}`,
         },
       ],
     });
@@ -231,6 +244,9 @@ Return ONLY valid JSON in this exact shape, with no surrounding text or markdown
       (parsed.detected_user_name as string).trim()
     ) {
       result.user_name = (parsed.detected_user_name as string).trim();
+    }
+    if (parsed.language === "hi" || parsed.language === "en") {
+      result.language = parsed.language;
     }
     if (Array.isArray(parsed.query_themes)) {
       const stringTags = (parsed.query_themes as unknown[]).filter(
@@ -441,13 +457,30 @@ export async function POST(req: Request) {
     return fetchCandidatesMultiQuery(variants, fetchK, ragFlags.rewritePerVariantK);
   }
 
-  const [candidates, extracted, safety] = await Promise.all([
+  // Phase 7 — derived BEFORE parallel block so extractMemory can apply
+  // asymmetric stickiness in its Haiku prompt.
+  const lastChatLang = await fetchLastChatLanguage(userId);
+  const priorSummary = priorMemory?.context_summary?.trim();
+  const priorLang =
+    lastChatLang ??
+    (priorSummary ? detectLang(priorSummary) : undefined);
+
+  const [candidates, extracted, safety, recentHistory] = await Promise.all([
     gatherCandidates().catch((e) => {
       console.error("[gatherCandidates] threw:", e);
       return [] as VerseHit[];
     }),
-    extractMemory(message, priorMemory?.context_summary ?? null, nameAwaited),
+    extractMemory(
+      message,
+      priorMemory?.context_summary ?? null,
+      nameAwaited,
+      priorLang,
+    ),
     safetyClassify(message),
+    fetchRecentChatHistory(userId, 8).catch((e) => {
+      console.error("[chat] fetchRecentChatHistory failed:", e);
+      return [] as Array<{ user_message: string; reply_text: string }>;
+    }),
   ]);
 
   const queryThemes = extracted?.query_themes ?? [];
@@ -494,19 +527,15 @@ export async function POST(req: Request) {
   // up automatically when Phase 3 grows the persona past it. No
   // further code change needed at that point — Phase 3 ships the
   // longer persona prompt and this block starts hitting cache.
-  // Phase 5.5 — sticky language. Derive priorLang from the user's
-  // running context_summary (extractMemory writes it in whatever
-  // language the conversation was in), then resolve the effective
-  // language for this turn. Single-word ambiguous messages inherit
-  // priorLang; clear-signal messages use per-message detection.
-  // First turn (no priorMemory) → priorLang undefined → falls back
-  // to per-message detection, same as before.
-  const lastChatLang = await fetchLastChatLanguage(userId);
-  const priorSummary = priorMemory?.context_summary?.trim();
-  const priorLang =
-    lastChatLang ??
-    (priorSummary ? detectLang(priorSummary) : undefined);
-  const conversationLang = detectLang(message, priorLang);
+  // Phase 7 — language now from extractMemory (Haiku). Falls back
+  // to detectLang regex on extraction failure (rate limit, JSON
+  // parse error). detectLang remains in src/lib/detectLang.ts as
+  // the resilience layer. priorLang derivation lifted earlier so
+  // extractMemory can apply asymmetric stickiness in its prompt.
+  const conversationLang: "hi" | "en" =
+    extracted?.language === "hi" || extracted?.language === "en"
+      ? extracted.language
+      : detectLang(message, priorLang);
 
   const { persona, dynamic } = buildSystemPrompt(
     effectiveMemory,
@@ -629,6 +658,19 @@ export async function POST(req: Request) {
     ? Math.max(0, sevaBalance - 1)
     : sevaBalance;
 
+  // Phase 7 — within-session continuity. The rolling context_summary
+  // captures emotion arc; the verbatim recent turns let Krishna
+  // actually respond to the dialogue. Last 8 turns is a soft window —
+  // tune in beta if cost/quality feedback warrants. recentHistory is
+  // already chronological (helper reverses inside the fetch).
+  const messagesArray: Array<{ role: "user" | "assistant"; content: string }> = [
+    ...recentHistory.flatMap((turn) => [
+      { role: "user" as const, content: turn.user_message },
+      { role: "assistant" as const, content: turn.reply_text },
+    ]),
+    { role: "user" as const, content: message },
+  ];
+
   // 5b. Final reply — branch on Accept header (see DUAL-MODE RESPONSE
   // CONTRACT block at top of file).
   //
@@ -665,7 +707,7 @@ export async function POST(req: Request) {
               model: "claude-sonnet-4-6",
               max_tokens: 3000,
               system: systemBlocks,
-              messages: [{ role: "user", content: message }],
+              messages: messagesArray,
             },
             { signal: req.signal },
           );
@@ -789,7 +831,7 @@ export async function POST(req: Request) {
     model: "claude-sonnet-4-6",
     max_tokens: 3000,
     system: systemBlocks,
-    messages: [{ role: "user", content: message }],
+    messages: messagesArray,
   });
 
   // Phase 2.6 cache telemetry: per-turn cache write/read + persona

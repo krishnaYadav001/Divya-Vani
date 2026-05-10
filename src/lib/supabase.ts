@@ -586,3 +586,36 @@ export async function fetchLastChatLanguage(
     return undefined;
   }
 }
+
+/**
+ * Phase 7.0 — within-session context restoration. Sonnet sees the
+ * verbatim recent dialogue alongside the rolling context_summary so
+ * short replies like "Project" or "han" land as answers to turn N-1
+ * rather than as topic switches. Returns chronological order
+ * (oldest first); the in-flight turn is excluded because chat_logs
+ * is written via fire-and-forget after the response. Silent-fail.
+ */
+export async function fetchRecentChatHistory(
+  userId: string,
+  limit: number = 8,
+): Promise<Array<{ user_message: string; reply_text: string }>> {
+  try {
+    const client = getClient();
+    if (!client) return [];
+    const { data, error } = await client
+      .from("chat_logs")
+      .select("user_message, reply_text")
+      .eq("user_id", userId)
+      .order("turn_at", { ascending: false })
+      .limit(limit);
+    if (error) {
+      console.error("[supabase] fetchRecentChatHistory error:", error);
+      return [];
+    }
+    if (!data) return [];
+    return [...data].reverse();
+  } catch (e) {
+    console.error("[supabase] fetchRecentChatHistory threw:", e);
+    return [];
+  }
+}
