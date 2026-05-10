@@ -39,6 +39,12 @@ export default function ChatUI() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
+  // Phase 7.0 server-side moderation — surfaces the bilingual warning
+  // when /api/chat returns 400 {error:"moderation"}. Cleared on the
+  // next keystroke (see textarea onChange below). Same visual treatment
+  // as the client-side bannedWord notice — single shared row in inputBlock.
+  const [serverModerationWarning, setServerModerationWarning] =
+    useState<string | null>(null);
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -212,6 +218,32 @@ export default function ChatUI() {
       });
 
       if (!res.ok) {
+        // Phase 7.0 — 400 {error:"moderation"} from the server-side
+        // moderation gate (Path A word filter OR Path B Haiku). Roll
+        // back the optimistic user-message append, restore the typed
+        // text so the user can edit it, and surface the bilingual
+        // warning above the input. `finally` clears isSending on return.
+        if (res.status === 400) {
+          let errBody:
+            | { error?: string; message?: string; flag?: string }
+            | null = null;
+          try {
+            errBody = await res.json();
+          } catch {
+            /* non-JSON 400 falls through to the generic throw */
+          }
+          if (errBody?.error === "moderation") {
+            setMessages((prev) =>
+              prev.filter((m) => m.id !== userMessage.id),
+            );
+            setInput(text);
+            setServerModerationWarning(
+              errBody.message ??
+                "कृपया उचित भाषा का प्रयोग करें · Please use respectful language",
+            );
+            return;
+          }
+        }
         throw new Error(`HTTP ${res.status}`);
       }
 
@@ -362,9 +394,10 @@ export default function ChatUI() {
   // flips at first message.
   const inputBlock = (
     <div className="mx-auto w-full max-w-[600px]">
-      {bannedWord && (
+      {(bannedWord || serverModerationWarning) && (
         <p role="status" className="mb-2 text-center text-xs text-sacred">
-          कृपया उचित भाषा का प्रयोग करें · Please use respectful language
+          {serverModerationWarning ??
+            "कृपया उचित भाषा का प्रयोग करें · Please use respectful language"}
         </p>
       )}
       <form
@@ -379,7 +412,10 @@ export default function ChatUI() {
           ref={textareaRef}
           rows={1}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            if (serverModerationWarning) setServerModerationWarning(null);
+          }}
           onKeyDown={(e) => {
             // Enter submits, Shift+Enter inserts newline. Mirrors
             // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual

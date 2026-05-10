@@ -35,6 +35,12 @@ import {
   type SafetyFlag,
 } from "@/lib/safety";
 import { detectLang } from "@/lib/detectLang";
+import { findBannedWord } from "@/lib/badWordFilter";
+import {
+  moderateInput,
+  MODERATION_THRESHOLD,
+  type ModerationFlag,
+} from "@/lib/moderation";
 
 const client = new Anthropic();
 const USER_COOKIE = "god_messenger_uid";
@@ -403,6 +409,42 @@ export async function POST(req: Request) {
     );
   }
 
+  // Phase 7.0 Path A — server-side word filter (defense in depth +
+  // latency saver). Mirrors the client-side check in ChatUI; runs
+  // here so direct-API hits and modified-client requests are still
+  // gated. Short-circuits BEFORE the parallel block, so when matched
+  // we pay no Haiku (moderation/extractMemory/safety) cost. Logs the
+  // hit to safety_events under flag="hostility" for beta review.
+  // Cookie is NOT set on this path — a user whose very first request
+  // is hostile does not establish identity; they can retry cleanly.
+  const bannedWordHit = findBannedWord(message);
+  if (bannedWordHit) {
+    const pathAJar = await cookies();
+    const cookieUid = pathAJar.get(USER_COOKIE)?.value;
+    const blockUserId = cookieUid ?? "anonymous";
+    waitUntil(
+      logSafetyEvent({
+        userId: blockUserId,
+        messageText: message,
+        flag: "hostility",
+        confidence: 1,
+        replyText: "",
+        versesReferenced: [],
+      }).catch((e) => {
+        console.error("[chat] path-A logSafetyEvent failed:", e);
+      }),
+    );
+    return NextResponse.json(
+      {
+        error: "moderation",
+        flag: "hostility",
+        message:
+          "कृपया उचित भाषा का प्रयोग करें · Please use respectful language",
+      },
+      { status: 400 },
+    );
+  }
+
   // 1. Resolve user_id from cookie (or assign one). Captured into a const
   // (resolvedUserId) after the may-assign branch so inner closures —
   // notably persistTurnState below — see a strictly-string type rather
@@ -485,24 +527,29 @@ export async function POST(req: Request) {
     lastChatLang ??
     (priorSummary ? detectLang(priorSummary) : undefined);
 
-  const [candidates, extracted, safety, recentHistory] = await Promise.all([
-    gatherCandidates().catch((e) => {
-      console.error("[gatherCandidates] threw:", e);
-      return [] as VerseHit[];
-    }),
-    extractMemory(
-      message,
-      priorMemory?.context_summary ?? null,
-      nameAwaited,
-      priorLang,
-      priorMemory?.growing_edge ?? null,
-    ),
-    safetyClassify(message),
-    fetchRecentChatHistory(userId, 8).catch((e) => {
-      console.error("[chat] fetchRecentChatHistory failed:", e);
-      return [] as Array<{ user_message: string; reply_text: string }>;
-    }),
-  ]);
+  const [candidates, extracted, safety, recentHistory, moderation] =
+    await Promise.all([
+      gatherCandidates().catch((e) => {
+        console.error("[gatherCandidates] threw:", e);
+        return [] as VerseHit[];
+      }),
+      extractMemory(
+        message,
+        priorMemory?.context_summary ?? null,
+        nameAwaited,
+        priorLang,
+        priorMemory?.growing_edge ?? null,
+      ),
+      safetyClassify(message),
+      fetchRecentChatHistory(userId, 8).catch((e) => {
+        console.error("[chat] fetchRecentChatHistory failed:", e);
+        return [] as Array<{ user_message: string; reply_text: string }>;
+      }),
+      // Phase 7.0 Path B — Haiku-based moderation classifier. Silent-
+      // fails to {flag:"safe",confidence:0} internally, so no per-call
+      // .catch needed here. Gated after safetyFlag derivation below.
+      moderateInput(message),
+    ]);
 
   const queryThemes = extracted?.query_themes ?? [];
 
@@ -524,6 +571,48 @@ export async function POST(req: Request) {
     safety.flag !== "safe" && safety.confidence > SAFETY_THRESHOLD
       ? safety.flag
       : null;
+
+  // Phase 7.0 Path B gate — Haiku-classified moderation. Bypassed
+  // when safetyFlag is set: crisis messages must reach Krishna for
+  // Bhagavata mode + helpline card per locked decision #7. Otherwise
+  // blocks hostility / sexual_explicit above the confidence threshold
+  // BEFORE the Sonnet reply call, logs to safety_events for review,
+  // and wraps with withCookie so a new user still gets identity on
+  // the response (they can retry with a clean message).
+  const moderationFlag: ModerationFlag | null =
+    !safetyFlag &&
+    moderation.flag !== "safe" &&
+    moderation.confidence > MODERATION_THRESHOLD
+      ? moderation.flag
+      : null;
+
+  if (moderationFlag) {
+    waitUntil(
+      logSafetyEvent({
+        userId,
+        messageText: message,
+        flag: moderationFlag,
+        confidence: moderation.confidence,
+        replyText: "",
+        versesReferenced: [],
+      }).catch((e) => {
+        console.error("[chat] path-B logSafetyEvent failed:", e);
+      }),
+    );
+    return withCookie(
+      NextResponse.json(
+        {
+          error: "moderation",
+          flag: moderationFlag,
+          message:
+            "कृपया उचित भाषा का प्रयोग करें · Please use respectful language",
+        },
+        { status: 400 },
+      ),
+      isNewUser,
+      userId,
+    );
+  }
 
   // Merge prior memory with this turn's freshly extracted fields so the
   // current reply has access to the just-detected name + updated emotion
