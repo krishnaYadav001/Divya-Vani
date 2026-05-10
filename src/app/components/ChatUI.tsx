@@ -24,9 +24,14 @@ import LotusMandala from "./motifs/LotusMandala";
 import PeacockFeather from "./motifs/PeacockFeather";
 
 const ONBOARDING_OPTIONS = [
-  "मन थोड़ा भारी है",
+  "मन थोड़ा भारी है आज",
   "कुछ समझ नहीं आ रहा",
   "बस किसी से बात करनी है",
+  "गुस्सा शांत नहीं होता",
+  "परिवार से अनबन है",
+  "क्या यह मेरा सही रास्ता है?",
+  "मन कैसे शांत करूँ?",
+  "भगवान मेरी क्यों नहीं सुनते?",
 ];
 
 // Phase 5.4 — static tier list for the diya seva panel. TIER_CONFIG is a
@@ -567,13 +572,15 @@ export default function ChatUI() {
             </p>
             {inputBlock}
             {isFirstTime === true && (
-              <div className="flex w-full flex-col gap-2">
-                {ONBOARDING_OPTIONS.map((text) => (
+              <div className="mt-4 flex w-full flex-col rounded-xl border border-brass/15 bg-parchment/50 overflow-hidden">
+                {ONBOARDING_OPTIONS.map((text, i) => (
                   <button
                     key={text}
                     type="button"
                     onClick={() => sendMessage(text)}
-                    className="rounded-2xl border border-brass/30 bg-parchment px-4 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:bg-devotional/10 hover:ring-2 hover:ring-devotional/30"
+                    className={`flex w-full items-center px-4 py-2.5 text-left font-devanagari text-sm leading-relaxed text-krishna/75 transition-colors hover:bg-devotional/5 hover:text-krishna ${
+                      i < ONBOARDING_OPTIONS.length - 1 ? "border-b border-brass/10" : ""
+                    }`}
                   >
                     {text}
                   </button>
