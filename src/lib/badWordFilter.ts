@@ -28,6 +28,19 @@ const BANNED: string[] = [
   "kill yourself",
   "kill you",
 
+  // English — clearly-hostile phrases (vs general profanity which is
+  // intentionally allowed for venting; see file maintenance notes)
+  "fuck off",
+  "fuck you",
+  "fuck u",
+  "f off",
+  "motherfucker",
+  "mother fucker",
+  "shut up",
+  "shut the fuck",
+  "stfu",
+  "go to hell",
+
   // Hindi (Devanagari) — sexual slurs (no benign use)
   "मादरचोद",
   "बहनचोद",

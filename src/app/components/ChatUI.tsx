@@ -353,6 +353,59 @@ export default function ChatUI() {
   const isEmpty = messages.length === 0 && !isSending;
   const bannedWord = findBannedWord(input);
 
+  // Phase 7.0 production-test fix — shared input form rendered in BOTH
+  // the centered empty-state and the bottom footer. Defined inline here
+  // (rather than as a separate component) so all handlers / refs close
+  // over the existing component state without a prop-drilling layer.
+  // Both layout branches mount the SAME JSX node, so the textarea ref
+  // + autogrow effect + IME composition stay continuous as the layout
+  // flips at first message.
+  const inputBlock = (
+    <div className="mx-auto w-full max-w-[600px]">
+      {bannedWord && (
+        <p role="status" className="mb-2 text-center text-xs text-sacred">
+          कृपया उचित भाषा का प्रयोग करें · Please use respectful language
+        </p>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage();
+        }}
+        className="flex items-center gap-2"
+      >
+        <Bansuri className="hidden h-16 w-auto shrink-0 sm:block" />
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter submits, Shift+Enter inserts newline. Mirrors
+            // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
+            // keyboards send the same keydown so the Send button
+            // remains the secondary path.
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
+          placeholder="मन में जो है, कहो…"
+          disabled={isSending}
+          aria-invalid={bannedWord !== null}
+          className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
+        />
+        <button
+          type="submit"
+          disabled={isSending || !input.trim() || bannedWord !== null}
+          className="rounded-full bg-krishna px-5 py-3 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  );
+
   return (
     <main className="relative flex h-full flex-1 flex-col">
       {/* Step 2.5.6 atmosphere — single low-opacity lotus mandala
@@ -463,99 +516,67 @@ export default function ChatUI() {
         </div>
       </div>
 
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4">
-          {isEmpty && (
-            <div className="fade-up flex flex-col items-center gap-4 pt-6 sm:pt-10">
-              <p className="text-center font-devanagari text-base italic leading-relaxed text-krishna/70 sm:text-lg">
-                आज मन कैसा लग रहा है…
-              </p>
-              {isFirstTime === true && (
-                <div className="mt-2 flex w-full flex-col gap-2">
-                  {ONBOARDING_OPTIONS.map((text) => (
-                    <button
-                      key={text}
-                      type="button"
-                      onClick={() => sendMessage(text)}
-                      className="rounded-2xl border border-brass/30 bg-parchment px-4 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:bg-devotional/10 hover:ring-2 hover:ring-devotional/30"
-                    >
-                      {text}
-                    </button>
-                  ))}
-                </div>
+      {/* Phase 7.0 production-test fix — empty-state ChatGPT-style layout.
+          When isEmpty, the input box + flute + 3 suggestion pills render
+          centered vertically in the messages-area's space (no bottom
+          footer). After the first message lands, isEmpty flips to false
+          and the layout snaps to the standard messages-scroll + bottom-
+          footer-input shape. The {inputBlock} JSX is shared so both
+          branches use one form, one set of handlers, one autogrow effect. */}
+      {isEmpty ? (
+        <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+          <div className="fade-up flex w-full max-w-[600px] flex-col items-center gap-6">
+            <p className="text-center font-devanagari text-base italic leading-relaxed text-krishna/70 sm:text-lg">
+              आज मन कैसा लग रहा है…
+            </p>
+            {inputBlock}
+            {isFirstTime === true && (
+              <div className="flex w-full flex-col gap-2">
+                {ONBOARDING_OPTIONS.map((text) => (
+                  <button
+                    key={text}
+                    type="button"
+                    onClick={() => sendMessage(text)}
+                    className="rounded-2xl border border-brass/30 bg-parchment px-4 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:bg-devotional/10 hover:ring-2 hover:ring-devotional/30"
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+            <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4">
+              {messages.map((m, i) => (
+                <MessageCard
+                  key={m.id}
+                  message={m}
+                  userLang={resolveUserLang(messages, i)}
+                  onPaywallSuccess={() => handlePaywallSuccess(m.id)}
+                />
+              ))}
+              {isSending && messages[messages.length - 1]?.role === "user" && (
+                // Spinner shows from submit until the assistant placeholder
+                // is pushed (first text delta in streaming mode, or full
+                // response in plain-JSON mode). Once Krishna's bubble appears
+                // the bubble itself becomes the "thinking" indicator as it
+                // grows token-by-token.
+                <p className="fade-up text-center font-devanagari text-sm italic text-krishna/60">
+                  सोच रहा हूँ...
+                </p>
               )}
+              <div ref={bottomRef} />
             </div>
-          )}
-          {messages.map((m, i) => (
-            <MessageCard
-              key={m.id}
-              message={m}
-              userLang={resolveUserLang(messages, i)}
-              onPaywallSuccess={() => handlePaywallSuccess(m.id)}
-            />
-          ))}
-          {isSending && messages[messages.length - 1]?.role === "user" && (
-            // Spinner shows from submit until the assistant placeholder
-            // is pushed (first text delta in streaming mode, or full
-            // response in plain-JSON mode). Once Krishna's bubble appears
-            // the bubble itself becomes the "thinking" indicator as it
-            // grows token-by-token.
-            <p className="fade-up text-center font-devanagari text-sm italic text-krishna/60">
-              सोच रहा हूँ...
-            </p>
-          )}
-          <div ref={bottomRef} />
-        </div>
-      </div>
+          </div>
 
-      <div className="relative z-10 border-t border-brass/30 bg-parchment/70 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
-        <div className="mx-auto w-full max-w-[600px]">
-          {bannedWord && (
-            <p
-              role="status"
-              className="mb-2 text-center text-xs text-sacred"
-            >
-              कृपया उचित भाषा का प्रयोग करें · Please use respectful language
-            </p>
-          )}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage();
-            }}
-            className="flex items-center gap-2"
-          >
-            <Bansuri className="hidden h-16 w-auto shrink-0 sm:block" />
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                // Enter submits, Shift+Enter inserts newline. Mirrors
-                // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
-                // keyboards send the same keydown so the Send button
-                // remains the secondary path.
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="मन में जो है, कहो…"
-              disabled={isSending}
-              aria-invalid={bannedWord !== null}
-              className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
-            />
-            <button
-              type="submit"
-              disabled={isSending || !input.trim() || bannedWord !== null}
-              className="rounded-full bg-krishna px-5 py-3 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50"
-            >
-              Send
-            </button>
-          </form>
-        </div>
-      </div>
+          <div className="relative z-10 border-t border-brass/30 bg-parchment/70 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+            {inputBlock}
+          </div>
+        </>
+      )}
     </main>
   );
 }
