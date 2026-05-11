@@ -45,6 +45,16 @@ export default function ChatUI() {
   // as the client-side bannedWord notice — single shared row in inputBlock.
   const [serverModerationWarning, setServerModerationWarning] =
     useState<string | null>(null);
+  // Phase 7.0 voice-input — Web Speech API state. speechSupported gates
+  // the mic button entirely (Firefox + any browser without
+  // SpeechRecognition/webkitSpeechRecognition hides the button rather
+  // than rendering a broken affordance). recognitionRef holds the
+  // SpeechRecognition instance created once on mount; `any` is the
+  // standard cast since the Web Speech API types are not in
+  // lib.dom.d.ts. isListening drives the visual state + aria-pressed.
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const [speechSupported, setSpeechSupported] = useState(false);
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -103,6 +113,70 @@ export default function ChatUI() {
     const t = setTimeout(() => setDisclaimerExpanded(false), 5000);
     return () => clearTimeout(t);
   }, [disclaimerExpanded]);
+
+  // Phase 7.0 voice-input — initialise the Web Speech API once on mount.
+  // SSR guard via `typeof window === 'undefined'` (this is a client
+  // component but the effect body still runs in the React tree's mount
+  // phase). Vendor-prefix fallback covers Chromium/Edge/Safari
+  // (webkitSpeechRecognition); Firefox lacks both and falls through to
+  // setSpeechSupported(false) so the button stays hidden. Continuous +
+  // interimResults: every utterance gets joined into a single transcript
+  // string that streams into the textarea live so the user sees their
+  // words land as they speak. lang='hi-IN' handles Hindi natively and
+  // transcribes English loanwords phonetically to Devanagari — the
+  // existing chat-route Haiku-based language classifier handles the
+  // resulting Hinglish-as-Devanagari downstream (locked decision #12 +
+  // the Hinglish-classifier move noted in CLAUDE.md status).
+  //
+  // The empty dep array is deliberate. recognition.onresult closes over
+  // `serverModerationWarning` at mount only — the alternative (effect
+  // re-runs on every warning change) would tear down + rebuild the
+  // SpeechRecognition object mid-recording. The textarea onChange path
+  // also clears the warning, so the mic-path clear is best-effort.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognitionImpl =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionImpl) {
+      setSpeechSupported(false);
+      return;
+    }
+    setSpeechSupported(true);
+
+    const recognition = new SpeechRecognitionImpl();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "hi-IN";
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join("");
+      setInput(transcript);
+      if (serverModerationWarning) setServerModerationWarning(null);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("[chat] speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      try {
+        recognition.abort();
+      } catch {
+        /* ignore */
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetch("/api/onboarding-state")
@@ -385,6 +459,31 @@ export default function ChatUI() {
   const isEmpty = messages.length === 0 && !isSending;
   const bannedWord = findBannedWord(input);
 
+  // Phase 7.0 voice-input — toggle handler. recognition.start() can
+  // throw if already running or in an invalid state (e.g. after a
+  // permission denial); both branches catch + reset to idle so the
+  // button never gets stuck listening.
+  const toggleMic = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+    if (isListening) {
+      try {
+        recognition.stop();
+      } catch {
+        /* ignore */
+      }
+      setIsListening(false);
+    } else {
+      try {
+        recognition.start();
+        setIsListening(true);
+      } catch (e) {
+        console.error("[chat] speech start failed:", e);
+        setIsListening(false);
+      }
+    }
+  };
+
   // Phase 7.0 production-test fix — shared input form rendered in BOTH
   // the centered empty-state and the bottom footer. Defined inline here
   // (rather than as a separate component) so all handlers / refs close
@@ -467,6 +566,21 @@ export default function ChatUI() {
             </div>
           )}
         </div>
+        {speechSupported && (
+          <button
+            type="button"
+            onClick={toggleMic}
+            aria-label={isListening ? "बंद करें · Stop recording" : "बोलें · Start recording"}
+            aria-pressed={isListening}
+            className={`flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
+              isListening
+                ? "bg-brass/20 text-brass animate-pulse"
+                : "text-krishna/60 hover:bg-devotional/10 hover:text-krishna"
+            }`}
+          >
+            <MicIcon className="h-5 w-5" />
+          </button>
+        )}
         <button
           type="submit"
           disabled={isSending || !input.trim() || bannedWord !== null}
@@ -838,6 +952,31 @@ function applyFrameToMessages(
 
   // Unknown frame type — silently skip (forward compat: future frame
   // types added server-side won't crash old clients).
+}
+
+// Phase 7.0 voice-input — inline microphone icon. Feather/Lucide-style
+// 24×24 outline at strokeWidth 2 with currentColor stroke + className
+// API, matching the rest of the project's line-art icons (DiyaIcon,
+// peacock-feather geometry). aria-hidden because the parent button
+// already carries the bilingual aria-label.
+function MicIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
 }
 
 function SafetyCardView({ card }: { card: SafetyCard }) {
