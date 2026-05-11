@@ -55,6 +55,14 @@ export default function ChatUI() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [speechSupported, setSpeechSupported] = useState(false);
+  // Phase 7.0 voice-input lang toggle — Web Speech API has no true
+  // Hinglish locale, so the user needs to pick the script their speech
+  // should land in: hi-IN (Devanagari output, native Hindi speech) or
+  // en-IN (Roman output, native English + Hinglish code-switching).
+  // Default hi-IN preserves the app's Hindi-first stance. The chip
+  // beside the mic flips this between sessions; mid-recording changes
+  // don't apply until the next recognition.start() call.
+  const [speechLang, setSpeechLang] = useState<"hi-IN" | "en-IN">("hi-IN");
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -475,6 +483,10 @@ export default function ChatUI() {
       setIsListening(false);
     } else {
       try {
+        // Apply the current lang before each start — the chip toggle
+        // updates state but does not touch the recognition instance,
+        // so reading speechLang here keeps the two in lockstep.
+        recognition.lang = speechLang;
         recognition.start();
         setIsListening(true);
       } catch (e) {
@@ -482,6 +494,14 @@ export default function ChatUI() {
         setIsListening(false);
       }
     }
+  };
+
+  // Phase 7.0 voice-input lang toggle — flip between hi-IN (Devanagari)
+  // and en-IN (Roman / Hinglish). Disabled while listening so the user
+  // doesn't get a half-Hindi-half-English transcript; they stop, switch,
+  // start again.
+  const toggleSpeechLang = () => {
+    setSpeechLang((prev) => (prev === "hi-IN" ? "en-IN" : "hi-IN"));
   };
 
   // Phase 7.0 production-test fix — shared input form rendered in BOTH
@@ -567,19 +587,43 @@ export default function ChatUI() {
           )}
         </div>
         {speechSupported && (
-          <button
-            type="button"
-            onClick={toggleMic}
-            aria-label={isListening ? "बंद करें · Stop recording" : "बोलें · Start recording"}
-            aria-pressed={isListening}
-            className={`flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
-              isListening
-                ? "bg-brass/20 text-brass animate-pulse"
-                : "text-krishna/60 hover:bg-devotional/10 hover:text-krishna"
-            }`}
-          >
-            <MicIcon className="h-5 w-5" />
-          </button>
+          <>
+            {/* Lang chip — sits left of the mic so the action buttons
+                (mic + send) stay grouped on the right. Disabled while
+                listening so the user can't mid-utterance switch into
+                an invalid state. Devanagari font for हिं, serif for EN,
+                mirroring the rest of the app's bilingual treatment. */}
+            <button
+              type="button"
+              onClick={toggleSpeechLang}
+              disabled={isListening}
+              aria-label={
+                speechLang === "hi-IN"
+                  ? "हिंदी में लिखें · Currently Hindi, tap to switch to English"
+                  : "Currently English, tap to switch to Hindi"
+              }
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-brass/40 bg-parchment px-2.5 text-xs text-brass-dark transition-colors hover:border-brass/60 hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
+            >
+              {speechLang === "hi-IN" ? (
+                <span className="font-devanagari">हिं</span>
+              ) : (
+                <span className="font-serif font-medium">EN</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={toggleMic}
+              aria-label={isListening ? "बंद करें · Stop recording" : "बोलें · Start recording"}
+              aria-pressed={isListening}
+              className={`flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
+                isListening
+                  ? "bg-brass/20 text-brass animate-pulse"
+                  : "text-krishna/60 hover:bg-devotional/10 hover:text-krishna"
+              }`}
+            >
+              <MicIcon className="h-5 w-5" />
+            </button>
+          </>
         )}
         <button
           type="submit"
