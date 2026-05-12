@@ -586,14 +586,14 @@ export default function ChatUI() {
             "कृपया उचित भाषा का प्रयोग करें · Please use respectful language"}
         </p>
       )}
-      {/* YouTube-style layout: Bansuri (left) + [textarea stacked over
-          suggestion list] (middle) + Send (right). items-start aligns
-          all three children to the top so the textarea, Bansuri and
-          Send share a top edge; Bansuri is h-12 to match the textarea's
-          natural height — no overflow below the textarea, no visual
-          collision with the suggestion list. The suggestion list
-          inherits the textarea's column width exactly, so the unit
-          mirrors YouTube's search-input + dropdown footprint. */}
+      {/* Form row + sibling suggestion card. Both are width-capped by
+          the outer max-w-[600px] container above. Mobile reality (~360px
+          Android) made the prior nested-inside-the-textarea-column
+          layout cramped: Bansuri is hidden on mobile, so the textarea
+          column shrank to fit between left edge and mic + Send, and
+          the suggestion list inherited that squeezed width — each Hindi
+          option wrapped to two lines. Lifting the list out keeps it
+          full-width while leaving the form row clean. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -602,57 +602,29 @@ export default function ChatUI() {
         className="flex items-start gap-2"
       >
         <Bansuri className="hidden h-12 w-auto shrink-0 sm:block" />
-        <div className="flex flex-1 flex-col">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              if (serverModerationWarning) setServerModerationWarning(null);
-            }}
-            onKeyDown={(e) => {
-              // Enter submits, Shift+Enter inserts newline. Mirrors
-              // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
-              // keyboards send the same keydown so the Send button
-              // remains the secondary path.
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="मन में जो है, कहो…"
-            disabled={isSending}
-            aria-invalid={bannedWord !== null}
-            className="w-full resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
-          />
-          {/* Suggestion list nested under the textarea so it shares
-              the textarea's column width exactly. mt-2 (8px) gap
-              keeps the two halves as distinct containers — input is
-              its own pill, list is its own rounded card — but the
-              separation is thin enough that they still read as a
-              single visual cluster. fade-up [animation-delay:360ms]
-              keeps the staggered cascade: greeting 0ms → input 180ms
-              → list 360ms. */}
-          {isEmpty && isFirstTime === true && (
-            <div className="fade-up mt-2 flex w-full flex-col overflow-hidden rounded-2xl border border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
-              {ONBOARDING_OPTIONS.map((text, i) => (
-                <button
-                  key={text}
-                  type="button"
-                  onClick={() => sendMessage(text)}
-                  className={`flex w-full items-center px-5 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna/70 transition-colors hover:bg-devotional/5 hover:text-krishna ${
-                    i < ONBOARDING_OPTIONS.length - 1
-                      ? "border-b border-brass/15"
-                      : ""
-                  }`}
-                >
-                  {text}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            if (serverModerationWarning) setServerModerationWarning(null);
+          }}
+          onKeyDown={(e) => {
+            // Enter submits, Shift+Enter inserts newline. Mirrors
+            // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
+            // keyboards send the same keydown so the Send button
+            // remains the secondary path.
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
+          placeholder="मन में जो है, कहो…"
+          disabled={isSending}
+          aria-invalid={bannedWord !== null}
+          className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
+        />
         {mediaSupported && (
           <button
             type="button"
@@ -677,14 +649,44 @@ export default function ChatUI() {
             <MicIcon className="h-5 w-5" />
           </button>
         )}
+        {/* Send button — icon-only 44×44 circle on mobile so the
+            textarea can use the freed horizontal space; text "Send"
+            button on sm:+ keeps the existing desktop affordance.
+            sm:min-w-0 cancels the mobile min-width so the desktop
+            text variant sizes to content. */}
         <button
           type="submit"
           disabled={isSending || !input.trim() || bannedWord !== null}
-          className="min-h-12 rounded-full bg-krishna px-5 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50"
+          aria-label="Send · भेजें"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-krishna p-2 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50 sm:min-h-12 sm:min-w-0 sm:px-5"
         >
-          Send
+          <SendIcon className="h-5 w-5 sm:hidden" />
+          <span className="hidden sm:inline">Send</span>
         </button>
       </form>
+      {/* Suggestion card sits outside the form row so it spans the
+          full inputBlock width (max-w-[600px]) on every viewport. mt-2
+          mirrors the original 8px gap. fade-up [animation-delay:360ms]
+          preserves the staggered cascade: greeting 0ms → input 180ms
+          → list 360ms. */}
+      {isEmpty && isFirstTime === true && (
+        <div className="fade-up mt-2 flex w-full flex-col overflow-hidden rounded-2xl border border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
+          {ONBOARDING_OPTIONS.map((text, i) => (
+            <button
+              key={text}
+              type="button"
+              onClick={() => sendMessage(text)}
+              className={`flex w-full items-center px-5 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna/70 transition-colors hover:bg-devotional/5 hover:text-krishna ${
+                i < ONBOARDING_OPTIONS.length - 1
+                  ? "border-b border-brass/15"
+                  : ""
+              }`}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -1071,6 +1073,29 @@ function MicIcon({ className }: { className?: string }) {
       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
       <line x1="12" y1="19" x2="12" y2="23" />
       <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
+// Phase 7.0 mobile-layout — inline send icon. Feather/Lucide-style
+// paper-plane outline, same vocabulary as MicIcon (currentColor stroke
+// at strokeWidth 2, 24×24 viewBox, className API, aria-hidden). Shown
+// on mobile only — the desktop button still renders the "Send" word
+// directly via responsive Tailwind utilities.
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>
   );
 }
