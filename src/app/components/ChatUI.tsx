@@ -45,24 +45,22 @@ export default function ChatUI() {
   // as the client-side bannedWord notice — single shared row in inputBlock.
   const [serverModerationWarning, setServerModerationWarning] =
     useState<string | null>(null);
-  // Phase 7.0 voice-input — Web Speech API state. speechSupported gates
-  // the mic button entirely (Firefox + any browser without
-  // SpeechRecognition/webkitSpeechRecognition hides the button rather
-  // than rendering a broken affordance). recognitionRef holds the
-  // SpeechRecognition instance created once on mount; `any` is the
-  // standard cast since the Web Speech API types are not in
-  // lib.dom.d.ts. isListening drives the visual state + aria-pressed.
+  // Phase 7.0 voice-input (Gemini STT) — MediaRecorder + transcription
+  // state. mediaSupported gates the mic button (very rare to be false;
+  // all modern browsers ship MediaRecorder + getUserMedia). isListening
+  // drives the recording visual state; isTranscribing drives the
+  // post-stop cursor-wait state while the audio is round-tripping to
+  // Gemini. mediaRecorderRef holds the active MediaRecorder instance,
+  // audioChunksRef accumulates Blob chunks as they arrive,
+  // recordingTimeoutRef holds the 30s auto-stop timer handle.
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const [speechSupported, setSpeechSupported] = useState(false);
-  // Phase 7.0 voice-input lang toggle — Web Speech API has no true
-  // Hinglish locale, so the user needs to pick the script their speech
-  // should land in: hi-IN (Devanagari output, native Hindi speech) or
-  // en-IN (Roman output, native English + Hinglish code-switching).
-  // Default hi-IN preserves the app's Hindi-first stance. The chip
-  // beside the mic flips this between sessions; mid-recording changes
-  // don't apply until the next recognition.start() call.
-  const [speechLang, setSpeechLang] = useState<"hi-IN" | "en-IN">("hi-IN");
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [mediaSupported, setMediaSupported] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -122,68 +120,38 @@ export default function ChatUI() {
     return () => clearTimeout(t);
   }, [disclaimerExpanded]);
 
-  // Phase 7.0 voice-input — initialise the Web Speech API once on mount.
-  // SSR guard via `typeof window === 'undefined'` (this is a client
-  // component but the effect body still runs in the React tree's mount
-  // phase). Vendor-prefix fallback covers Chromium/Edge/Safari
-  // (webkitSpeechRecognition); Firefox lacks both and falls through to
-  // setSpeechSupported(false) so the button stays hidden. Continuous +
-  // interimResults: every utterance gets joined into a single transcript
-  // string that streams into the textarea live so the user sees their
-  // words land as they speak. lang='hi-IN' handles Hindi natively and
-  // transcribes English loanwords phonetically to Devanagari — the
-  // existing chat-route Haiku-based language classifier handles the
-  // resulting Hinglish-as-Devanagari downstream (locked decision #12 +
-  // the Hinglish-classifier move noted in CLAUDE.md status).
-  //
-  // The empty dep array is deliberate. recognition.onresult closes over
-  // `serverModerationWarning` at mount only — the alternative (effect
-  // re-runs on every warning change) would tear down + rebuild the
-  // SpeechRecognition object mid-recording. The textarea onChange path
-  // also clears the warning, so the mic-path clear is best-effort.
+  // Phase 7.0 voice-input (Gemini STT) — one-time check that the
+  // browser supports getUserMedia + MediaRecorder. Hides the mic
+  // button on unsupported browsers (very rare; Firefox/Chromium/Safari
+  // all support both). The actual permission prompt happens at
+  // startRecording() time, not here.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const SpeechRecognitionImpl =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionImpl) {
-      setSpeechSupported(false);
-      return;
-    }
-    setSpeechSupported(true);
+    const supported =
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getUserMedia === "function" &&
+      typeof window.MediaRecorder !== "undefined";
+    setMediaSupported(supported);
+  }, []);
 
-    const recognition = new SpeechRecognitionImpl();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "hi-IN";
-
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0].transcript)
-        .join("");
-      setInput(transcript);
-      if (serverModerationWarning) setServerModerationWarning(null);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("[chat] speech recognition error:", event.error);
-      setIsListening(false);
-    };
-
-    recognitionRef.current = recognition;
-
+  // Release the mic stream + cancel the auto-stop timer if the
+  // component unmounts mid-recording (e.g. user navigates away).
+  // Avoids orphaned mic permission indicators in the browser chrome.
+  useEffect(() => {
     return () => {
-      try {
-        recognition.abort();
-      } catch {
-        /* ignore */
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {
+          /* ignore */
+        }
+      }
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -467,42 +435,141 @@ export default function ChatUI() {
   const isEmpty = messages.length === 0 && !isSending;
   const bannedWord = findBannedWord(input);
 
-  // Phase 7.0 voice-input — toggle handler. recognition.start() can
-  // throw if already running or in an invalid state (e.g. after a
-  // permission denial); both branches catch + reset to idle so the
-  // button never gets stuck listening.
-  const toggleMic = () => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-    if (isListening) {
-      try {
-        recognition.stop();
-      } catch {
-        /* ignore */
-      }
+  // Phase 7.0 voice-input (Gemini STT) — recording flow.
+  // Cap recording at 30s: keeps server-side audio payload bounded
+  // (5MB cap) and latency reasonable (~2-4s per recording for the
+  // Gemini round-trip; longer audio compounds wait time linearly).
+  const MAX_RECORDING_MS = 30_000;
+
+  async function startRecording() {
+    if (!mediaSupported) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+
+      // Prefer audio/webm;codecs=opus — Chromium baseline, accepted by
+      // Gemini. Safari may not support webm; fall back through webm
+      // (no codec hint) → mp4. The actual produced mimeType is read
+      // from recorder.mimeType when stopping (some browsers ignore
+      // the hint and pick their own container).
+      const preferredMime = MediaRecorder.isTypeSupported(
+        "audio/webm;codecs=opus",
+      )
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
+
+      const recorder = new MediaRecorder(
+        stream,
+        preferredMime ? { mimeType: preferredMime } : undefined,
+      );
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Release mic tracks immediately so the browser indicator clears.
+        stream.getTracks().forEach((t) => t.stop());
+
+        const mimeType =
+          recorder.mimeType || preferredMime || "audio/webm";
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        audioChunksRef.current = [];
+
+        if (blob.size === 0) {
+          setIsListening(false);
+          return;
+        }
+
+        const base64 = await blobToBase64(blob);
+
+        setIsListening(false);
+        setIsTranscribing(true);
+        try {
+          const res = await fetch("/api/transcribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ audio: base64, mimeType }),
+          });
+          if (!res.ok) throw new Error(`transcribe HTTP ${res.status}`);
+          const data = (await res.json()) as { text?: string };
+          const text = (data.text ?? "").trim();
+          if (text) {
+            // APPEND when the user has already typed something;
+            // otherwise REPLACE. Mirrors typical voice-input UX
+            // (iOS dictation appends to existing field content).
+            setInput((prev) =>
+              prev.trim() ? `${prev.trim()} ${text}` : text,
+            );
+            if (serverModerationWarning) setServerModerationWarning(null);
+          }
+        } catch (e) {
+          console.error("[chat] transcription failed:", e);
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsListening(true);
+
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopRecording();
+      }, MAX_RECORDING_MS);
+    } catch (e) {
+      console.error("[chat] getUserMedia failed:", e);
       setIsListening(false);
-    } else {
+    }
+  }
+
+  function stopRecording() {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
       try {
-        // Apply the current lang before each start — the chip toggle
-        // updates state but does not touch the recognition instance,
-        // so reading speechLang here keeps the two in lockstep.
-        recognition.lang = speechLang;
-        recognition.start();
-        setIsListening(true);
+        recorder.stop();
       } catch (e) {
-        console.error("[chat] speech start failed:", e);
+        console.error("[chat] mediaRecorder.stop failed:", e);
         setIsListening(false);
       }
+    } else {
+      setIsListening(false);
+    }
+    mediaRecorderRef.current = null;
+  }
+
+  const toggleMic = () => {
+    if (isTranscribing) return; // ignore clicks while waiting for transcription
+    if (isListening) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
-  // Phase 7.0 voice-input lang toggle — flip between hi-IN (Devanagari)
-  // and en-IN (Roman / Hinglish). Disabled while listening so the user
-  // doesn't get a half-Hindi-half-English transcript; they stop, switch,
-  // start again.
-  const toggleSpeechLang = () => {
-    setSpeechLang((prev) => (prev === "hi-IN" ? "en-IN" : "hi-IN"));
-  };
+  // Convert Blob → base64 (data URL prefix stripped).
+  async function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
 
   // Phase 7.0 production-test fix — shared input form rendered in BOTH
   // the centered empty-state and the bottom footer. Defined inline here
@@ -586,44 +653,29 @@ export default function ChatUI() {
             </div>
           )}
         </div>
-        {speechSupported && (
-          <>
-            {/* Lang chip — sits left of the mic so the action buttons
-                (mic + send) stay grouped on the right. Disabled while
-                listening so the user can't mid-utterance switch into
-                an invalid state. Devanagari font for हिं, serif for EN,
-                mirroring the rest of the app's bilingual treatment. */}
-            <button
-              type="button"
-              onClick={toggleSpeechLang}
-              disabled={isListening}
-              aria-label={
-                speechLang === "hi-IN"
-                  ? "हिंदी में लिखें · Currently Hindi, tap to switch to English"
-                  : "Currently English, tap to switch to Hindi"
-              }
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-brass/40 bg-parchment px-2.5 text-xs text-brass-dark transition-colors hover:border-brass/60 hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
-            >
-              {speechLang === "hi-IN" ? (
-                <span className="font-devanagari">हिं</span>
-              ) : (
-                <span className="font-serif font-medium">EN</span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={toggleMic}
-              aria-label={isListening ? "बंद करें · Stop recording" : "बोलें · Start recording"}
-              aria-pressed={isListening}
-              className={`flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
-                isListening
-                  ? "bg-brass/20 text-brass animate-pulse"
+        {mediaSupported && (
+          <button
+            type="button"
+            onClick={toggleMic}
+            disabled={isTranscribing}
+            aria-label={
+              isTranscribing
+                ? "लिप्यंतरण हो रहा है · Transcribing"
+                : isListening
+                  ? "बंद करें · Stop recording"
+                  : "बोलें · Start recording"
+            }
+            aria-pressed={isListening}
+            className={`flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
+              isListening
+                ? "bg-brass/20 text-brass animate-pulse"
+                : isTranscribing
+                  ? "bg-devotional/10 text-devotional/70 cursor-wait"
                   : "text-krishna/60 hover:bg-devotional/10 hover:text-krishna"
-              }`}
-            >
-              <MicIcon className="h-5 w-5" />
-            </button>
-          </>
+            }`}
+          >
+            <MicIcon className="h-5 w-5" />
+          </button>
         )}
         <button
           type="submit"
