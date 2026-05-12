@@ -23,12 +23,6 @@ import DiyaIcon from "./motifs/DiyaIcon";
 import LotusMandala from "./motifs/LotusMandala";
 import PeacockFeather from "./motifs/PeacockFeather";
 
-const ONBOARDING_OPTIONS = [
-  "मन थोड़ा भारी है आज",
-  "कुछ समझ नहीं आ रहा",
-  "बस किसी से बात करनी है",
-];
-
 // Phase 5.4 — static tier list for the diya seva panel. TIER_CONFIG is a
 // frozen const so this is computed once at module load (avoids handing
 // the panel a fresh array on every render and triggering useless work).
@@ -832,27 +826,28 @@ export default function ChatUI() {
           <span className="hidden sm:inline">Send</span>
         </button>
       </form>
-      {/* Suggestion card sits outside the form row so it spans the
-          full inputBlock width (max-w-[600px]) on every viewport. mt-2
-          mirrors the original 8px gap. fade-up [animation-delay:360ms]
-          preserves the staggered cascade: greeting 0ms → input 180ms
-          → list 360ms. */}
-      {isEmpty && isFirstTime === true && (
-        <div className="fade-up mt-2 flex w-full flex-col overflow-hidden rounded-2xl border border-brass/40 bg-parchment shadow-[0_4px_16px_rgba(0,0,0,0.05)] [animation-delay:360ms] [animation-fill-mode:backwards]">
-          {ONBOARDING_OPTIONS.map((text, i) => (
-            <button
-              key={text}
-              type="button"
-              onClick={() => sendMessage(text)}
-              className={`flex w-full items-center px-5 py-3 text-left font-devanagari text-sm leading-relaxed text-krishna/70 transition-colors hover:bg-devotional/5 hover:text-krishna ${
-                i < ONBOARDING_OPTIONS.length - 1
-                  ? "border-b border-brass/15"
-                  : ""
-              }`}
-            >
-              {text}
-            </button>
-          ))}
+      {/* Phase 7.0 onboarding-suggestion redesign — replaced the 8
+          clickable emotional-state pills (ONBOARDING_OPTIONS) with
+          static informational text. Beta-tester feedback: first-time
+          users tapped pills like "मन थोड़ा भारी है आज" out of
+          curiosity without being in those states, and Krishna
+          responded to phantom emotion with deep acknowledge-first
+          reflection — register mismatch. Static text shows what
+          users CAN DO without forcing an emotional framing; the user
+          defines their register by what they type. Shown on every
+          empty-state (no longer gated on isFirstTime — informational
+          context is useful for returning users too). */}
+      {isEmpty && (
+        <div className="mt-4 flex w-full flex-col items-center gap-3 text-center">
+          <p className="font-devanagari text-sm leading-relaxed text-krishna/70">
+            जो भी मन में हो — यहाँ कह सकते हो
+          </p>
+          <div className="flex flex-col gap-1.5 font-devanagari text-sm leading-relaxed text-krishna/55">
+            <span>अपने सवाल पूछो</span>
+            <span>मन की बात बाँटो</span>
+            <span>गीता, महाभारत, भागवत से सीखो</span>
+            <span>बस साथ बैठो, कोई कारण नहीं चाहिए</span>
+          </div>
         </div>
       )}
     </div>
