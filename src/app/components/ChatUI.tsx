@@ -61,6 +61,21 @@ export default function ChatUI() {
   const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  // Phase 7.0 voice-input live-preview — Web Speech API runs alongside
+  // MediaRecorder so the user sees their words appear in the textarea
+  // as they speak (best-effort; fails silently on Android Chrome builds
+  // where Web Speech is flaky — in those cases Gemini still produces
+  // the final accurate transcript on stop). The `any` cast on the ref
+  // is the standard pattern since lib.dom.d.ts doesn't declare the
+  // SpeechRecognition / webkitSpeechRecognition types.
+  //
+  // inputBeforeMicRef captures whatever the user had typed BEFORE
+  // they hit the mic, so both the live preview (recognition.onresult)
+  // and the final Gemini result append to that prefix rather than
+  // clobbering typed text.
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const speechRecognitionRef = useRef<any>(null);
+  const inputBeforeMicRef = useRef<string>("");
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -133,6 +148,60 @@ export default function ChatUI() {
       typeof navigator.mediaDevices.getUserMedia === "function" &&
       typeof window.MediaRecorder !== "undefined";
     setMediaSupported(supported);
+  }, []);
+
+  // Phase 7.0 voice-input live-preview — set up a single Web Speech
+  // recognition instance once on mount. continuous + interimResults
+  // stream interim transcripts into the textarea as the user speaks.
+  // lang='hi-IN' is the Hindi-first default; Gemini's final pass is
+  // language-agnostic so the preview's accuracy is only "good enough
+  // to feel live" — the real transcript replaces it on stop. Wrapped
+  // in a try/catch + best-effort start; on browsers without Web Speech
+  // (Firefox) we skip the instance entirely and the user just sees
+  // text land all at once on stop.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognitionImpl =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionImpl) {
+      setSpeechSupported(false);
+      return;
+    }
+    setSpeechSupported(true);
+
+    const recognition = new SpeechRecognitionImpl();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "hi-IN";
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join("");
+      // Append to whatever the user typed before clicking mic. The
+      // prefix is captured in startRecording() into inputBeforeMicRef
+      // so this closure reads a current value even though the effect
+      // ran once at mount.
+      const prefix = inputBeforeMicRef.current;
+      setInput(prefix ? `${prefix} ${transcript}` : transcript);
+      if (serverModerationWarning) setServerModerationWarning(null);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("[chat] speech recognition error:", event.error);
+    };
+
+    speechRecognitionRef.current = recognition;
+
+    return () => {
+      try {
+        recognition.abort();
+      } catch {
+        /* ignore */
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Release the mic stream + cancel the auto-stop timer if the
@@ -444,6 +513,17 @@ export default function ChatUI() {
   async function startRecording() {
     if (!mediaSupported) return;
     try {
+      // Capture the user's typed prefix BEFORE we touch input. Both
+      // the live preview (recognition.onresult) and the final Gemini
+      // result append to this so the user's typed text is preserved.
+      inputBeforeMicRef.current = input.trim();
+
+      // Audio cue — short Web Audio sine ping signals "listening".
+      // Created from a user-gesture click handler so AudioContext is
+      // not auto-suspended; if anything throws we swallow it (sound
+      // is a nice-to-have, not load-bearing).
+      playStartTone();
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
@@ -501,12 +581,13 @@ export default function ChatUI() {
           const data = (await res.json()) as { text?: string };
           const text = (data.text ?? "").trim();
           if (text) {
-            // APPEND when the user has already typed something;
-            // otherwise REPLACE. Mirrors typical voice-input UX
-            // (iOS dictation appends to existing field content).
-            setInput((prev) =>
-              prev.trim() ? `${prev.trim()} ${text}` : text,
-            );
+            // The Web Speech live preview (if it was running) has
+            // already written interim text into `input`. Replace
+            // that whole appended segment with Gemini's higher-
+            // quality version. The prefix is the user-typed text
+            // captured at startRecording.
+            const prefix = inputBeforeMicRef.current;
+            setInput(prefix ? `${prefix} ${text}` : text);
             if (serverModerationWarning) setServerModerationWarning(null);
           }
         } catch (e) {
@@ -519,6 +600,19 @@ export default function ChatUI() {
       recorder.start();
       mediaRecorderRef.current = recorder;
       setIsListening(true);
+
+      // Best-effort start of the Web Speech live preview. If it
+      // throws (already running, permission flakiness on Android,
+      // etc.) the recording still proceeds and Gemini still runs
+      // on stop — the user just doesn't see interim text.
+      const recognition = speechRecognitionRef.current;
+      if (recognition) {
+        try {
+          recognition.start();
+        } catch {
+          /* ignore — preview is best-effort */
+        }
+      }
 
       recordingTimeoutRef.current = setTimeout(() => {
         stopRecording();
@@ -533,6 +627,17 @@ export default function ChatUI() {
     if (recordingTimeoutRef.current) {
       clearTimeout(recordingTimeoutRef.current);
       recordingTimeoutRef.current = null;
+    }
+    // Stop the Web Speech preview first so it stops writing interim
+    // results into the textarea between now and when Gemini's final
+    // transcript arrives.
+    const recognition = speechRecognitionRef.current;
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch {
+        /* ignore */
+      }
     }
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") {
@@ -586,6 +691,49 @@ export default function ChatUI() {
             "कृपया उचित भाषा का प्रयोग करें · Please use respectful language"}
         </p>
       )}
+      {/* Phase 7.0 voice-input — prominent listening / transcribing
+          status chip above the form. Mirrors the disclaimer chip
+          vocabulary (rounded-full + brass border + parchment fill)
+          and uses bilingual text so the state is unambiguous. The
+          fade-up animation gives it a soft entry, not a hard cut. */}
+      {(isListening || isTranscribing) && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fade-up mb-3 flex items-center justify-center"
+        >
+          {isListening ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-brass/40 bg-parchment px-4 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <span aria-hidden className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brass [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brass [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brass [animation-delay:300ms]" />
+              </span>
+              <span className="font-devanagari text-sm text-brass-dark">
+                सुन रहा हूँ…
+              </span>
+              <span aria-hidden className="text-brass/60">·</span>
+              <span className="font-serif text-sm italic text-brass-dark">
+                listening
+              </span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-full border border-devotional/40 bg-parchment px-4 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <span
+                aria-hidden
+                className="h-3 w-3 animate-spin rounded-full border-2 border-devotional/30 border-t-devotional"
+              />
+              <span className="font-devanagari text-sm italic text-devotional-dark">
+                समझ रहा हूँ…
+              </span>
+              <span aria-hidden className="text-devotional/60">·</span>
+              <span className="font-serif text-sm italic text-devotional-dark">
+                transcribing
+              </span>
+            </span>
+          )}
+        </div>
+      )}
       {/* Form row + sibling suggestion card. Both are width-capped by
           the outer max-w-[600px] container above. Mobile reality (~360px
           Android) made the prior nested-inside-the-textarea-column
@@ -626,28 +774,48 @@ export default function ChatUI() {
           className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
         />
         {mediaSupported && (
-          <button
-            type="button"
-            onClick={toggleMic}
-            disabled={isTranscribing}
-            aria-label={
-              isTranscribing
-                ? "लिप्यंतरण हो रहा है · Transcribing"
-                : isListening
-                  ? "बंद करें · Stop recording"
-                  : "बोलें · Start recording"
-            }
-            aria-pressed={isListening}
-            className={`flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
-              isListening
-                ? "bg-brass/20 text-brass animate-pulse"
-                : isTranscribing
-                  ? "bg-devotional/10 text-devotional/70 cursor-wait"
-                  : "text-krishna/60 hover:bg-devotional/10 hover:text-krishna"
-            }`}
-          >
-            <MicIcon className="h-5 w-5" />
-          </button>
+          <div className="relative flex shrink-0 items-center justify-center">
+            {/* Phase 7.0 voice-input — sonar rings emanate outward
+                from the mic when active. Two pings at staggered
+                phases (0s, 0.8s offset) give a continuous "alive"
+                feel without being so busy it competes with the
+                meditative palette. pointer-events-none so the
+                actual button stays clickable through them. */}
+            {isListening && (
+              <>
+                <span
+                  aria-hidden
+                  className="sonar-ring pointer-events-none absolute inset-0 rounded-full bg-brass/35"
+                />
+                <span
+                  aria-hidden
+                  className="sonar-ring-delayed pointer-events-none absolute inset-0 rounded-full bg-brass/35"
+                />
+              </>
+            )}
+            <button
+              type="button"
+              onClick={toggleMic}
+              disabled={isTranscribing}
+              aria-label={
+                isTranscribing
+                  ? "लिप्यंतरण हो रहा है · Transcribing"
+                  : isListening
+                    ? "बंद करें · Stop recording"
+                    : "बोलें · Start recording"
+              }
+              aria-pressed={isListening}
+              className={`relative z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-all focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
+                isListening
+                  ? "scale-110 bg-brass text-parchment shadow-[0_0_0_3px_rgba(176,141,76,0.25)]"
+                  : isTranscribing
+                    ? "bg-devotional/10 text-devotional/70 cursor-wait"
+                    : "text-krishna/60 hover:bg-devotional/10 hover:text-krishna"
+              }`}
+            >
+              <MicIcon className="h-5 w-5" />
+            </button>
+          </div>
         )}
         {/* Send button — icon-only 44×44 circle on mobile so the
             textarea can use the freed horizontal space; text "Send"
@@ -1050,6 +1218,41 @@ function applyFrameToMessages(
 
   // Unknown frame type — silently skip (forward compat: future frame
   // types added server-side won't crash old clients).
+}
+
+// Phase 7.0 voice-input audio cue — short Web Audio sine "ping" played
+// when the user activates the mic. Runs on a fresh AudioContext each
+// call so the browser doesn't keep one hanging around; closes it after
+// ~300 ms to release the audio device. Wrapped in try/catch since the
+// sound is a nice-to-have, not load-bearing — older browsers without
+// AudioContext or users with autoplay restrictions just get the
+// visual feedback.
+function playStartTone() {
+  if (typeof window === "undefined") return;
+  try {
+    const AudioCtx =
+      window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx: AudioContext = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880; // A5 — soft, devotional-feeling chime
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.16);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.17);
+    setTimeout(() => {
+      ctx.close().catch(() => {
+        /* ignore */
+      });
+    }, 300);
+  } catch {
+    /* silent — sound is best-effort */
+  }
 }
 
 // Phase 7.0 voice-input — inline microphone icon. Feather/Lucide-style

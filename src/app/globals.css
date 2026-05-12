@@ -49,3 +49,26 @@ body {
 .fade-up {
   animation: fade-up 350ms ease-out;
 }
+
+/* Phase 7.0 voice-input — sonar pulse for the listening mic state.
+   Two concentric brass rings emanate outward from the mic button at
+   staggered phases, signalling that the system is actively capturing
+   audio. CSS-only per the frontend-design "Motion: CSS-only" rule. */
+@keyframes sonar {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.sonar-ring {
+  animation: sonar 1.6s ease-out infinite;
+}
+
+.sonar-ring-delayed {
+  animation: sonar 1.6s ease-out 0.8s infinite;
+}
