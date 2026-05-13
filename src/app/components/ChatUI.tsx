@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import Link from "next/link";
 import type { Message, SafetyCard } from "@/lib/messages";
 import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
@@ -886,8 +887,22 @@ export default function ChatUI() {
         {/* Phase 5.4 — diya seva trigger + panel. Wrapper is absolute
             inside the relative header (top-right corner). The panel is
             in turn absolute relative to this wrapper via right-0 top-full,
-            so it slides down directly under the icon. */}
-        <div className="absolute right-3 top-3 sm:right-5 sm:top-4">
+            so it slides down directly under the icon. Phase 8 added a
+            Settings gear sibling to the left of the diya button —
+            because /chat is fullscreen, the layout footer's Settings
+            link is below the fold; placing the gear here gives
+            /settings a first-class reach point from the main UI. The
+            seva-panel anchors `right-0 top-full` to this wrapper, and
+            since the diya button is the rightmost in-flow child, the
+            panel still pops down under the diya icon as before. */}
+        <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-5 sm:top-4">
+          <Link
+            href="/settings"
+            aria-label="Settings · सेटिंग्स"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+          >
+            <SettingsIcon className="h-6 w-6" />
+          </Link>
           <button
             type="button"
             aria-label="Seva · सेवा"
@@ -1294,6 +1309,29 @@ function SendIcon({ className }: { className?: string }) {
     >
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+// Phase 8 pre-launch — inline settings (cog) icon for the chat header.
+// Feather/Lucide-style outline, same vocabulary as MicIcon + SendIcon
+// (currentColor stroke at strokeWidth 2, 24×24 viewBox, className API,
+// aria-hidden). Routes the user to /settings, where the conversation-
+// review opt-out toggle and delete-my-data button live.
+function SettingsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   );
 }
