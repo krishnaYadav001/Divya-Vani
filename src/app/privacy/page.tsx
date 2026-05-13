@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const LAST_UPDATED = "2026-05-08";
+const LAST_UPDATED = "2026-05-13";
 
 export default function PrivacyPage() {
   return (
@@ -64,55 +64,105 @@ export default function PrivacyPage() {
             </h2>
             <ul className="ml-5 list-disc space-y-2">
               <li>
-                <strong>Anonymous identifier.</strong> An HttpOnly cookie
-                named{" "}
+                <strong>Anonymous browser identifier.</strong> An HttpOnly
+                cookie named{" "}
                 <code className="rounded bg-brass/10 px-1 text-sm">
                   god_messenger_uid
                 </code>{" "}
                 containing a randomly generated UUID. One-year expiry,
                 per-browser, not accessible to client-side JavaScript.
+                This is how we recognize you across visits without an
+                account.
               </li>
               <li>
-                <strong>Optional name.</strong> If you choose to share your
-                name during a conversation, it is stored so Krishna can
-                address you in future replies. This is voluntary; the
-                conversation works without it.
+                <strong>Account name.</strong> When you choose to share
+                your name during a conversation, it is stored so Krishna
+                can address you in future replies. This is voluntary;
+                the conversation works without it.
               </li>
               <li>
-                <strong>Conversation memory (not verbatim log).</strong>{" "}
-                Messages you send are processed by Anthropic Claude (Sonnet
-                4.6 + Haiku 4.5) to generate Krishna&apos;s responses. We
-                do <strong>not</strong> store a verbatim record of every
-                message. We do store a brief AI-generated summary of your
-                emotional thread (current concern, current emotion, running
-                summary across turns) so subsequent conversations have
-                continuity.
+                <strong>Conversation summary.</strong> A brief AI-generated
+                summary of your emotional thread across turns — the
+                current concern, the current emotion, and a running
+                narrative — stored so Krishna can continue the
+                conversation across sessions instead of starting fresh
+                each time. Field name:{" "}
+                <code className="rounded bg-brass/10 px-1 text-sm">
+                  users_memory.context_summary
+                </code>
+                .
+              </li>
+              <li>
+                <strong>Long-term theme of your conversations.</strong> A
+                short phrase capturing the slow-moving theme across many
+                turns — used silently to shape the tone and the verse
+                selection Krishna reaches for. Never narrated back to
+                you. Field name:{" "}
+                <code className="rounded bg-brass/10 px-1 text-sm">
+                  users_memory.growing_edge
+                </code>
+                .
+              </li>
+              <li>
+                <strong>Message count.</strong> A simple integer used to
+                track how many messages you have sent toward the free
+                tier (10 messages) before a seva contribution is asked.
+              </li>
+              <li>
+                <strong>Seva purchase records.</strong> When you make a
+                seva contribution, we store the Razorpay order ID,
+                payment ID, amount in paise, tier (Pratham / Anjali /
+                Bhakti / Param), status, and timestamps — used for
+                refund handling and financial-compliance audit. We do{" "}
+                <strong>not</strong> store bank details, card numbers,
+                or UPI IDs — Razorpay handles those directly between
+                your device and their servers.
+              </li>
+              <li>
+                <strong>Full conversation logs.</strong> Verbatim user
+                messages and Krishna&apos;s replies are stored in the
+                table{" "}
+                <code className="rounded bg-brass/10 px-1 text-sm">
+                  chat_logs
+                </code>{" "}
+                so we can review them for product improvement (see{" "}
+                <em>Human review of conversations</em> below). These
+                logs are automatically deleted after 180 days. You can
+                opt out of this logging at any time via{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                ; when you opt out, future conversations are not logged
+                in this table at all.
+              </li>
+              <li>
+                <strong>Voice audio.</strong> When you use the
+                microphone on the chat input, the recorded audio is
+                sent to Google Gemini 2.5 Flash for transcription. The
+                audio file is immediately discarded server-side after
+                the transcription completes — only the resulting text
+                becomes part of your conversation. We do{" "}
+                <strong>not</strong> retain audio files.
               </li>
               <li>
                 <strong>Local chat history.</strong> To keep your
                 conversation visible if you refresh the page or return
                 later, the messages shown in your chat are stored in
-                your browser&apos;s localStorage. This data stays on your
-                device only — it is <strong>not</strong> sent to our
-                servers, <strong>not</strong> synced across devices, and
-                is automatically removed when you clear your browser
-                data. We retain only the AI-generated summary described
-                above on the server, never verbatim message logs.
-              </li>
-              <li>
-                <strong>Payment metadata.</strong> When you make a seva
-                contribution, we store the Razorpay order ID, payment ID,
-                amount in paise, tier (Pratham / Anjali / Bhakti / Param),
-                status, and timestamps. We do <strong>not</strong> store
-                bank details, card numbers, or UPI IDs — Razorpay handles
-                those directly between your device and their servers.
+                your browser&apos;s localStorage. This data stays on
+                your device only — it is <strong>not</strong> sent to
+                our servers, <strong>not</strong> synced across devices,
+                and is automatically removed when you clear your
+                browser data.
               </li>
               <li>
                 <strong>Webhook event metadata.</strong> Razorpay payment
                 webhooks (event ID, event type, full event payload from
-                Razorpay) are stored for audit and idempotency. The payload
-                contains payment status and method (e.g., netbanking) but
-                never card or bank-account numbers.
+                Razorpay) are stored for audit and idempotency. The
+                payload contains payment status and method (e.g.,
+                netbanking) but never card or bank-account numbers.
               </li>
               <li>
                 <strong>Anonymous analytics.</strong> Aggregate page-view
@@ -130,6 +180,67 @@ export default function PrivacyPage() {
                 ).
               </li>
             </ul>
+          </section>
+
+          <section>
+            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+              Human Review of Conversations
+            </h2>
+            <aside className="mb-4 rounded-2xl border border-brass/40 bg-parchment/80 p-5 sm:p-6">
+              <p className="font-devanagari text-base leading-relaxed text-krishna">
+                हम कभी-कभी तुम्हारी बातचीत पढ़ते हैं — कृष्ण की वाणी
+                सुधारने के लिए। तुम चाहो तो रोक सकते हो।
+              </p>
+              <p className="mt-2 font-serif italic leading-relaxed text-krishna/85">
+                We sometimes read your conversations to improve
+                Krishna&apos;s voice. You can opt out anytime.
+              </p>
+            </aside>
+            <p className="mb-3">
+              {BRAND.name.en} is built by a solo founder. To improve
+              Krishna&apos;s voice — to catch when a reply lands wrong,
+              to learn where the persona drifts, to make the next
+              user&apos;s experience better — the founder occasionally
+              reviews conversation logs. This is human review for product
+              improvement, not automated training of an AI model. The
+              same approach is used by Google Gemini, OpenAI
+              ChatGPT, and Pi by Inflection, who also disclose human
+              review in their privacy policies.
+            </p>
+            <p className="mb-3">
+              You can disable this review for your future conversations
+              at any time via{" "}
+              <Link
+                href="/settings"
+                className="underline decoration-brass underline-offset-2 hover:text-peacock"
+              >
+                /settings
+              </Link>
+              . When disabled, your future conversations are not logged
+              in our{" "}
+              <code className="rounded bg-brass/10 px-1 text-sm">
+                chat_logs
+              </code>{" "}
+              table at all. The conversation summary (
+              <code className="rounded bg-brass/10 px-1 text-sm">
+                context_summary
+              </code>
+              ) is still saved because Krishna needs it to remember the
+              thread across sessions — this is product function, not
+              review material.
+            </p>
+            <p>
+              Existing conversations logged before you opted out remain
+              until they are auto-purged at 180 days, or until you
+              delete your data via{" "}
+              <Link
+                href="/settings"
+                className="underline decoration-brass underline-offset-2 hover:text-peacock"
+              >
+                /settings
+              </Link>
+              .
+            </p>
           </section>
 
           <section>
@@ -309,6 +420,46 @@ export default function PrivacyPage() {
               . We respond within 30 days as required by Section 13 of the
               DPDP Act.
             </p>
+
+            <aside className="mt-5 rounded-2xl border border-brass/40 bg-parchment/80 p-5 sm:p-6">
+              <p className="font-devanagari text-base leading-relaxed text-krishna">
+                तुम्हारे अधिकार: /settings पर जाकर control करो।
+              </p>
+              <p className="mt-2 font-serif italic leading-relaxed text-krishna/85">
+                Your rights: visit /settings to control your data.
+              </p>
+            </aside>
+
+            <ul className="mt-5 ml-5 list-disc space-y-2">
+              <li>
+                <strong>Opt out of conversation review</strong> — toggle
+                in{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                . Takes effect immediately for future conversations.
+              </li>
+              <li>
+                <strong>Delete all your data</strong> — &ldquo;Delete
+                everything&rdquo; button in{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                . Removes conversation logs, safety events, summary,
+                name, and memory. Payment records are retained per
+                Indian financial law.
+              </li>
+              <li>
+                <strong>View this policy</strong> — you&apos;re reading
+                it now.
+              </li>
+            </ul>
           </section>
 
           <section>
@@ -330,22 +481,82 @@ export default function PrivacyPage() {
             </h2>
             <ul className="ml-5 list-disc space-y-2">
               <li>
-                <strong>Memory data</strong> (extracted summaries, name,
-                preferences): retained while your account is active.
-                Deletion requests honored within 30 days.
+                <strong>Conversation logs (chat_logs):</strong> 180 days,
+                then automatically deleted by a nightly purge. Skipped
+                entirely for users who have opted out of conversation
+                review via{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                .
               </li>
               <li>
-                <strong>Payment records:</strong> retained for 7 years per
-                the Income Tax Act and standard Indian accounting
-                requirements.
+                <strong>Conversation summary, name, and memory
+                (users_memory):</strong> retained until you delete your
+                data via{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                . If you continue using {BRAND.name.en} indefinitely,
+                this data persists indefinitely so Krishna can continue
+                to remember the thread of your conversations.
+              </li>
+              <li>
+                <strong>Safety events</strong> (flagged turns only,
+                stored in the{" "}
+                <code className="rounded bg-brass/10 px-1 text-sm">
+                  safety_events
+                </code>{" "}
+                table): retained for safety review and pattern detection,
+                no fixed automatic-deletion window. These are reviewed
+                under the duty-of-care described in our Terms.
+              </li>
+              <li>
+                <strong>Payment records:</strong> retained per Indian
+                financial law (typically 7+ years per the Income Tax Act
+                and RBI reconciliation requirements). NOT deleted when
+                you delete your data via{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                .
+              </li>
+              <li>
+                <strong>Voice audio:</strong> never retained. Transcribed
+                via Google Gemini 2.5 Flash and immediately discarded
+                server-side after the transcription text is produced.
+              </li>
+              <li>
+                <strong>Webhook event audit:</strong> retained for
+                Razorpay reconciliation and idempotency. No user-facing
+                impact; not deleted when you delete your data.
               </li>
               <li>
                 <strong>Anonymous cookies:</strong> 1-year expiry; can be
-                cleared via your browser at any time.
+                cleared via your browser at any time. Cleared
+                automatically when you use the &ldquo;Delete all my
+                data&rdquo; button in{" "}
+                <Link
+                  href="/settings"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  /settings
+                </Link>
+                .
               </li>
               <li>
                 <strong>Sentry error logs:</strong> 30-day retention
-                (Sentry&apos;s default).
+                (Sentry&apos;s default). No personal information is sent
+                to Sentry (see <em>Data We Collect</em> above).
               </li>
             </ul>
           </section>

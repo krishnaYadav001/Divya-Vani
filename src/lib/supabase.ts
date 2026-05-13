@@ -34,6 +34,11 @@ export interface UserMemory {
   verses_referenced?: string[] | null;
   user_name?: string | null;
   growing_edge?: string | null;
+  // Phase 8 pre-launch — when TRUE, user has opted out of conversation
+  // review for product improvement. logChatTurn must skip writes for
+  // these users (safety_events + users_memory writes continue per
+  // duty-of-care and product function).
+  training_opt_out?: boolean | null;
 }
 
 export type PaymentStatus = "created" | "verified" | "failed";
@@ -406,7 +411,7 @@ export async function fetchMemory(
     const { data, error } = await client
       .from("users_memory")
       .select(
-        "main_problem, emotion, context_summary, last_active_at, message_count, seva_balance, is_first_time, verses_referenced, user_name, growing_edge",
+        "main_problem, emotion, context_summary, last_active_at, message_count, seva_balance, is_first_time, verses_referenced, user_name, growing_edge, training_opt_out",
       )
       .eq("user_id", userId)
       .maybeSingle();
@@ -415,10 +420,17 @@ export async function fetchMemory(
       return null;
     }
     if (!data) return null;
-    if (isBannedName(data.user_name)) {
-      return { ...data, user_name: null };
+    // Pre-migration environments may not have the training_opt_out column
+    // yet — graceful default to false so the chat route's opt-out gate
+    // continues to log normally until the ALTER TABLE is applied.
+    const normalized: UserMemory = {
+      ...data,
+      training_opt_out: data.training_opt_out === true,
+    };
+    if (isBannedName(normalized.user_name)) {
+      return { ...normalized, user_name: null };
     }
-    return data;
+    return normalized;
   } catch (e) {
     console.error("[supabase] fetchMemory threw:", e);
     return null;
@@ -622,5 +634,83 @@ export async function fetchRecentChatHistory(
   } catch (e) {
     console.error("[supabase] fetchRecentChatHistory threw:", e);
     return [];
+  }
+}
+
+/**
+ * Phase 8 pre-launch — update a user's settings row. Currently supports
+ * only `training_opt_out`; future settings can be added without breaking
+ * callers. Writes through the service-role client. Silent-fails per ops
+ * invariant; the /settings UI shows the toast independently.
+ */
+export async function updateUserSettings(
+  userId: string,
+  settings: { training_opt_out?: boolean },
+): Promise<void> {
+  try {
+    const client = getClient();
+    if (!client) return;
+    const payload: Record<string, unknown> = {
+      user_id: userId,
+      updated_at: new Date().toISOString(),
+    };
+    if (settings.training_opt_out !== undefined) {
+      payload.training_opt_out = settings.training_opt_out;
+    }
+    const { error } = await client
+      .from("users_memory")
+      .upsert(payload, { onConflict: "user_id" });
+    if (error) {
+      console.error("[supabase] updateUserSettings error:", error);
+    }
+  } catch (e) {
+    console.error("[supabase] updateUserSettings threw:", e);
+  }
+}
+
+/**
+ * Phase 8 pre-launch — DPDP-compliant data deletion for a user. Removes
+ * chat_logs + safety_events + users_memory rows for the user.
+ *
+ * Intentionally NOT deleted:
+ *   - payments: retained per Indian financial law (Income Tax Act + RBI
+ *     reconciliation requirements, typically 7+ years).
+ *   - webhook_events: payment-audit + idempotency table, no user-facing
+ *     impact; deletion would break Razorpay refund reconciliation.
+ *
+ * Each table delete is independent — a failure on one doesn't roll back
+ * the others. Silent-fail per ops invariant; the /api/delete-account
+ * route logs the outcome but always tries to clear the cookie regardless.
+ */
+export async function deleteUserData(userId: string): Promise<void> {
+  try {
+    const client = getClient();
+    if (!client) return;
+    const { error: chatErr } = await client
+      .from("chat_logs")
+      .delete()
+      .eq("user_id", userId);
+    if (chatErr) {
+      console.error("[supabase] deleteUserData chat_logs error:", chatErr);
+    }
+    const { error: safetyErr } = await client
+      .from("safety_events")
+      .delete()
+      .eq("user_id", userId);
+    if (safetyErr) {
+      console.error(
+        "[supabase] deleteUserData safety_events error:",
+        safetyErr,
+      );
+    }
+    const { error: memErr } = await client
+      .from("users_memory")
+      .delete()
+      .eq("user_id", userId);
+    if (memErr) {
+      console.error("[supabase] deleteUserData users_memory error:", memErr);
+    }
+  } catch (e) {
+    console.error("[supabase] deleteUserData threw:", e);
   }
 }

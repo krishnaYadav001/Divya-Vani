@@ -734,15 +734,27 @@ export async function POST(req: Request) {
       versesReferenced: verseRefs,
     });
 
-    await logChatTurn({
-      userId,
-      userMessage: message,
-      replyText,
-      language: conversationLang,
-      versesReferenced: verseRefs,
-      safetyFlag: safety.flag,
-      messageCountAfter: priorCount + 1,
-    });
+    // Phase 8 pre-launch — conversation-review opt-out gate. User has
+    // opted out of conversation review (industry standard: ChatGPT's
+    // "Improve the model for everyone" toggle off). safety_events +
+    // users_memory writes continue per duty-of-care and product
+    // function; only the verbatim conversation log is skipped.
+    if (effectiveMemory?.training_opt_out === true) {
+      console.log(
+        "[chat] training_opt_out=true; skipping logChatTurn for user",
+        userId,
+      );
+    } else {
+      await logChatTurn({
+        userId,
+        userMessage: message,
+        replyText,
+        language: conversationLang,
+        versesReferenced: verseRefs,
+        safetyFlag: safety.flag,
+        messageCountAfter: priorCount + 1,
+      });
+    }
   }
 
   const responseVerses = verses.map((v) => ({

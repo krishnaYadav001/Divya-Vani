@@ -95,6 +95,15 @@ export default function RootLayout({
           >
             Terms
           </Link>
+          <span aria-hidden className="text-brass">
+            ·
+          </span>
+          <Link
+            href="/settings"
+            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
+          >
+            Settings
+          </Link>
           <span aria-hidden className="mx-2 text-brass">
             ·
           </span>
