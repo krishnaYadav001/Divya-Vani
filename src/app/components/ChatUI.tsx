@@ -754,13 +754,24 @@ export default function ChatUI() {
             if (serverModerationWarning) setServerModerationWarning(null);
           }}
           onKeyDown={(e) => {
-            // Enter submits, Shift+Enter inserts newline. Mirrors
-            // the ChatGPT/Slack/WhatsApp pattern. Mobile virtual
-            // keyboards send the same keydown so the Send button
-            // remains the secondary path.
+            // Desktop (fine pointer): Enter submits, Shift+Enter inserts
+            // newline — ChatGPT/Slack/WhatsApp-web convention.
+            // Mobile (coarse pointer): Enter falls through to default
+            // browser behavior = newline insertion. Send button submits.
+            // Mirrors WhatsApp / Instagram DMs / ChatGPT-mobile so users
+            // can author multi-paragraph messages on touch keyboards
+            // (real user screenshot showed Enter wiping their draft).
+            // matchMedia runs inside the handler — client-only, no SSR
+            // concern. Composition / send-in-progress / empty-input
+            // guards still hold at the Send button + sendMessage entry.
             if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
+              const isMobile =
+                typeof window !== "undefined" &&
+                window.matchMedia("(pointer: coarse)").matches;
+              if (!isMobile) {
+                e.preventDefault();
+                sendMessage();
+              }
             }
           }}
           placeholder="मन में जो है, कहो…"

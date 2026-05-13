@@ -757,13 +757,29 @@ export async function POST(req: Request) {
     }
   }
 
-  const responseVerses = verses.map((v) => ({
-    reference: v.reference,
-    sanskrit: v.sanskrit,
-    transliteration: v.transliteration,
-    hindi: v.hindi,
-    english: v.english,
-  }));
+  // Verse-card suppression on short replies — fixes the production UX bug
+  // where casual responses like "हाँ, बताओ।" rendered 5 verse cards. Cards
+  // should reflect actual scripture references in the reply, not retrieval
+  // debris. Threshold tuned empirically: a 25-word floor suppresses cards
+  // on greetings, affirmations, single-sentence reflections, and brief
+  // bridge replies, while preserving cards on substantive replies that
+  // typically run 40+ words and quote or reference scripture. RAG retrieval
+  // pipeline itself is unchanged — `verses` still flows into the Sonnet
+  // system prompt as RELEVANT SCRIPTURE; only user-visible cards suppressed.
+  const VERSE_CARD_MIN_WORDS = 25;
+  function buildResponseVerses(replyText: string) {
+    const replyWordCount = replyText.trim().split(/\s+/).filter(Boolean).length;
+    const suppressVerseCards = replyWordCount < VERSE_CARD_MIN_WORDS;
+    return suppressVerseCards
+      ? []
+      : verses.map((v) => ({
+          reference: v.reference,
+          sanskrit: v.sanskrit,
+          transliteration: v.transliteration,
+          hindi: v.hindi,
+          english: v.english,
+        }));
+  }
   const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
 
   // Phase 5.4: post-mutation counter values surfaced to the client so the
@@ -870,7 +886,7 @@ export async function POST(req: Request) {
           const metaLine =
             JSON.stringify({
               type: "meta",
-              verses: responseVerses,
+              verses: buildResponseVerses(replyText),
               paywall: false,
               safety_card: safetyCard ?? null,
               message_count: responseMessageCount,
@@ -979,7 +995,7 @@ export async function POST(req: Request) {
     NextResponse.json({
       reply,
       paywall: false,
-      verses: responseVerses,
+      verses: buildResponseVerses(reply),
       safety_card: safetyCard,
       message_count: responseMessageCount,
       seva_balance: responseSevaBalance,
