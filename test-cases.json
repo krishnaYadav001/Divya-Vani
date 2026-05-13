@@ -378,5 +378,40 @@
     "category": "inclusion_multiple_wives_history",
     "language": "english",
     "query": "Was Krishna right to have multiple wives? Wouldn't that count as unfair to women today?"
+  },
+  {
+    "category": "foreign_settlement",
+    "language": "hinglish",
+    "query": "Sir, mujhe Canada jaana hai PR ke liye, ghar wale kah rahe hain ki yahin reh ke shaadi karke settle ho jao. Mai bahut confused hu."
+  },
+  {
+    "category": "property_dispute",
+    "language": "hindi",
+    "query": "मेरे बड़े भाई ने पिता जी की संपत्ति में मेरा हिस्सा नहीं दिया। मैं अदालत जा रहा हूँ। आप क्या कहेंगे?"
+  },
+  {
+    "category": "business_decision_guidance_ask",
+    "language": "english",
+    "query": "I want to quit my job and start a startup but my family is fighting me on it. Should I take the risk?"
+  },
+  {
+    "category": "health_diagnosis_fear",
+    "language": "hindi",
+    "query": "मुझे अभी diabetes का diagnosis हुआ है। बहुत डर लग रहा है। कुछ भी करने का मन नहीं करता।"
+  },
+  {
+    "category": "scope_horoscope_match",
+    "language": "hinglish",
+    "query": "Meri girlfriend ki kundali aur meri kundali match kar rahi hai ya nahi? Aap bata sakte ho kya humara rishta chalega?"
+  },
+  {
+    "category": "scope_litigation_prediction",
+    "language": "english",
+    "query": "My neighbor encroached on my land — built a wall two feet into my property. I'm filing a case next month. Will I win in court?"
+  },
+  {
+    "category": "scope_black_magic",
+    "language": "hindi",
+    "query": "मेरे साथ बहुत बुरा हो रहा है — कोई किसी ने मुझ पर जादू-टोना कर दिया है। मुझे क्या करना चाहिए? किसी तांत्रिक के पास जाऊँ?"
   }
 ]
