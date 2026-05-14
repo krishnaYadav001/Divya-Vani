@@ -46,15 +46,11 @@ export default async function SettingsPage() {
             interactions). Greeting 0ms → settings card 180ms →
             danger zone 360ms. */}
         <header className="fade-up mb-3 [animation-delay:0ms] [animation-fill-mode:backwards]">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
-            <span className="font-devanagari">तुम्हारी सेटिंग्स</span>
-            <span aria-hidden className="mx-3 text-brass/60">·</span>
-            <span className="italic text-peacock">Your Settings</span>
+          <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-peacock sm:text-4xl">
+            Your Settings
           </h1>
-          <p className="mt-3 font-devanagari text-base text-brass-dark">
-            अपनी जानकारी पर तुम्हारा अधिकार
-            <span aria-hidden className="mx-2 text-brass/60">·</span>
-            <span className="font-serif italic">Your data, your control</span>
+          <p className="mt-3 font-serif text-base italic text-brass-dark">
+            Your data, your control
           </p>
         </header>
 
@@ -63,11 +59,9 @@ export default async function SettingsPage() {
         <footer className="fade-up mt-16 border-t border-brass/30 pt-6 text-sm text-brass-dark [animation-delay:540ms] [animation-fill-mode:backwards]">
           <Link
             href="/privacy"
-            className="inline-flex min-h-11 items-center underline decoration-brass underline-offset-2 hover:text-peacock"
+            className="inline-flex min-h-11 items-center font-serif italic underline decoration-brass underline-offset-2 hover:text-peacock"
           >
-            <span className="font-devanagari">गोपनीयता</span>
-            <span aria-hidden className="mx-2 text-brass/60">·</span>
-            <span className="font-serif italic">Privacy Policy</span>
+            Privacy Policy
           </Link>
           <p className="mt-3">
             <Link
@@ -95,25 +89,18 @@ function NoSessionState() {
 
       <article className="relative mx-auto w-full max-w-xl px-6 py-20 text-center font-serif text-krishna sm:px-8 sm:py-28">
         <header className="fade-up mb-6 [animation-delay:0ms] [animation-fill-mode:backwards]">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
-            <span className="font-devanagari">तुम्हारी सेटिंग्स</span>
-            <span aria-hidden className="mx-3 text-brass/60">·</span>
-            <span className="italic text-peacock">Your Settings</span>
+          <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-peacock sm:text-4xl">
+            Your Settings
           </h1>
         </header>
-        <p className="fade-up font-devanagari text-base leading-relaxed text-krishna/80 [animation-delay:180ms] [animation-fill-mode:backwards]">
-          सेटिंग्स देखने के लिए, पहले एक बार बातचीत शुरू करो।
-        </p>
-        <p className="fade-up mt-2 font-serif text-base italic leading-relaxed text-krishna/70 [animation-delay:180ms] [animation-fill-mode:backwards]">
+        <p className="fade-up font-serif text-base italic leading-relaxed text-krishna/80 [animation-delay:180ms] [animation-fill-mode:backwards]">
           Start a conversation first to manage your data.
         </p>
         <Link
           href="/chat"
           className="fade-up mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-krishna px-6 py-2 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 [animation-delay:360ms] [animation-fill-mode:backwards]"
         >
-          <span className="font-devanagari">{BRAND.name.hi}</span>
-          <span aria-hidden className="mx-2">·</span>
-          <span>Open chat</span>
+          Open chat
         </Link>
       </article>
     </main>

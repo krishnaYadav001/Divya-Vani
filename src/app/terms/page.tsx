@@ -27,19 +27,7 @@ export default function TermsPage() {
           <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
             Terms of Service
           </h1>
-          <p className="mt-2 font-devanagari text-lg text-brass-dark">
-            सेवा की शर्तें
-          </p>
         </header>
-
-        <aside className="mb-10 rounded-2xl border border-brass/40 bg-parchment/80 p-5 sm:p-6">
-          <p className="font-devanagari text-base leading-relaxed text-krishna">
-            {BRAND.name.hi} का उपयोग करने से पहले कृपया ये शर्तें पढ़ें। यह
-            ऐप कृष्ण की भूमिका में एक AI है — दैवीय मार्गदर्शन, मानसिक
-            चिकित्सा, या क़ानूनी सलाह का स्थान नहीं। आपका योगदान स्वैच्छिक
-            सेवा है। पूर्ण विवरण अंग्रेज़ी में नीचे है।
-          </p>
-        </aside>
 
         <div className="space-y-8 text-base font-medium leading-relaxed">
           <section>

@@ -80,7 +80,7 @@ export default function SettingsClient({
       console.error("[settings] delete failed:", e);
       setDeleting(false);
       setConfirmDelete(false);
-      setDeleteError("कुछ गलत हो गया, फिर कोशिश करो · Something went wrong, please try again.");
+      setDeleteError("Something went wrong, please try again.");
     }
   }
 
@@ -88,10 +88,8 @@ export default function SettingsClient({
     <div className="space-y-12">
       {/* SECTION 1 — Conversation Review toggle */}
       <section className="fade-up rounded-2xl border border-brass/40 bg-parchment/80 p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] [animation-delay:180ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-serif text-xl font-semibold text-sacred">
-          <span className="font-devanagari">बातचीत की समीक्षा</span>
-          <span aria-hidden className="mx-2 text-brass/60">·</span>
-          <span className="italic">Conversation Review</span>
+        <h2 className="font-serif text-xl font-semibold italic text-sacred">
+          Conversation Review
         </h2>
 
         <div className="mt-5 flex items-start gap-5">
@@ -101,8 +99,8 @@ export default function SettingsClient({
             aria-checked={reviewAllowed}
             aria-label={
               reviewAllowed
-                ? "Disable conversation review · बातचीत की समीक्षा बंद करो"
-                : "Enable conversation review · बातचीत की समीक्षा शुरू करो"
+                ? "Disable conversation review"
+                : "Enable conversation review"
             }
             onClick={handleToggle}
             disabled={saving}
@@ -120,23 +118,15 @@ export default function SettingsClient({
             />
           </button>
 
-          <div className="flex-1 space-y-2">
-            <p className="font-devanagari text-base leading-relaxed text-krishna">
-              क्या मैं तुम्हारी बातचीत पढ़ सकता हूँ? — कृष्ण की वाणी बेहतर
-              करने के लिए।
-            </p>
-            <p className="font-serif text-base italic leading-relaxed text-krishna/85">
+          <div className="flex-1">
+            <p className="font-serif text-base italic leading-relaxed text-krishna">
               May the founder review your conversations to improve
               Krishna&apos;s voice?
             </p>
           </div>
         </div>
 
-        <p className="mt-5 font-devanagari text-sm leading-relaxed text-brass-dark">
-          हाँ चुनने पर तुम्हारी बातचीत 180 दिन तक रखी जाएगी। नहीं चुनने पर
-          भविष्य की बातचीत save नहीं होगी।
-        </p>
-        <p className="mt-2 font-serif text-sm italic leading-relaxed text-brass-dark">
+        <p className="mt-5 font-serif text-sm italic leading-relaxed text-brass-dark">
           If yes, your conversations are kept for 180 days. If no, future
           conversations will not be saved.
         </p>
@@ -145,13 +135,11 @@ export default function SettingsClient({
         <p
           role="status"
           aria-live="polite"
-          className={`mt-3 text-xs text-peacock transition-opacity duration-500 ${
+          className={`mt-3 font-serif text-xs italic text-peacock transition-opacity duration-500 ${
             savedAt && Date.now() - savedAt < 3000 ? "opacity-100" : "opacity-0"
           }`}
         >
-          <span className="font-devanagari">सहेज लिया</span>
-          <span aria-hidden className="mx-1.5 text-brass/60">·</span>
-          <span className="font-serif italic">saved</span>
+          saved
         </p>
       </section>
 
@@ -161,23 +149,14 @@ export default function SettingsClient({
           colour — temple aesthetic conveys gravity through typography
           weight, spacing, and the brass border, not chromatic alarm. */}
       <section className="fade-up rounded-2xl border-2 border-brass bg-parchment/60 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] [animation-delay:360ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-serif text-xl font-semibold text-sacred">
-          <span className="font-devanagari">अपनी सारी जानकारी मिटाओ</span>
-          <span aria-hidden className="mx-2 text-brass/60">·</span>
-          <span className="italic">Delete all my data</span>
+        <h2 className="font-serif text-xl font-semibold italic text-sacred">
+          Delete all my data
         </h2>
 
         <div className="mt-4 space-y-3">
-          <p className="font-devanagari text-base leading-relaxed text-krishna">
-            इससे तुम्हारी सारी बातचीत, name, और memory हमारे system से हट
-            जाएगी। यह वापस नहीं किया जा सकता।
-          </p>
-          <p className="font-serif text-base italic leading-relaxed text-krishna/85">
+          <p className="font-serif text-base italic leading-relaxed text-krishna">
             This will remove all your conversations, name, and memory from
             our system. This cannot be undone.
-          </p>
-          <p className="font-devanagari text-sm leading-relaxed text-brass-dark">
-            तुम्हारी payment की जानकारी कानून के अनुसार रखी जाएगी।
           </p>
           <p className="font-serif text-sm italic leading-relaxed text-brass-dark">
             Payment records are retained as required by Indian financial law.
@@ -191,9 +170,7 @@ export default function SettingsClient({
             disabled={deleting}
             className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brass bg-parchment px-6 py-2 font-serif text-sm font-semibold text-devotional-dark transition-colors hover:border-sacred hover:bg-parchment/80 hover:text-sacred focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
           >
-            <span className="font-devanagari">सब कुछ मिटाओ</span>
-            <span aria-hidden className="mx-2 text-brass/60">·</span>
-            <span>Delete everything</span>
+            Delete everything
           </button>
         ) : (
           <div
@@ -203,32 +180,18 @@ export default function SettingsClient({
           >
             <p
               id="confirm-delete-heading"
-              className="font-serif text-base font-semibold text-sacred"
+              className="font-serif text-base font-semibold italic text-sacred"
             >
-              <span className="font-devanagari">क्या तुम पक्का चाहते हो?</span>
-              <span aria-hidden className="mx-2 text-brass/60">·</span>
-              <span className="italic">Are you sure?</span>
+              Are you sure?
             </p>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border-2 border-sacred bg-sacred/10 px-5 py-2 font-serif text-sm font-semibold text-sacred transition-colors hover:bg-sacred/20 focus:outline-none focus:ring-2 focus:ring-sacred/40 disabled:opacity-50"
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border-2 border-sacred bg-sacred/10 px-5 py-2 font-serif text-sm font-semibold italic text-sacred transition-colors hover:bg-sacred/20 focus:outline-none focus:ring-2 focus:ring-sacred/40 disabled:opacity-50"
               >
-                {deleting ? (
-                  <>
-                    <span className="font-devanagari">मिटा रहा हूँ…</span>
-                    <span aria-hidden className="mx-2 text-sacred/60">·</span>
-                    <span className="italic">deleting…</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-devanagari">हाँ, मिटा दो</span>
-                    <span aria-hidden className="mx-2 text-sacred/60">·</span>
-                    <span className="italic">Yes, delete</span>
-                  </>
-                )}
+                {deleting ? "Deleting…" : "Yes, delete"}
               </button>
               <button
                 type="button"
@@ -236,9 +199,7 @@ export default function SettingsClient({
                 disabled={deleting}
                 className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-brass/60 bg-parchment px-5 py-2 font-serif text-sm font-medium text-krishna transition-colors hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
               >
-                <span className="font-devanagari">रद्द करो</span>
-                <span aria-hidden className="mx-2 text-brass/60">·</span>
-                <span className="italic">Cancel</span>
+                Cancel
               </button>
             </div>
             {deleteError && (

@@ -27,19 +27,7 @@ export default function PrivacyPage() {
           <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
             Privacy Policy
           </h1>
-          <p className="mt-2 font-devanagari text-lg text-brass-dark">
-            गोपनीयता नीति
-          </p>
         </header>
-
-        <aside className="mb-10 rounded-2xl border border-brass/40 bg-parchment/80 p-5 sm:p-6">
-          <p className="font-devanagari text-base leading-relaxed text-krishna">
-            {BRAND.name.hi} में आपकी निजता का सम्मान किया जाता है। यह पृष्ठ बताता
-            है कि हम कौन-सी जानकारी एकत्र करते हैं, क्यों, और आपके अधिकार
-            क्या हैं। पूर्ण विवरण अंग्रेज़ी में नीचे पढ़ें। किसी भी प्रश्न
-            के लिए नीचे दिए गए ईमेल पर हमसे संपर्क करें।
-          </p>
-        </aside>
 
         <div className="space-y-8 text-base font-medium leading-relaxed">
           <section>
@@ -189,16 +177,6 @@ export default function PrivacyPage() {
             <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
               Human Review of Conversations
             </h2>
-            <aside className="mb-4 rounded-2xl border border-brass/40 bg-parchment/80 p-5 sm:p-6">
-              <p className="font-devanagari text-base leading-relaxed text-krishna">
-                हम कभी-कभी तुम्हारी बातचीत पढ़ते हैं — कृष्ण की वाणी
-                सुधारने के लिए। तुम चाहो तो रोक सकते हो।
-              </p>
-              <p className="mt-2 font-serif italic leading-relaxed text-krishna/85">
-                We sometimes read your conversations to improve
-                Krishna&apos;s voice. You can opt out anytime.
-              </p>
-            </aside>
             <p className="mb-3">
               {BRAND.name.en} is built by a solo founder. To improve
               Krishna&apos;s voice — to catch when a reply lands wrong,
@@ -423,15 +401,6 @@ export default function PrivacyPage() {
               . We respond within 30 days as required by Section 13 of the
               DPDP Act.
             </p>
-
-            <aside className="mt-5 rounded-2xl border border-brass/40 bg-parchment/80 p-5 sm:p-6">
-              <p className="font-devanagari text-base leading-relaxed text-krishna">
-                तुम्हारे अधिकार: /settings पर जाकर control करो।
-              </p>
-              <p className="mt-2 font-serif italic leading-relaxed text-krishna/85">
-                Your rights: visit /settings to control your data.
-              </p>
-            </aside>
 
             <ul className="mt-5 ml-5 list-disc space-y-2">
               <li>
