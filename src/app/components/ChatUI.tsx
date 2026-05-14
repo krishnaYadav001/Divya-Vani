@@ -79,6 +79,27 @@ export default function ChatUI() {
   const transcriptPrefixRef = useRef<string>("");
   const compositionActiveRef = useRef<boolean>(false);
   const pendingTextRef = useRef<string>("");
+  // Phase 8.0 mic-error chip — five failure modes (permission denied,
+  // no hardware, unsupported browser, VAD load failed, Sarvam
+  // transcription failed) surface as a bilingual parchment chip
+  // instead of silently swallowing to console.error. Source: a
+  // production tester (founder's brother) tapped the mic when his
+  // browser had denied permission; nothing happened, no feedback,
+  // he gave up. micErrorTimerRef holds the 8s auto-dismiss timer
+  // so it can be cleared on manual dismiss or mic retap.
+  type MicErrorType =
+    | "permission_denied"
+    | "no_hardware"
+    | "unsupported_browser"
+    | "vad_load_failed"
+    | "transcription_failed";
+  const [micError, setMicError] = useState<{
+    type: MicErrorType;
+    detail?: string;
+  } | null>(null);
+  const micErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -173,6 +194,9 @@ export default function ChatUI() {
       }
       if (sessionEndTimerRef.current) {
         clearTimeout(sessionEndTimerRef.current);
+      }
+      if (micErrorTimerRef.current) {
+        clearTimeout(micErrorTimerRef.current);
       }
     };
   }, []);
@@ -477,8 +501,45 @@ export default function ChatUI() {
   const SESSION_END_SILENCE_MS = 5_000;
   const SAFETY_CAP_MS = 60_000;
 
+  // Phase 8.0 mic-error helpers. showMicError + dismissMicError share
+  // a single 8-second auto-dismiss timer (micErrorTimerRef). Each
+  // showMicError clears the prior timer before starting a fresh one,
+  // so back-to-back errors don't race or leak.
+  function showMicError(type: MicErrorType, detail?: string) {
+    if (micErrorTimerRef.current) {
+      clearTimeout(micErrorTimerRef.current);
+    }
+    setMicError({ type, detail });
+    micErrorTimerRef.current = setTimeout(() => {
+      setMicError(null);
+      micErrorTimerRef.current = null;
+    }, 8000);
+  }
+
+  function dismissMicError() {
+    if (micErrorTimerRef.current) {
+      clearTimeout(micErrorTimerRef.current);
+      micErrorTimerRef.current = null;
+    }
+    setMicError(null);
+  }
+
   async function startSession() {
-    if (!mediaSupported) return;
+    // Belt-and-suspenders browser-support check. The mediaSupported
+    // effect at mount already gates the mic button's rendering, but
+    // this defends against the rare case of MediaRecorder/getUserMedia
+    // being unavailable at click time (e.g., browser extension or
+    // policy disabled it after mount).
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof window.AudioWorklet === "undefined" ||
+      typeof window.WebAssembly === "undefined"
+    ) {
+      showMicError("unsupported_browser");
+      return;
+    }
+
     try {
       // Dynamic import keeps the ~17MB VAD WASM/ONNX assets out of the
       // initial page bundle. First-time mic use triggers an async
@@ -561,6 +622,28 @@ export default function ChatUI() {
     } catch (e) {
       console.error("[chat] VAD init failed:", e);
       setIsListening(false);
+      // Classify by DOMException name. MicVAD.new() internally calls
+      // getUserMedia, so permission/hardware errors propagate up with
+      // their original DOMException name preserved. Anything else
+      // (asset 404, ONNX init failure, network) is bucketed as
+      // vad_load_failed — the user-facing message is "try again in
+      // a moment" which fits both retryable network failures and
+      // transient asset-serving issues.
+      const name =
+        e instanceof Error ? (e as Error & { name?: string }).name : "";
+      const detail = e instanceof Error ? e.message : String(e);
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        showMicError("permission_denied");
+      } else if (
+        name === "NotFoundError" ||
+        name === "DevicesNotFoundError"
+      ) {
+        showMicError("no_hardware");
+      } else if (name === "NotSupportedError") {
+        showMicError("unsupported_browser", detail);
+      } else {
+        showMicError("vad_load_failed", detail);
+      }
     }
   }
 
@@ -608,6 +691,14 @@ export default function ChatUI() {
           if (text) appendTranscribedChunk(text);
         } catch (e) {
           console.error("[chat] transcription chunk failed:", e);
+          // Phase 8.0 — surface to the user as well, not just console.
+          // The session keeps recording (VAD is independent of chunk
+          // transcription) so the user can keep speaking; the chip
+          // tells them the LAST chunk didn't land.
+          showMicError(
+            "transcription_failed",
+            e instanceof Error ? e.message : String(e),
+          );
         } finally {
           setIsTranscribing(false);
         }
@@ -637,6 +728,10 @@ export default function ChatUI() {
     if (isListening) {
       stopSession();
     } else {
+      // Clear any prior error before retrying — the user has signaled
+      // intent to try again (e.g., they granted permission in browser
+      // settings and came back).
+      dismissMicError();
       startSession();
     }
   };
@@ -655,6 +750,40 @@ export default function ChatUI() {
           {serverModerationWarning ??
             "कृपया उचित भाषा का प्रयोग करें · Please use respectful language"}
         </p>
+      )}
+      {/* Phase 8.0 mic-error chip — five failure modes (permission,
+          hardware, browser support, VAD assets, Sarvam transcription)
+          surface here. Sacred border conveys gravity without bright-
+          red SaaS-alert aesthetics. Auto-dismisses after 8s; user can
+          dismiss earlier via × (separate 44×44 touch target sibling
+          element so the chip pill itself stays compact). */}
+      {micError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fade-up mb-3 flex items-center justify-center gap-1 [animation-delay:0ms] [animation-fill-mode:backwards]"
+        >
+          <span className="inline-flex max-w-[88%] items-center gap-2 rounded-full border border-sacred/60 bg-parchment px-4 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <AlertTriangleIcon className="h-4 w-4 shrink-0 text-sacred" />
+            <span className="font-devanagari text-sm leading-snug text-krishna">
+              {micErrorMessages[micError.type].hi}
+            </span>
+            <span aria-hidden className="text-sacred/60">·</span>
+            <span className="font-serif text-sm italic leading-snug text-krishna">
+              {micErrorMessages[micError.type].en}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={dismissMicError}
+            aria-label="बंद करें · Dismiss"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-krishna/50 transition-colors hover:bg-sacred/10 hover:text-krishna focus:outline-none focus:ring-2 focus:ring-sacred/40"
+          >
+            <span aria-hidden className="text-lg leading-none">
+              ×
+            </span>
+          </button>
+        </div>
       )}
       {/* Phase 7.0 voice-input — prominent listening / transcribing
           status chip above the form. Mirrors the disclaimer chip
@@ -1310,6 +1439,65 @@ function SendIcon({ className }: { className?: string }) {
     >
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+// Phase 8.0 mic-error chip — bilingual prose for each of the five
+// failure modes. Hindi-first per the project's Hinglish register;
+// small code-switches (browser, settings, allow, device, transcribe,
+// try) match how the target audience naturally writes/speaks. Kept
+// at module scope (not inside the component) so it isn't reallocated
+// on every render.
+const micErrorMessages: Record<
+  "permission_denied"
+  | "no_hardware"
+  | "unsupported_browser"
+  | "vad_load_failed"
+  | "transcription_failed",
+  { hi: string; en: string }
+> = {
+  permission_denied: {
+    hi: "माइक की अनुमति चाहिए — browser settings में जाकर allow करो।",
+    en: "Microphone permission needed — allow it in your browser settings to use voice.",
+  },
+  no_hardware: {
+    hi: "इस device पर माइक नहीं मिला।",
+    en: "No microphone found on this device.",
+  },
+  unsupported_browser: {
+    hi: "तुम्हारा browser माइक support नहीं करता। Chrome या Safari try करो।",
+    en: "Your browser doesn't support voice input. Try Chrome or Safari.",
+  },
+  vad_load_failed: {
+    hi: "Voice feature load नहीं हुआ। थोड़ी देर बाद try करो।",
+    en: "Voice feature failed to load. Please try again in a moment.",
+  },
+  transcription_failed: {
+    hi: "अभी बातचीत transcribe नहीं हो पा रही। थोड़ी देर बाद try करो।",
+    en: "Transcription unavailable right now. Try again.",
+  },
+};
+
+// Phase 8.0 mic-error chip — inline alert-triangle icon. Feather/
+// Lucide-style outline, same vocabulary as MicIcon + SendIcon
+// (currentColor stroke at strokeWidth 2, 24×24 viewBox, className
+// API, aria-hidden). Used inside the error chip with text-sacred.
+function AlertTriangleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   );
 }
