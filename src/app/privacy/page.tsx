@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const LAST_UPDATED = "2026-05-13";
+const LAST_UPDATED = "2026-05-14";
 
 export default function PrivacyPage() {
   return (
@@ -140,12 +140,15 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong>Voice audio.</strong> When you use the
-                microphone on the chat input, the recorded audio is
-                sent to Google Gemini 2.5 Flash for transcription. The
-                audio file is immediately discarded server-side after
-                the transcription completes — only the resulting text
-                becomes part of your conversation. We do{" "}
-                <strong>not</strong> retain audio files.
+                microphone on the chat input, short utterance chunks
+                of the recorded audio are sent to Sarvam AI (Saaras
+                V3 — an Indian speech-to-text service based in
+                Bengaluru; data does <strong>not</strong> leave India)
+                for transcription. Each audio chunk is immediately
+                discarded server-side after its transcription text is
+                produced — only the resulting text becomes part of
+                your conversation. We do <strong>not</strong> retain
+                audio files.
               </li>
               <li>
                 <strong>Local chat history.</strong> To keep your
@@ -531,8 +534,9 @@ export default function PrivacyPage() {
                 .
               </li>
               <li>
-                <strong>Voice audio:</strong> never retained. Transcribed
-                via Google Gemini 2.5 Flash and immediately discarded
+                <strong>Voice audio:</strong> never retained.
+                Transcribed via Sarvam AI Saaras V3 (Bengaluru, India
+                — data stays in India) and immediately discarded
                 server-side after the transcription text is produced.
               </li>
               <li>

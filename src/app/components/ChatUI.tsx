@@ -40,37 +40,45 @@ export default function ChatUI() {
   // as the client-side bannedWord notice — single shared row in inputBlock.
   const [serverModerationWarning, setServerModerationWarning] =
     useState<string | null>(null);
-  // Phase 7.0 voice-input (Gemini STT) — MediaRecorder + transcription
-  // state. mediaSupported gates the mic button (very rare to be false;
-  // all modern browsers ship MediaRecorder + getUserMedia). isListening
-  // drives the recording visual state; isTranscribing drives the
-  // post-stop cursor-wait state while the audio is round-tripping to
-  // Gemini. mediaRecorderRef holds the active MediaRecorder instance,
-  // audioChunksRef accumulates Blob chunks as they arrive,
-  // recordingTimeoutRef holds the 30s auto-stop timer handle.
+  // Phase 8.0 voice-input — Sarvam STT + Silero VAD chunked-REST.
+  //
+  // Replaces the Phase 7.0 MediaRecorder + Gemini batch flow and its
+  // Web Speech "live preview" layer. The VAD library (@ricky0123/vad-web)
+  // runs Silero VAD in-browser via ONNX Runtime / WebAssembly + an
+  // AudioWorklet, captures the mic, and emits each detected utterance
+  // as a Float32Array. Each utterance is encoded as WAV PCM16 16kHz
+  // mono and POSTed to /api/transcribe (Sarvam Saaras V3), which keeps
+  // the API key server-only. Transcribed chunks append to the textarea
+  // in arrival order via a serial promise queue.
+  //
+  // mediaSupported gates the mic button (very rare to be false; all
+  // modern browsers ship getUserMedia + WebAssembly). isListening
+  // drives the recording visual state; isTranscribing turns on briefly
+  // while a chunk is in flight. Both can be true at once during a
+  // session — the chip prefers listening as the dominant state.
+  //
+  // micVadRef holds the active MicVAD instance, sessionEndTimerRef
+  // holds the silence timer (5s after the last onSpeechEnd auto-stops
+  // the session; 60s safety cap also rides on it as the outer bound),
+  // transcribeQueueRef serializes /api/transcribe POSTs so chunk text
+  // appends in onSpeechEnd order even when Sarvam round-trips overlap.
+  // transcriptPrefixRef holds the user's pre-mic typed text plus all
+  // chunks transcribed so far — it is the source of truth for the
+  // textarea value during a session. compositionActiveRef + pendingTextRef
+  // honor the IME safety invariant: if a chunk arrives while the user
+  // is mid-Devanagari-composition, buffer the new value until
+  // onCompositionEnd before pushing to setInput.
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [mediaSupported, setMediaSupported] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+  const micVadRef = useRef<{ destroy: () => void } | null>(null);
+  const sessionEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  // Phase 7.0 voice-input live-preview — Web Speech API runs alongside
-  // MediaRecorder so the user sees their words appear in the textarea
-  // as they speak (best-effort; fails silently on Android Chrome builds
-  // where Web Speech is flaky — in those cases Gemini still produces
-  // the final accurate transcript on stop). The `any` cast on the ref
-  // is the standard pattern since lib.dom.d.ts doesn't declare the
-  // SpeechRecognition / webkitSpeechRecognition types.
-  //
-  // inputBeforeMicRef captures whatever the user had typed BEFORE
-  // they hit the mic, so both the live preview (recognition.onresult)
-  // and the final Gemini result append to that prefix rather than
-  // clobbering typed text.
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const speechRecognitionRef = useRef<any>(null);
-  const inputBeforeMicRef = useRef<string>("");
+  const transcribeQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const transcriptPrefixRef = useRef<string>("");
+  const compositionActiveRef = useRef<boolean>(false);
+  const pendingTextRef = useRef<string>("");
   // Phase 5.4 — diya seva panel visibility + counter state. counterState
   // seeds from /api/me on mount and updates from each chat response's
   // message_count + seva_balance fields (both streaming meta frames and
@@ -130,90 +138,41 @@ export default function ChatUI() {
     return () => clearTimeout(t);
   }, [disclaimerExpanded]);
 
-  // Phase 7.0 voice-input (Gemini STT) — one-time check that the
-  // browser supports getUserMedia + MediaRecorder. Hides the mic
-  // button on unsupported browsers (very rare; Firefox/Chromium/Safari
-  // all support both). The actual permission prompt happens at
-  // startRecording() time, not here.
+  // Phase 8.0 voice-input — one-time check that the browser supports
+  // the APIs VAD needs: getUserMedia for the mic, AudioWorklet for
+  // real-time audio processing, and WebAssembly for the Silero ONNX
+  // model. All three are universal across modern Chromium/Firefox/
+  // Safari; the check just hides the mic button on very old browsers.
+  // The actual permission prompt happens at startSession() time.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const supported =
       typeof navigator !== "undefined" &&
       !!navigator.mediaDevices &&
       typeof navigator.mediaDevices.getUserMedia === "function" &&
-      typeof window.MediaRecorder !== "undefined";
+      typeof window.AudioWorklet !== "undefined" &&
+      typeof window.WebAssembly !== "undefined";
     setMediaSupported(supported);
   }, []);
 
-  // Phase 7.0 voice-input live-preview — set up a single Web Speech
-  // recognition instance once on mount. continuous + interimResults
-  // stream interim transcripts into the textarea as the user speaks.
-  // lang='hi-IN' is the Hindi-first default; Gemini's final pass is
-  // language-agnostic so the preview's accuracy is only "good enough
-  // to feel live" — the real transcript replaces it on stop. Wrapped
-  // in a try/catch + best-effort start; on browsers without Web Speech
-  // (Firefox) we skip the instance entirely and the user just sees
-  // text land all at once on stop.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const SpeechRecognitionImpl =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionImpl) {
-      setSpeechSupported(false);
-      return;
-    }
-    setSpeechSupported(true);
-
-    const recognition = new SpeechRecognitionImpl();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "hi-IN";
-
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0].transcript)
-        .join("");
-      // Append to whatever the user typed before clicking mic. The
-      // prefix is captured in startRecording() into inputBeforeMicRef
-      // so this closure reads a current value even though the effect
-      // ran once at mount.
-      const prefix = inputBeforeMicRef.current;
-      setInput(prefix ? `${prefix} ${transcript}` : transcript);
-      if (serverModerationWarning) setServerModerationWarning(null);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("[chat] speech recognition error:", event.error);
-    };
-
-    speechRecognitionRef.current = recognition;
-
-    return () => {
-      try {
-        recognition.abort();
-      } catch {
-        /* ignore */
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Release the mic stream + cancel the auto-stop timer if the
-  // component unmounts mid-recording (e.g. user navigates away).
-  // Avoids orphaned mic permission indicators in the browser chrome.
+  // Release the mic + cancel timers if the component unmounts during a
+  // recording session (e.g. user navigates away). vad.destroy() releases
+  // the underlying MediaStream tracks and terminates the AudioWorklet so
+  // the browser's mic indicator clears. The Web Speech preview layer
+  // from Phase 7.0 was removed in Phase 8.0 — Sarvam chunks arrive fast
+  // enough that the preview is no longer needed.
   useEffect(() => {
     return () => {
-      const recorder = mediaRecorderRef.current;
-      if (recorder && recorder.state !== "inactive") {
+      const vad = micVadRef.current;
+      if (vad) {
         try {
-          recorder.stop();
+          vad.destroy();
         } catch {
           /* ignore */
         }
       }
-      if (recordingTimeoutRef.current) {
-        clearTimeout(recordingTimeoutRef.current);
+      if (sessionEndTimerRef.current) {
+        clearTimeout(sessionEndTimerRef.current);
       }
     };
   }, []);
@@ -499,177 +458,188 @@ export default function ChatUI() {
   const isEmpty = messages.length === 0 && !isSending;
   const bannedWord = findBannedWord(input);
 
-  // Phase 7.0 voice-input (Gemini STT) — recording flow.
-  // Cap recording at 30s: keeps server-side audio payload bounded
-  // (5MB cap) and latency reasonable (~2-4s per recording for the
-  // Gemini round-trip; longer audio compounds wait time linearly).
-  const MAX_RECORDING_MS = 30_000;
+  // Phase 8.0 voice-input — VAD session with chunked /api/transcribe POSTs.
+  //
+  // No fixed time cap. The session ends when any of:
+  //   - User taps the mic button again (manual stop)
+  //   - 5 seconds of detected silence elapse after the most recent
+  //     utterance (SESSION_END_SILENCE_MS — armed in onSpeechEnd,
+  //     cancelled in onSpeechStart)
+  //   - The 60s outer safety cap fires (SAFETY_CAP_MS) — protects
+  //     against a runaway VAD that never detected silence, e.g. the
+  //     model getting confused by sustained background noise
+  //
+  // Each VAD utterance triggers onSpeechEnd with a Float32Array of
+  // 16kHz mono PCM. We encode it as a WAV blob and POST it through
+  // the transcribeQueue. The queue is a serial promise chain so chunk
+  // text appends to the textarea in utterance order even if Sarvam
+  // round-trips finish out of order.
+  const SESSION_END_SILENCE_MS = 5_000;
+  const SAFETY_CAP_MS = 60_000;
 
-  async function startRecording() {
+  async function startSession() {
     if (!mediaSupported) return;
     try {
-      // Capture the user's typed prefix BEFORE we touch input. Both
-      // the live preview (recognition.onresult) and the final Gemini
-      // result append to this so the user's typed text is preserved.
-      inputBeforeMicRef.current = input.trim();
+      // Dynamic import keeps the ~17MB VAD WASM/ONNX assets out of the
+      // initial page bundle. First-time mic use triggers an async
+      // fetch from /public/vad/; subsequent uses are cached.
+      const { MicVAD, utils } = await import("@ricky0123/vad-web");
+
+      // Capture pre-mic typed text as the running prefix. All
+      // transcribed chunks append after it. Cleared when the user
+      // sends or clears manually.
+      transcriptPrefixRef.current = input.trim();
 
       // Audio cue — short Web Audio sine ping signals "listening".
-      // Created from a user-gesture click handler so AudioContext is
-      // not auto-suspended; if anything throws we swallow it (sound
-      // is a nice-to-have, not load-bearing).
+      // Runs from a user-gesture click handler so AudioContext is not
+      // auto-suspended. Failures swallowed (sound is best-effort).
       playStartTone();
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+      const vad = await MicVAD.new({
+        // Local asset paths — files copied into public/vad/ from
+        // node_modules/@ricky0123/vad-web/dist/ and
+        // node_modules/onnxruntime-web/dist/. Self-hosted so we don't
+        // depend on a third-party CDN at runtime.
+        baseAssetPath: "/vad/",
+        onnxWASMBasePath: "/vad/",
+        model: "v5",
+        // Per-utterance silence threshold. Brief breath-pauses (<700ms)
+        // should NOT split a sentence into two chunks. The 5s session-
+        // end silence timer (sessionEndTimerRef) is a SEPARATE rule
+        // layered on top — it ends the whole session, not an utterance.
+        redemptionMs: 700,
+        minSpeechMs: 250,
+        preSpeechPadMs: 200,
+        // When the user manually stops mid-speech, still emit the
+        // currently-buffered audio as a final onSpeechEnd.
+        submitUserSpeechOnPause: true,
+
+        onSpeechStart: () => {
+          // User started speaking again — cancel the pending session-
+          // end timer. It will be re-armed when this utterance ends.
+          if (sessionEndTimerRef.current) {
+            clearTimeout(sessionEndTimerRef.current);
+            sessionEndTimerRef.current = null;
+          }
+        },
+
+        onSpeechEnd: (audio: Float32Array) => {
+          // Encode 16kHz mono PCM16 WAV and queue for transcription.
+          // ArrayBuffer → base64 via the library's own helper (no
+          // FileReader async needed; we're already on the main thread).
+          const wavBuffer = utils.encodeWAV(audio);
+          const base64 = utils.arrayBufferToBase64(wavBuffer);
+          queueTranscribe(base64);
+
+          // Arm/re-arm the session-end timer. 5s of silence after the
+          // last utterance auto-stops the session. The safety cap
+          // (60s) is a separate timer set once at start; this one
+          // tracks "silence since last speech".
+          if (sessionEndTimerRef.current) {
+            clearTimeout(sessionEndTimerRef.current);
+          }
+          sessionEndTimerRef.current = setTimeout(() => {
+            stopSession();
+          }, SESSION_END_SILENCE_MS);
+        },
       });
 
-      // Prefer audio/webm;codecs=opus — Chromium baseline, accepted by
-      // Gemini. Safari may not support webm; fall back through webm
-      // (no codec hint) → mp4. The actual produced mimeType is read
-      // from recorder.mimeType when stopping (some browsers ignore
-      // the hint and pick their own container).
-      const preferredMime = MediaRecorder.isTypeSupported(
-        "audio/webm;codecs=opus",
-      )
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : MediaRecorder.isTypeSupported("audio/mp4")
-            ? "audio/mp4"
-            : "";
+      micVadRef.current = vad;
+      vad.start();
+      setIsListening(true);
 
-      const recorder = new MediaRecorder(
-        stream,
-        preferredMime ? { mimeType: preferredMime } : undefined,
-      );
-      audioChunksRef.current = [];
+      // Outer safety cap. Independent of the per-silence timer above:
+      // if the silence detector ever fails (continuous noise, model
+      // bug), this absolute upper bound still releases the mic. We
+      // intentionally reuse sessionEndTimerRef — onSpeechEnd will
+      // overwrite it once the first utterance lands, which is the
+      // desired behavior (session-end-silence beats safety-cap once
+      // we have real speech signal).
+      sessionEndTimerRef.current = setTimeout(() => {
+        stopSession();
+      }, SAFETY_CAP_MS);
+    } catch (e) {
+      console.error("[chat] VAD init failed:", e);
+      setIsListening(false);
+    }
+  }
 
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
+  function stopSession() {
+    if (sessionEndTimerRef.current) {
+      clearTimeout(sessionEndTimerRef.current);
+      sessionEndTimerRef.current = null;
+    }
+    const vad = micVadRef.current;
+    if (vad) {
+      try {
+        // destroy() releases the underlying MediaStream tracks and
+        // terminates the AudioWorklet — the browser's mic indicator
+        // clears immediately. Pending in-flight transcribeQueue
+        // promises continue to resolve and append their chunks; the
+        // queue is intentionally NOT cancelled on stop because the
+        // user expects their final utterance to land in the textarea.
+        vad.destroy();
+      } catch (e) {
+        console.error("[chat] VAD destroy failed:", e);
+      }
+      micVadRef.current = null;
+    }
+    setIsListening(false);
+  }
 
-      recorder.onstop = async () => {
-        // Release mic tracks immediately so the browser indicator clears.
-        stream.getTracks().forEach((t) => t.stop());
-
-        const mimeType =
-          recorder.mimeType || preferredMime || "audio/webm";
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        audioChunksRef.current = [];
-
-        if (blob.size === 0) {
-          setIsListening(false);
-          return;
-        }
-
-        const base64 = await blobToBase64(blob);
-
-        setIsListening(false);
+  // Serial transcription queue. Each chunk's POST starts only after
+  // the previous chunk's POST resolves — this preserves utterance
+  // order in the textarea regardless of Sarvam round-trip jitter.
+  function queueTranscribe(base64Wav: string) {
+    transcribeQueueRef.current = transcribeQueueRef.current.then(
+      async () => {
         setIsTranscribing(true);
         try {
           const res = await fetch("/api/transcribe", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audio: base64, mimeType }),
+            body: JSON.stringify({ audio: base64Wav, mimeType: "audio/wav" }),
           });
-          if (!res.ok) throw new Error(`transcribe HTTP ${res.status}`);
+          if (!res.ok) {
+            throw new Error(`transcribe HTTP ${res.status}`);
+          }
           const data = (await res.json()) as { text?: string };
           const text = (data.text ?? "").trim();
-          if (text) {
-            // The Web Speech live preview (if it was running) has
-            // already written interim text into `input`. Replace
-            // that whole appended segment with Gemini's higher-
-            // quality version. The prefix is the user-typed text
-            // captured at startRecording.
-            const prefix = inputBeforeMicRef.current;
-            setInput(prefix ? `${prefix} ${text}` : text);
-            if (serverModerationWarning) setServerModerationWarning(null);
-          }
+          if (text) appendTranscribedChunk(text);
         } catch (e) {
-          console.error("[chat] transcription failed:", e);
+          console.error("[chat] transcription chunk failed:", e);
         } finally {
           setIsTranscribing(false);
         }
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsListening(true);
-
-      // Best-effort start of the Web Speech live preview. If it
-      // throws (already running, permission flakiness on Android,
-      // etc.) the recording still proceeds and Gemini still runs
-      // on stop — the user just doesn't see interim text.
-      const recognition = speechRecognitionRef.current;
-      if (recognition) {
-        try {
-          recognition.start();
-        } catch {
-          /* ignore — preview is best-effort */
-        }
-      }
-
-      recordingTimeoutRef.current = setTimeout(() => {
-        stopRecording();
-      }, MAX_RECORDING_MS);
-    } catch (e) {
-      console.error("[chat] getUserMedia failed:", e);
-      setIsListening(false);
-    }
+      },
+    );
   }
 
-  function stopRecording() {
-    if (recordingTimeoutRef.current) {
-      clearTimeout(recordingTimeoutRef.current);
-      recordingTimeoutRef.current = null;
+  function appendTranscribedChunk(text: string) {
+    const prefix = transcriptPrefixRef.current;
+    const next = prefix ? `${prefix} ${text}` : text;
+    transcriptPrefixRef.current = next;
+
+    // IME safety: if the user is mid-Devanagari composition on an
+    // on-screen keyboard (unlikely but possible — they could be
+    // typing while mic continues to record), buffer the value and
+    // flush at onCompositionEnd. Honors the persona-invariants
+    // "Devanagari typing must continue to work after voice input".
+    if (compositionActiveRef.current) {
+      pendingTextRef.current = next;
+      return;
     }
-    // Stop the Web Speech preview first so it stops writing interim
-    // results into the textarea between now and when Gemini's final
-    // transcript arrives.
-    const recognition = speechRecognitionRef.current;
-    if (recognition) {
-      try {
-        recognition.stop();
-      } catch {
-        /* ignore */
-      }
-    }
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      try {
-        recorder.stop();
-      } catch (e) {
-        console.error("[chat] mediaRecorder.stop failed:", e);
-        setIsListening(false);
-      }
-    } else {
-      setIsListening(false);
-    }
-    mediaRecorderRef.current = null;
+    setInput(next);
+    if (serverModerationWarning) setServerModerationWarning(null);
   }
 
   const toggleMic = () => {
-    if (isTranscribing) return; // ignore clicks while waiting for transcription
     if (isListening) {
-      stopRecording();
+      stopSession();
     } else {
-      startRecording();
+      startSession();
     }
   };
-
-  // Convert Blob → base64 (data URL prefix stripped).
-  async function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const comma = result.indexOf(",");
-        resolve(comma >= 0 ? result.slice(comma + 1) : result);
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
-    });
-  }
 
   // Phase 7.0 production-test fix — shared input form rendered in BOTH
   // the centered empty-state and the bottom footer. Defined inline here
@@ -751,7 +721,21 @@ export default function ChatUI() {
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
+            // User edited the textarea directly — break the running
+            // transcript prefix so the NEXT voice chunk doesn't
+            // overwrite their manual edits.
+            transcriptPrefixRef.current = e.target.value;
             if (serverModerationWarning) setServerModerationWarning(null);
+          }}
+          onCompositionStart={() => {
+            compositionActiveRef.current = true;
+          }}
+          onCompositionEnd={() => {
+            compositionActiveRef.current = false;
+            if (pendingTextRef.current) {
+              setInput(pendingTextRef.current);
+              pendingTextRef.current = "";
+            }
           }}
           onKeyDown={(e) => {
             // Desktop (fine pointer): Enter submits, Shift+Enter inserts
@@ -802,9 +786,15 @@ export default function ChatUI() {
             <button
               type="button"
               onClick={toggleMic}
-              disabled={isTranscribing}
+              // Phase 8.0 — manual stop must work even while a chunk
+              // POST is in flight (the user has finished speaking and
+              // wants to send). Only block clicks during the brief
+              // post-stop window when listening is false but a chunk
+              // is still resolving — in that case neither start nor
+              // stop is meaningful.
+              disabled={!isListening && isTranscribing}
               aria-label={
-                isTranscribing
+                !isListening && isTranscribing
                   ? "लिप्यंतरण हो रहा है · Transcribing"
                   : isListening
                     ? "बंद करें · Stop recording"
