@@ -9,6 +9,7 @@ import {
   fetchCandidatesMultiQuery,
   rerankByTheme,
   applyDiversityBoost,
+  attestVerseReferences,
   getRagFlags,
   type VerseHit,
 } from "@/lib/verses";
@@ -757,28 +758,44 @@ export async function POST(req: Request) {
     }
   }
 
-  // Verse-card suppression on short replies — fixes the production UX bug
-  // where casual responses like "हाँ, बताओ।" rendered 5 verse cards. Cards
-  // should reflect actual scripture references in the reply, not retrieval
-  // debris. Threshold tuned empirically: a 25-word floor suppresses cards
-  // on greetings, affirmations, single-sentence reflections, and brief
-  // bridge replies, while preserving cards on substantive replies that
-  // typically run 40+ words and quote or reference scripture. RAG retrieval
-  // pipeline itself is unchanged — `verses` still flows into the Sonnet
-  // system prompt as RELEVANT SCRIPTURE; only user-visible cards suppressed.
+  // Verse-card surfacing — two layered filters:
+  //
+  //   1. Word-count floor (VERSE_CARD_MIN_WORDS = 25). Short replies
+  //      ("हाँ, बताओ।", "ठीक है।") never surface cards. Fixes the
+  //      production UX bug where casual responses rendered 5 cards of
+  //      retrieval debris. Short-circuit returns [] immediately —
+  //      avoids paying for a Haiku attestation call on short replies.
+  //
+  //   2. Model-attested filter (attestVerseReferences in verses.ts).
+  //      Above the floor, a small Haiku call audits which retrieved
+  //      verses Krishna actually drew from. Only attested refs surface
+  //      as cards. Silent-fails to the full retrieved pool on auditor
+  //      error so cards never silently disappear when the audit breaks.
+  //
+  // RAG retrieval pipeline itself is unchanged — `verses` still flows
+  // into the Sonnet system prompt as RELEVANT SCRIPTURE; only the
+  // user-visible card list is filtered. attestVerseReferences runs
+  // AFTER Sonnet's reply finishes (streaming path: between
+  // finalMessage() and the meta frame; non-streaming: before the
+  // NextResponse.json). Adds ~500ms to meta-frame latency — user-
+  // perceived reply latency is unchanged because the reply text has
+  // already streamed.
   const VERSE_CARD_MIN_WORDS = 25;
-  function buildResponseVerses(replyText: string) {
+  async function buildResponseVerses(replyText: string) {
     const replyWordCount = replyText.trim().split(/\s+/).filter(Boolean).length;
-    const suppressVerseCards = replyWordCount < VERSE_CARD_MIN_WORDS;
-    return suppressVerseCards
-      ? []
-      : verses.map((v) => ({
-          reference: v.reference,
-          sanskrit: v.sanskrit,
-          transliteration: v.transliteration,
-          hindi: v.hindi,
-          english: v.english,
-        }));
+    if (replyWordCount < VERSE_CARD_MIN_WORDS) return [];
+    const attestedRefs = new Set(
+      await attestVerseReferences(replyText, verses),
+    );
+    return verses
+      .filter((v) => attestedRefs.has(v.reference))
+      .map((v) => ({
+        reference: v.reference,
+        sanskrit: v.sanskrit,
+        transliteration: v.transliteration,
+        hindi: v.hindi,
+        english: v.english,
+      }));
   }
   const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
 
@@ -883,10 +900,19 @@ export async function POST(req: Request) {
           const replyText =
             finalMsg.content.find((b) => b.type === "text")?.text ?? "";
 
+          // Phase 8.0 Path C — attestation runs AFTER the reply has
+          // fully streamed (text on screen) and BEFORE the meta frame
+          // ships. Adds ~500ms before the verse cards land below the
+          // reply. User-visible reply latency is unchanged: the text
+          // they're reading already arrived. controller.enqueue must
+          // strictly follow this await so the meta frame carries the
+          // attested verses list, not the pre-attestation list.
+          const attestedResponseVerses = await buildResponseVerses(replyText);
+
           const metaLine =
             JSON.stringify({
               type: "meta",
-              verses: buildResponseVerses(replyText),
+              verses: attestedResponseVerses,
               paywall: false,
               safety_card: safetyCard ?? null,
               message_count: responseMessageCount,
@@ -991,11 +1017,18 @@ export async function POST(req: Request) {
 
   await persistTurnState(reply);
 
+  // Phase 8.0 Path C — attest verses AFTER the Sonnet reply lands and
+  // BEFORE the JSON response goes out. Plain-JSON callers (test scripts,
+  // non-browser clients) see the same attested-verses list as streaming
+  // clients. Sequential here rather than parallel because the response
+  // body needs the result before NextResponse.json can serialize.
+  const attestedResponseVerses = await buildResponseVerses(reply);
+
   return withCookie(
     NextResponse.json({
       reply,
       paywall: false,
-      verses: buildResponseVerses(reply),
+      verses: attestedResponseVerses,
       safety_card: safetyCard,
       message_count: responseMessageCount,
       seva_balance: responseSevaBalance,

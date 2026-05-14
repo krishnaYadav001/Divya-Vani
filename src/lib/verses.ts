@@ -20,6 +20,7 @@
 // When RAG_LAYER_THEME_RERANK=false OR queryThemes is empty/undefined,
 // retrieval falls back to pure cosine top-k (current Phase 1 behavior).
 
+import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI, TaskType } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
@@ -37,6 +38,7 @@ const EMBED_DIM = 768;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const embedModel = genAI.getGenerativeModel({ model: EMBED_MODEL });
+const anthropic = new Anthropic();
 
 export type VerseHit = {
   reference: string;
@@ -307,4 +309,149 @@ export async function searchVerses(
 
 export function getRagFlags(): RagFlags {
   return readFlags();
+}
+
+// Phase 8.0 Path C — model-attested verse references.
+//
+// After Krishna's reply is generated, audit which of the retrieved
+// verses he actually referenced, quoted, paraphrased, or drew a
+// parallel from. Returns the subset of refs that Krishna genuinely
+// drew on. The chat route filters responseVerses by this list before
+// surfacing cards to the client.
+//
+// Layered defense:
+//   1. Word-count floor (in chat/route.ts buildResponseVerses) is the
+//      first gate — short replies skip this audit entirely and surface
+//      no cards. We re-check the floor here so callers outside the chat
+//      route (tests, future scripts) get the same behavior.
+//   2. Haiku audit — small, fast call. The retrieved verse pool is
+//      always ≤5 chunks, so the prompt is short (~150-300 tokens).
+//
+// Silent-fail invariant: on Haiku error, JSON parse failure, network
+// error — return ALL retrievedVerses refs (NOT empty). Hiding all
+// cards when the auditor itself broke would silently degrade the UX;
+// surfacing the retrieved set falls back to pre-Path-C behavior. The
+// failure is logged for observability.
+//
+// Defensive filter: Haiku may hallucinate refs that aren't in the
+// pool — we drop those (only refs that exist in retrievedVerses
+// survive the filter at the end).
+const ATTESTATION_MIN_WORDS = 25;
+
+export async function attestVerseReferences(
+  replyText: string,
+  retrievedVerses: VerseHit[],
+): Promise<string[]> {
+  // Short-circuits before paying for a Haiku call.
+  if (!replyText.trim() || retrievedVerses.length === 0) return [];
+
+  const wordCount = replyText.trim().split(/\s+/).filter(Boolean).length;
+  if (wordCount < ATTESTATION_MIN_WORDS) return [];
+
+  // Pool of valid refs the auditor can attest to. Hallucinated refs
+  // get filtered out at the end using this set.
+  const validRefs = new Set(retrievedVerses.map((v) => v.reference));
+
+  const versesList = retrievedVerses
+    .map((v, i) => {
+      const sanskrit = v.sanskrit.replace(/\s+/g, ' ').trim();
+      const hindi = v.hindi.replace(/\s+/g, ' ').trim();
+      const english = v.english.replace(/\s+/g, ' ').trim();
+      const parts = [sanskrit, hindi, english].filter((p) => p.length > 0);
+      return `${i + 1}. [${v.reference}] ${parts.join(' — ')}`;
+    })
+    .join('\n');
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 200,
+      messages: [
+        {
+          role: 'user',
+          content: `You are a citation auditor for Krishna's reply in the Divya Vani app.
+
+Krishna replied:
+"""
+${replyText}
+"""
+
+These verses were retrieved as POTENTIAL context for Krishna's reply (but may or may not have been used):
+${versesList}
+
+Identify which of these verses Krishna ACTUALLY referenced, quoted, paraphrased, or drew a parallel from in his reply.
+
+Rules:
+- Be conservative. Only mark a verse as referenced if Krishna's reply genuinely uses its content, characters, scene, or teaching.
+- A verse IS referenced if: Krishna quotes it directly, paraphrases its teaching, mentions its characters/scenes by name (Arjuna at Kurukshetra, Sudama, Yashoda, gopis, etc.), or draws a parallel that maps to its content.
+- A verse is NOT referenced if it was merely thematically related but Krishna did not draw on it.
+- If Krishna's reply was a short acknowledgment, affirmation, or doesn't substantively draw on any verse, return an empty list.
+
+Return ONLY valid JSON in this exact shape, no surrounding text or markdown:
+{"referenced": ["gita_2.47", "mahabharata_udyoga_140"]}
+
+Or for no references:
+{"referenced": []}`,
+        },
+      ],
+    });
+
+    const text =
+      response.content.find((b) => b.type === 'text')?.text ?? '';
+
+    // LAST-valid-JSON defensive parser — same pattern as extractMemory
+    // in chat/route.ts. Handles Haiku occasionally emitting reasoning
+    // asides before the JSON object: iterate inner-most {…} blocks
+    // last-to-first, fall back to a greedy match, fall back to raw
+    // trim and fenced markdown. First candidate that parses with the
+    // expected shape wins.
+    let parsed: { referenced?: unknown } | null = null;
+    const candidates: string[] = [text.trim()];
+    const fence = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+    if (fence) candidates.push(fence[1]);
+    const innerBlocks = text.match(/\{[^{}]*\}/g) ?? [];
+    candidates.push(...[...innerBlocks].reverse());
+    const greedy = text.match(/\{[\s\S]*\}/);
+    if (greedy) candidates.push(greedy[0]);
+
+    for (const c of candidates) {
+      try {
+        const obj = JSON.parse(c.trim()) as { referenced?: unknown };
+        if (Array.isArray(obj.referenced)) {
+          parsed = obj;
+          break;
+        }
+      } catch {
+        /* try next */
+      }
+    }
+
+    if (!parsed || !Array.isArray(parsed.referenced)) {
+      // Silent-fail: return full pool, not empty. See module-level
+      // doc above attestVerseReferences for rationale.
+      console.error(
+        '[attestVerseReferences] no valid JSON, returning full pool',
+      );
+      return retrievedVerses.map((v) => v.reference);
+    }
+
+    // Filter Haiku output to refs that ACTUALLY exist in the retrieved
+    // pool. Drops hallucinated refs without crashing.
+    const attestedRefs = (parsed.referenced as unknown[])
+      .filter((r): r is string => typeof r === 'string')
+      .filter((r) => validRefs.has(r));
+
+    console.log(
+      `[chat] verse attestation: retrieved=${retrievedVerses.length} attested=${attestedRefs.length} reply_words=${wordCount}`,
+    );
+
+    return attestedRefs;
+  } catch (e) {
+    // Silent-fail on Haiku/network error: return full pool.
+    console.error(
+      '[attestVerseReferences] threw, returning full pool:',
+      e,
+    );
+    return retrievedVerses.map((v) => v.reference);
+  }
 }
