@@ -69,8 +69,26 @@ export default function DiyaSevaPanel({
     }
   }
 
+  // Phase 8 prep counter-display bugfix — the prior ternary
+  // (sevaBalance > 0 ? sevaBalance : freeRemaining) hid the user's
+  // UNUSED free messages whenever they purchased seva before
+  // exhausting the free pool. Real production case:
+  //   message_count=3, seva_balance=6 → showed "6" but the user
+  //   actually had 7 unused free + 6 paid = 13 messages remaining.
+  // The correct formula sums both pools so the counter reflects
+  // the user's total runway. Backend chat-flow consumes free-first
+  // then paid (per chat-flow rule + /api/chat persistTurnState),
+  // so the counter ticks down through (10-mc) first, then sb.
+  //
+  // Edge cases verified:
+  //   (a) mc=0,  sb=0  → max(0, 10-0)  + 0  = 10   (full free pool)
+  //   (b) mc=3,  sb=0  → max(0, 10-3)  + 0  = 7    (no purchases yet)
+  //   (c) mc=3,  sb=6  → max(0, 10-3)  + 6  = 13   (the bug case)
+  //   (d) mc=10, sb=6  → max(0, 10-10) + 6  = 6    (free exhausted)
+  //   (e) mc=10, sb=0  → max(0, 10-10) + 0  = 0    (paywall state)
+  //   (f) mc=15, sb=2  → max(0, 10-15) + 2  = 2    (defensive clamp)
   const remaining =
-    sevaBalance > 0 ? sevaBalance : Math.max(0, FREE_LIMIT - messageCount);
+    Math.max(0, FREE_LIMIT - messageCount) + (sevaBalance ?? 0);
   const isDepleted = remaining === 0;
   const countDisplay = String(remaining);
 
