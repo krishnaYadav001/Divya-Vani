@@ -6,6 +6,7 @@ import {
   Noto_Sans_Devanagari,
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
@@ -110,6 +111,20 @@ export default function RootLayout({
           <span>{BRAND.copyright.text}</span>
         </footer>
         <Analytics />
+        {/* Phase 8 — Plausible (privacy-friendly, cookieless) runs
+            alongside Vercel Analytics: Vercel for aggregate pageviews,
+            Plausible for funnel + event visibility (Phase 7 retro
+            surfaced 95.7% top-of-funnel drop-off). Next 16 <Script>
+            with afterInteractive so it loads post-hydration and never
+            blocks first render. Goal-event calls are a later pass. */}
+        <Script
+          defer
+          src="https://plausible.io/js/pa-sq9uxOjl7qHjRhcDeza2w.js"
+          strategy="afterInteractive"
+        />
+        <Script id="plausible-init" strategy="afterInteractive">
+          {`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}
+        </Script>
       </body>
     </html>
   );

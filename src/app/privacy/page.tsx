@@ -345,6 +345,23 @@ export default function PrivacyPage() {
                 </a>
                 .
               </li>
+              <li>
+                <strong>Plausible Analytics (EU)</strong> —
+                privacy-friendly website analytics: no cookies, no
+                cross-site tracking, no personal identifiers. Used to
+                understand aggregate funnel and traffic patterns.
+                GDPR / DPDP / CCPA compliant by default. Hosted by
+                Plausible Insights OÜ (Estonia, EU). Privacy:{" "}
+                <a
+                  href="https://plausible.io/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  plausible.io/privacy
+                </a>
+                .
+              </li>
             </ul>
           </section>
 
@@ -353,8 +370,8 @@ export default function PrivacyPage() {
               Cross-Border Data Transfer
             </h2>
             <p>
-              Some of our processors (Anthropic, Google, Vercel, Sentry)
-              are based outside India. Under Section 16 of the Digital
+              Some of our processors (Anthropic, Google, Vercel, Sentry,
+              Plausible) are based outside India. Under Section 16 of the Digital
               Personal Data Protection Act 2023, cross-border transfer is
               permitted subject to government-notified restrictions. As of
               the effective date of this notice, no such restrictions
