@@ -34,7 +34,7 @@ export const BRAND = {
   },
   contact: {
     founder: "Krishna Yadav",
-    email: "krishnayadav123345@gmail.com",
+    email: "grievance.divyavani@gmail.com",
     location: "Kanpur, Uttar Pradesh, India",
   },
   copyright: {
