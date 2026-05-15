@@ -43,6 +43,28 @@ export const metadata: Metadata = {
     siteName: BRAND.name.en,
     title: BRAND.name.en,
     description: BRAND.description.en,
+    // width/height reflect the ACTUAL public/og.png (1024×541), not
+    // the 1200×630 the Phase 8 spec assumed — the shipped asset
+    // exported smaller. Declared dims must match the real file or
+    // Twitter/Facebook validators reject or letterbox the card.
+    // Re-export at 1200×630 later for the optimal LinkedIn/FB hero;
+    // bump these two numbers when that lands. Relative /og.png
+    // resolves against metadataBase (set above) → absolute URL.
+    images: [
+      {
+        url: "/og.png",
+        width: 1024,
+        height: 541,
+        alt: `${BRAND.name.en} — ${BRAND.description.en}`,
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: BRAND.name.en,
+    description: BRAND.description.en,
+    images: ["/og.png"],
   },
   // Phase 6.6 Stage C-1 — canonical removed from root layout. Each page
   // declares its own alternates.canonical so /chat / /privacy / /terms
