@@ -1078,7 +1078,7 @@ export default function ChatUI() {
           }`}
         >
           <div className="overflow-hidden">
-            <p className="mx-auto max-w-[600px] py-2.5 text-center text-sm leading-snug text-brass-dark">
+            <p className="mx-auto max-w-[600px] py-2 text-center text-xs leading-tight text-brass-dark">
               <span className="font-devanagari">
                 यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
               </span>
