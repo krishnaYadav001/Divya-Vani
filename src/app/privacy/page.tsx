@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LotusBackground from "../components/LotusBackground";
+import BackToChat from "../components/BackToChat";
 import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -23,6 +24,8 @@ export default function PrivacyPage() {
       </div>
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
+        <BackToChat />
+
         <header className="mb-10">
           <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
             Privacy Policy
