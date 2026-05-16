@@ -118,7 +118,7 @@ export default function SevaTierPicker({
       name: BRAND.name.en,
       description: `${tier.displayName} · ${tier.messages} messages`,
       order_id: order.order_id,
-      theme: { color: "#92400e" },
+      theme: { color: "#d4a24a" },
       handler: async (response) => {
         try {
           const verifyRes = await fetch("/api/seva/verify", {
