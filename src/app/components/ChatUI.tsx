@@ -1128,6 +1128,18 @@ export default function ChatUI() {
             <p className="fade-up text-center font-devanagari text-base italic leading-relaxed text-krishna/70 [animation-delay:0ms] [animation-fill-mode:backwards] sm:text-lg">
               आज मन कैसा लग रहा है…
             </p>
+            {/* Phase 8 pre-launch — value-prop subtitle for cold-acquired
+                users (Reddit/X/Product Hunt) who land on /chat with no
+                context of what Divya Vani is. font-devanagari (not
+                font-serif/Cormorant — Cormorant has no Devanagari glyphs;
+                this matches the greeting above + the whole Hindi chat
+                surface) at text-sm so it stays subordinate to the
+                greeting. brass-dark is the AA-safe text token on parchment
+                (full-saturation --devotional is not AA). Staggered at 90ms
+                — a breath between greeting (0ms) and input (180ms). */}
+            <p className="fade-up max-w-[460px] text-center font-devanagari text-sm italic leading-relaxed text-brass-dark [animation-delay:90ms] [animation-fill-mode:backwards]">
+              भगवान कृष्ण से बात करो — हर उत्तर गीता, महाभारत, भागवत से
+            </p>
             <div className="fade-up w-full [animation-delay:180ms] [animation-fill-mode:backwards]">
               {inputBlock}
             </div>
