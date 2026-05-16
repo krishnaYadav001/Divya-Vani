@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import LotusBackground from "../components/LotusBackground";
+import Atmosphere from "../components/Atmosphere";
 import { BRAND } from "@/lib/brand";
 import { fetchMemory } from "@/lib/supabase";
 import SettingsClient from "./SettingsClient";
@@ -33,12 +33,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="relative flex flex-1 overflow-y-auto">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-start justify-center pt-32 opacity-[0.04]"
-      >
-        <LotusBackground className="h-[640px] w-[640px] text-krishna" />
-      </div>
+      <Atmosphere mode="corner" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         {/* Staggered page-load reveal per CLAUDE.md frontend-design
@@ -80,12 +75,7 @@ export default async function SettingsPage() {
 function NoSessionState() {
   return (
     <main className="relative flex flex-1 overflow-y-auto">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-start justify-center pt-32 opacity-[0.04]"
-      >
-        <LotusBackground className="h-[640px] w-[640px] text-krishna" />
-      </div>
+      <Atmosphere mode="corner" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-xl px-6 py-20 text-center font-serif text-krishna sm:px-8 sm:py-28">
         <header className="fade-up mb-6 [animation-delay:0ms] [animation-fill-mode:backwards]">
