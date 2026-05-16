@@ -19,6 +19,7 @@
     "regen:hindi:mahabharata": "tsx --env-file=.env.local scripts/regenerate-hindi-mahabharata.ts",
     "regen:hindi:mahabharata:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-mahabharata.ts --dry-run",
     "parse:bhagavata": "tsx scripts/parse-bhagavata.ts",
+    "count:tokens": "tsx --env-file=.env.local scripts/count-system-prompt-tokens.ts",
     "regen:hindi:bhagavata": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts",
     "regen:hindi:bhagavata:dry": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts --dry-run",
     "regen:hindi:bhagavata:canto11": "tsx --env-file=.env.local scripts/regenerate-hindi-bhagavata.ts --input=data/bhagavata-canto11.json --output=data/bhagavata-canto11-regenerated.json",
