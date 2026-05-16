@@ -79,7 +79,7 @@ Privacy + persona + UX + STT + verse-card + mic-UX + i18n. 8 commits on top of 2
 - **b4b37ae** — next 16.2.4 → 16.2.6 (HIGH SSRF 8.6 GHSA-c4j6-fc7j-m34r + middleware-bypass 8.1 GHSA-492v-c6pp-mqqv) + @anthropic-ai/sdk 0.91.0 → 0.91.1; build PASS, test:prompt 82/83 (baseline)
 - **e0c3d90** — removed unused silero_vad_legacy.onnx (~1.8 MB; vad-web `model:"v5"` only, no fallback codepath verified)
 - **0a0cbae** — scripts/count-system-prompt-tokens.ts rewritten to measure persona via `messages.countTokens` (drops Phase 1.7 cache probe); added `npm run count:tokens` (measured 26,314 persona-only, 0.05% off the 26,327 reference)
-- `<this-commit>` — CLAUDE.md status section structural rewrite (SHA fills in after this commit lands)
+- **8bb373b** — CLAUDE.md status section structural rewrite
 - **Accepted residual:** postcss@8.4.31 bundled by Next (XSS via unescaped `</style>`, GHSA-qx2v-qp2m-jg93, CVSS 6.1) — transitive-only, not on app's request path, only npm "fix" is a Next downgrade. Monitor for upstream Next patch
 - onnxruntime-web: install-time advisories cleared upstream — no action
 - Resolved this session (formerly open backlog): count-tokens script (0a0cbae), VAD bundle trim (e0c3d90), onnxruntime-web npm-audit (b4b37ae + cleared upstream)
@@ -169,14 +169,16 @@ All UI work in this project follows Anthropic's official **`frontend-design` ski
 
 Six principles to apply on every UI change:
 
-1. **Commit to a BOLD aesthetic direction.** Divya Vani's direction is *editorial-traditional-Indian-devotional* — parchment + brass + lotus mandala + Cormorant Garamond + Noto Sans Devanagari. Every UI choice serves this direction; no SaaS conventions, no AI-default aesthetics.
-2. **Typography:** distinctive display (Cormorant Garamond serif italic) + refined body (Noto Sans Devanagari for Hindi, Geist for English). NEVER introduce Inter / Roboto / Arial / Space Grotesk / system fonts.
-3. **Color:** semantic CSS variables (`--devotional`, `--sacred`, `--krishna`, `--brass`, `--parchment`, `--peacock`) in `src/app/globals.css`. Dominant parchment + sharp brass/devotional/sacred accents — never an evenly-distributed palette.
-4. **Motion:** CSS-only (no Motion library). High-impact moments over scattered micro-interactions — *one orchestrated page-load with staggered reveals beats many small hovers*. Existing keyframe: `fade-up`. Stagger via `[animation-delay:Xms] [animation-fill-mode:backwards]` arbitrary classes.
-5. **Spatial:** asymmetry, overlap, generous negative space OR controlled density. Symmetric-centered is fine for the meditative direction but pick at least one asymmetric grace note per page.
-6. **Atmosphere:** lotus-mandala watermark, backdrop-blur layers, soft shadows, peacock-feather + bansuri SVG motifs. NEVER ship a solid-color background.
+> **DIRECTION REVERSED — Phase 8 (2026-05-17), founder-approved.** The project moved from the Phase 2.5 *editorial-traditional parchment/brass* direction to **cinematic-dark temple-aarti**, implemented from a Claude Design handoff. The six principles below now describe the CURRENT locked direction. (Rationale + decision log: [`docs/decisions.md`](docs/decisions.md).)
 
-**Banned across the project** (per skill + project brand): Inter / Roboto / Arial / system-ui / Space Grotesk fonts, purple-on-white gradients, generic SaaS card grids, carousels without narrative, evenly-distributed color palettes, untextured solid backgrounds.
+1. **Commit to a BOLD aesthetic direction.** Divya Vani's direction is *cinematic-dark temple-aarti* — deep ink ground (`#050505`/`#0a0a0d`), gold leaf (`#d4a24a`), warm ivory text (`#efe6d1`), with the founder's Krishna image as a vignetted atmospheric background (masked-to-black ellipse + outer vignette + warm wash + faint film grain) on every page. Every UI choice serves this direction; no SaaS conventions, no AI-default aesthetics.
+2. **Typography:** Marcellus (English display / wordmark / UI labels) + Cormorant Garamond *italic* (English body) + Tiro Devanagari Hindi (ALL Devanagari). Hindi-first, English as secondary italic. NEVER introduce Inter / Roboto / Arial / Space Grotesk / system fonts / Noto Sans Devanagari (retired).
+3. **Color:** semantic CSS variables in `src/app/globals.css`. The Phase 2.5 token NAMES (`--devotional` `--sacred` `--krishna` `--brass` `--parchment` `--peacock` + `*-dark`) are deliberately KEPT and REMAPPED to the dark palette so components reskin globally — do not reintroduce light values. New direct tokens for redesign surfaces: `--ink0..3`, `--gold` / `--gold-dim` / `--gold-mute` / `--gold-faint`, `--ivory`, `--red-seal`. Dominant ink + sparing gold/ivory; full-saturation gold is for lines/fills/large-display only, NOT body text (use `*-dark`/ivory/light-gold for AA text on the dark ground — the inverted form of the old parchment rule).
+4. **Motion:** CSS-only (no Motion library). High-impact moments over scattered micro-interactions. Keyframes: `fade-up`, `sonar`/`sonar-ring`, `dv-drift`, `dv-pulse`. Stagger via `[animation-delay:Xms] [animation-fill-mode:backwards]`.
+5. **Spatial:** asymmetry, overlap, generous negative space OR controlled density; at least one asymmetric grace note per page (e.g. the landing dharma-wheel seal).
+6. **Atmosphere:** the `Atmosphere` component (`src/app/components/Atmosphere.tsx`, modes `hero`/`chat`/`corner`/`deep`/`mobile`/`distant`) is the z-0 ground on every page — Krishna vignette + outer vignette + warm wash + film grain + backdrop-blur glass surfaces. NEVER ship a flat untextured background; NEVER place the disclaimer/identity layer where the vignette reduces its legibility (Locked Decision #1).
+
+**Banned across the project** (per skill + project brand): Inter / Roboto / Arial / system-ui / Space Grotesk / Noto Sans Devanagari fonts, purple-on-white gradients, generic SaaS card grids, carousels without narrative, flat untextured backgrounds, light/parchment surfaces (the Phase 2.5 palette is retired), full-saturation gold as body text.
 
 **Apply this skill to:** every change in `src/app/**/*.tsx`, `src/app/globals.css`, `src/app/components/**/*.tsx`. Re-read this section before any visual change. Before shipping a UI change, audit it against the six principles above.
 
