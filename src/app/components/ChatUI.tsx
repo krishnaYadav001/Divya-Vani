@@ -21,8 +21,8 @@ import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
 import Bansuri from "./motifs/Bansuri";
 import DiyaIcon from "./motifs/DiyaIcon";
-import LotusMandala from "./motifs/LotusMandala";
 import PeacockFeather from "./motifs/PeacockFeather";
+import Atmosphere from "./Atmosphere";
 
 // Phase 5.4 — static tier list for the diya seva panel. TIER_CONFIG is a
 // frozen const so this is computed once at module load (avoids handing
@@ -986,14 +986,16 @@ export default function ChatUI() {
 
   return (
     <main className="relative flex h-full flex-1 flex-col">
-      {/* Step 2.5.6 atmosphere — single low-opacity lotus mandala
-          centered behind content. pointer-events-none so it never
-          intercepts clicks; aria-hidden so screen readers skip it. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden"
-      >
-        <LotusMandala className="h-[80vh] max-h-[720px] w-auto text-krishna opacity-[0.06]" />
+      {/* Phase 8 cinematic-dark redesign — Krishna atmospheric vignette
+          replaces the Phase 2.5 lotus-mandala watermark as the z-0
+          background. Empty state uses the softer 'chat' crop; once the
+          conversation is live it recedes to 'deep' so message text
+          stays the focus. pointer-events-none + aria-hidden (inside
+          Atmosphere) so it never intercepts clicks or screen readers,
+          and the disclaimer/identity layers stay stacked above it
+          (Locked Decision #1 intact). */}
+      <div className="absolute inset-0 z-0">
+        <Atmosphere mode={isEmpty ? "chat" : "deep"} intensity={1} vignette={1} />
       </div>
 
       <header className="relative z-20 border-b border-brass/30 bg-parchment/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
