@@ -997,61 +997,70 @@ export default function ChatUI() {
       </div>
 
       <header className="relative z-20 border-b border-brass/30 bg-parchment/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
-        <div className="mx-auto flex max-w-[600px] items-center justify-center gap-3">
-          <PeacockFeather
-            className="h-12 w-auto shrink-0"
-            width={48}
-            height={48}
-            priority
-          />
-          <div className="text-center">
-            <h1 className="font-serif text-2xl font-medium leading-none tracking-tight sm:text-3xl">
-              <span className="text-peacock">{BRAND_HEAD}</span>
-              <span className="text-sacred"> {BRAND_TAIL.join(" ")}</span>
-            </h1>
-            <p className="mt-1 font-devanagari text-xs leading-snug text-krishna/70 sm:text-sm">
-              एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
-            </p>
+        {/* Phase 8 launch-eve mobile fix — was a centred title with an
+            `absolute right-3 top-3` controls overlay, which collided
+            with the title on ~360px. Now an in-flow 2-zone flex:
+            the feather+title group takes the slack (flex-1, centred
+            within its zone) and the controls sit at the far right as
+            a shrink-0 sibling, so they can never crowd the title.
+            min-w-0 lets the title wrap instead of forcing overflow. */}
+        <div className="mx-auto flex max-w-[600px] items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+            <PeacockFeather
+              className="h-10 w-auto shrink-0 sm:h-12"
+              width={48}
+              height={48}
+              priority
+            />
+            <div className="min-w-0 text-center">
+              <h1 className="font-serif text-2xl font-medium leading-none tracking-tight sm:text-3xl">
+                <span className="text-peacock">{BRAND_HEAD}</span>
+                <span className="text-sacred"> {BRAND_TAIL.join(" ")}</span>
+              </h1>
+              <p className="mt-1 font-devanagari text-xs leading-snug text-krishna/70 sm:text-sm">
+                एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
+              </p>
+            </div>
           </div>
-        </div>
-        {/* Phase 5.4 — diya seva trigger + panel. Wrapper is absolute
-            inside the relative header (top-right corner). The panel is
-            in turn absolute relative to this wrapper via right-0 top-full,
-            so it slides down directly under the icon. Phase 8 added a
-            Settings gear sibling to the left of the diya button —
-            because /chat is fullscreen, the layout footer's Settings
-            link is below the fold; placing the gear here gives
-            /settings a first-class reach point from the main UI. The
-            seva-panel anchors `right-0 top-full` to this wrapper, and
-            since the diya button is the rightmost in-flow child, the
-            panel still pops down under the diya icon as before. */}
-        <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-5 sm:top-4">
-          <Link
-            href="/settings"
-            aria-label="Settings · सेटिंग्स"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
-          >
-            <SettingsIcon className="h-6 w-6" />
-          </Link>
-          <button
-            type="button"
-            aria-label="Seva · सेवा"
-            aria-expanded={isDiyaOpen}
-            onClick={() => setIsDiyaOpen((prev) => !prev)}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
-          >
-            <DiyaIcon className="h-6 w-6" />
-          </button>
-          <DiyaSevaPanel
-            isOpen={isDiyaOpen}
-            onClose={() => setIsDiyaOpen(false)}
-            messageCount={counterState.message_count}
-            sevaBalance={counterState.seva_balance}
-            tiers={TIERS}
-            onPurchaseSuccess={(newBalance) => {
-              setCounterState((prev) => ({ ...prev, seva_balance: newBalance }));
-            }}
-          />
+          {/* Phase 5.4 — diya seva trigger + panel. Phase 8 — Settings
+              gear sibling (because /chat is fullscreen, the layout
+              footer's Settings link is below the fold; this gives
+              /settings a first-class reach point from the main UI).
+              Phase 8 launch-eve — moved out of the absolute corner
+              overlay into this in-flow `relative` wrapper so it no
+              longer overlaps the centred title on small viewports.
+              The wrapper stays `relative` (positioned), so
+              DiyaSevaPanel's `absolute right-0 top-full` still anchors
+              and slides down directly under the diya icon exactly as
+              before — no seva-flow behaviour change. */}
+          <div className="relative flex shrink-0 items-center gap-1">
+            <Link
+              href="/settings"
+              aria-label="Settings · सेटिंग्स"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+            >
+              <SettingsIcon className="h-6 w-6" />
+            </Link>
+            <button
+              type="button"
+              aria-label="Seva · सेवा"
+              aria-expanded={isDiyaOpen}
+              onClick={() => setIsDiyaOpen((prev) => !prev)}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+            >
+              <DiyaIcon className="h-6 w-6" />
+            </button>
+            <DiyaSevaPanel
+              isOpen={isDiyaOpen}
+              onClose={() => setIsDiyaOpen(false)}
+              messageCount={counterState.message_count}
+              sevaBalance={counterState.seva_balance}
+              tiers={TIERS}
+              onPurchaseSuccess={(newBalance) => {
+                setCounterState((prev) => ({ ...prev, seva_balance: newBalance }));
+              }}
+            />
+          </div>
         </div>
       </header>
 
