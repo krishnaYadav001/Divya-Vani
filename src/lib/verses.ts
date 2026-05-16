@@ -455,3 +455,308 @@ Or for no references:
     return retrievedVerses.map((v) => v.reference);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Phase 8.x Path B — post-generation entity-based verse retrieval.
+//
+// Path C (attestVerseReferences) can only attest verses that were in the
+// cosine RAG top-5. When Krishna draws on a §4.5 PARALLEL-MAPPING figure
+// (Sudama, Yashoda, Devakī, gopī viraha, Mausala parva, …) that the
+// cosine search didn't surface, Path C attests 0 and the reply shows no
+// cards even though it's richly scriptural. Path B closes that gap:
+// extract the scriptural figures Krishna actually named, look up verses
+// that feature them, and MERGE those with Path C's attested set (dedupe
+// by reference, cap 5). Path B is ADDITIVE — it never alters Path C and
+// degrades gracefully (returns [] on any Haiku/DB error).
+// ─────────────────────────────────────────────────────────────────────
+
+export type ApiVerse = {
+  reference: string;
+  sanskrit: string;
+  transliteration: string;
+  hindi: string;
+  english: string;
+};
+
+// Canonical scriptural entities Krishna draws on. The first array mirrors
+// the §4.5 PARALLEL-MAPPING canon + the figures/places Krishna parallels
+// most often across the 5 modes. extractScripturalEntities returns names
+// from this list ONLY (Haiku output is filtered against it).
+export const KRISHNA_SCRIPTURAL_ENTITIES = [
+  // §4.5 PARALLEL-MAPPING canonical 8
+  'Arjuna', 'Sudama', 'Devaki', 'Yashoda', 'Rukmini', 'Yudhishthira',
+  // Mausala parva, gopī viraha, Bhramara-gītā — events
+  'Mausala', 'gopi', 'Bhramara',
+  // Vrindavan-Gokul-Mathura figures
+  'Pootana', 'Kaliya', 'Govardhan', 'Sandipani', 'Uddhava',
+  'Balarama', 'Subhadra',
+  // Mahabharata figures Krishna frequently parallels
+  'Bhima', 'Karna', 'Drona', 'Bhishma', 'Dhritarashtra', 'Gandhari',
+  'Draupadi', 'Vidura', 'Kunti',
+  // Places
+  'Vrindavan', 'Dwaraka', 'Mathura', 'Kurukshetra',
+];
+
+// Search variants per canonical entity: Latin spellings, IAST diacritic
+// forms, and Devanagari. getVersesForEntity ilike-matches any of these
+// against english / hindi / transliteration. Keep every variant
+// comma-free and paren-free — PostgREST `.or()` uses those as syntax.
+const ENTITY_VARIANTS: Record<string, string[]> = {
+  Arjuna: ['Arjuna', 'Arjun', 'अर्जुन', 'Partha', 'Pārtha', 'पार्थ', 'Dhananjaya', 'धनंजय'],
+  Sudama: ['Sudama', 'Sudāmā', 'Sudaman', 'सुदामा', 'सुदाम'],
+  Devaki: ['Devaki', 'Devakī', 'देवकी'],
+  Yashoda: ['Yashoda', 'Yaśodā', 'Yasoda', 'यशोदा'],
+  Rukmini: ['Rukmini', 'Rukmiṇī', 'रुक्मिणी'],
+  Yudhishthira: ['Yudhishthira', 'Yudhiṣṭhira', 'Yudhisthira', 'युधिष्ठिर', 'Dharmaraja', 'धर्मराज'],
+  Mausala: ['Mausala', 'Mausal', 'मौसल'],
+  gopi: ['gopi', 'gopī', 'gopis', 'gopīs', 'गोपी', 'गोपिय', 'गोपियों'],
+  Bhramara: ['Bhramara', 'Bhramar', 'भ्रमर', 'Bhramara-gita', 'Bhramara-gītā'],
+  Pootana: ['Pootana', 'Putana', 'Pūtanā', 'पूतना'],
+  Kaliya: ['Kaliya', 'Kāliya', 'कालिय', 'कालिया'],
+  Govardhan: ['Govardhan', 'Govardhana', 'गोवर्धन'],
+  Sandipani: ['Sandipani', 'Sāndīpani', 'Sandīpani', 'सांदीपनि', 'सान्दीपनि'],
+  Uddhava: ['Uddhava', 'उद्धव'],
+  Balarama: ['Balarama', 'Balarāma', 'Balaram', 'बलराम'],
+  Subhadra: ['Subhadra', 'Subhadrā', 'सुभद्रा'],
+  Bhima: ['Bhima', 'Bhīma', 'भीम', 'Bhimasena', 'भीमसेन'],
+  Karna: ['Karna', 'Karṇa', 'कर्ण'],
+  Drona: ['Drona', 'Droṇa', 'द्रोण', 'Dronacharya', 'द्रोणाचार्य'],
+  Bhishma: ['Bhishma', 'Bhīṣma', 'भीष्म'],
+  Dhritarashtra: ['Dhritarashtra', 'Dhṛtarāṣṭra', 'धृतराष्ट्र'],
+  Gandhari: ['Gandhari', 'Gāndhārī', 'गांधारी', 'गान्धारी'],
+  Vrindavan: ['Vrindavan', 'Vṛndāvana', 'Vrindavana', 'वृन्दावन', 'वृंदावन'],
+  Dwaraka: ['Dwaraka', 'Dvārakā', 'Dwarka', 'द्वारका', 'द्वारिका'],
+  Mathura: ['Mathura', 'Mathurā', 'मथुरा'],
+  Kurukshetra: ['Kurukshetra', 'Kurukṣetra', 'कुरुक्षेत्र'],
+  Draupadi: ['Draupadi', 'Draupadī', 'द्रौपदी', 'Panchali', 'पांचाली', 'Yajnaseni', 'याज्ञसेनी'],
+  Vidura: ['Vidura', 'विदुर', 'Mahatma Vidura'],
+  Kunti: ['Kunti', 'Kuntī', 'कुंती', 'Pritha', 'पृथा'],
+};
+
+// Source a verse about this entity is most likely to be found in / most
+// thematically apt. Character-lila figures → bhagavata; war figures →
+// mahabharata; the Arjuna/Kurukshetra pre-war-doubt parallel → gita.
+const ENTITY_PREFERRED_SOURCE: Record<string, 'gita' | 'mahabharata' | 'bhagavata'> = {
+  Arjuna: 'gita', Kurukshetra: 'gita',
+  Yudhishthira: 'mahabharata', Bhima: 'mahabharata', Karna: 'mahabharata',
+  Drona: 'mahabharata', Bhishma: 'mahabharata', Dhritarashtra: 'mahabharata',
+  Gandhari: 'mahabharata', Mausala: 'mahabharata',
+  Sudama: 'bhagavata', Devaki: 'bhagavata', Yashoda: 'bhagavata',
+  Rukmini: 'bhagavata', gopi: 'bhagavata', Bhramara: 'bhagavata',
+  Pootana: 'bhagavata', Kaliya: 'bhagavata', Govardhan: 'bhagavata',
+  Sandipani: 'bhagavata', Uddhava: 'bhagavata', Balarama: 'bhagavata',
+  Subhadra: 'bhagavata', Vrindavan: 'bhagavata', Dwaraka: 'bhagavata',
+  Mathura: 'bhagavata',
+  Draupadi: 'mahabharata',
+  Vidura: 'mahabharata',
+  Kunti: 'mahabharata',
+};
+
+const ENTITY_MIN_WORDS = 25;
+const ENTITY_VERSES_PER = 2; // max cards per entity
+
+const VALID_ENTITY_SET = new Set(KRISHNA_SCRIPTURAL_ENTITIES);
+
+// Haiku 4.5 — which canonical entities does Krishna's reply actually
+// invoke? Returns canonical English names from KRISHNA_SCRIPTURAL_ENTITIES
+// only (hallucinations filtered out). Silent-fail → [] (Path B is purely
+// additive; on any failure we fall back to Path C alone).
+//
+// Arjuna/Kurukshetra are special-cased in the prompt: Krishna mentions
+// Arjuna in passing constantly ("as I told Arjuna long ago"). We only
+// want a card when a SPECIFIC Arjuna scene is invoked (the battlefield,
+// the dropped bow, the despair between the armies) — otherwise every
+// reply would surface Gita 2.x.
+export async function extractScripturalEntities(
+  replyText: string,
+): Promise<string[]> {
+  if (!replyText.trim()) return [];
+  const wordCount = replyText.trim().split(/\s+/).filter(Boolean).length;
+  if (wordCount < ENTITY_MIN_WORDS) return [];
+
+  const entityCatalog = KRISHNA_SCRIPTURAL_ENTITIES.map((e) => {
+    const variants = ENTITY_VARIANTS[e] ?? [e];
+    return `- ${e} (also: ${variants.slice(1).join(', ') || e})`;
+  }).join('\n');
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 200,
+      messages: [
+        {
+          role: 'user',
+          content: `You identify which scriptural figures/places Krishna's reply actually invokes, for surfacing verse cards in the Divya Vani app.
+
+Krishna replied:
+"""
+${replyText}
+"""
+
+Canonical entities (with transliteration / Devanagari variants):
+${entityCatalog}
+
+Return the canonical English names (left of the parenthesis) of every entity Krishna NAMES or whose SCENE he describes in this reply.
+
+Rules:
+- Match any variant form (Latin, IAST diacritics, or Devanagari).
+- Include an entity if Krishna names them OR vividly describes their scene/story, even without the exact name.
+- SPECIAL CASE — "Arjuna" and "Kurukshetra": include them ONLY if Krishna invokes a SPECIFIC Arjuna moment — the battlefield between the two armies, his despair/grief, his bow (Gandiva) slipping from his hand, the pre-war collapse, the chariot at Kurukshetra. Do NOT include them for a passing reference like "as I told Arjuna long ago" or "I once taught a warrior" with no scene.
+- Only return names from the canonical list. Do not invent entities.
+- If the reply invokes no listed entity, return an empty list.
+
+Return ONLY valid JSON, no surrounding text or markdown:
+{"entities": ["Sudama", "Yashoda"]}
+
+Or for none:
+{"entities": []}`,
+        },
+      ],
+    });
+
+    const text = response.content.find((b) => b.type === 'text')?.text ?? '';
+
+    // LAST-valid-JSON defensive parser — same pattern as
+    // attestVerseReferences / extractMemory.
+    let parsed: { entities?: unknown } | null = null;
+    const candidates: string[] = [text.trim()];
+    const fence = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+    if (fence) candidates.push(fence[1]);
+    const innerBlocks = text.match(/\{[^{}]*\}/g) ?? [];
+    candidates.push(...[...innerBlocks].reverse());
+    const greedy = text.match(/\{[\s\S]*\}/);
+    if (greedy) candidates.push(greedy[0]);
+
+    for (const c of candidates) {
+      try {
+        const obj = JSON.parse(c.trim()) as { entities?: unknown };
+        if (Array.isArray(obj.entities)) {
+          parsed = obj;
+          break;
+        }
+      } catch {
+        /* try next */
+      }
+    }
+
+    if (!parsed || !Array.isArray(parsed.entities)) {
+      console.error('[extractScripturalEntities] no valid JSON, returning []');
+      return [];
+    }
+
+    // Keep only canonical names that exist in the allowed set (drop
+    // hallucinations + casing drift). Dedupe, preserve order.
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of parsed.entities as unknown[]) {
+      if (typeof raw !== 'string') continue;
+      const name = raw.trim();
+      if (VALID_ENTITY_SET.has(name) && !seen.has(name)) {
+        seen.add(name);
+        out.push(name);
+      }
+    }
+    return out;
+  } catch (e) {
+    console.error('[extractScripturalEntities] threw, returning []:', e);
+    return [];
+  }
+}
+
+function occurrenceScore(text: string, variants: string[]): number {
+  if (!text) return 0;
+  const hay = text.toLowerCase();
+  let n = 0;
+  for (const v of variants) {
+    const needle = v.toLowerCase();
+    if (!needle) continue;
+    let idx = hay.indexOf(needle);
+    while (idx !== -1) {
+      n++;
+      idx = hay.indexOf(needle, idx + needle.length);
+    }
+  }
+  return n;
+}
+
+// Up to ENTITY_VERSES_PER verses that prominently feature `entityName`.
+// ilike-matches any variant against english / hindi / transliteration,
+// prefers the entity's most-apt source, and ranks by how central the
+// entity is to the verse (occurrence count in english+hindi). Returns []
+// on no match or any DB error (Path B degrades to Path C alone).
+export async function getVersesForEntity(
+  entityName: string,
+): Promise<ApiVerse[]> {
+  const variants = ENTITY_VARIANTS[entityName] ?? [entityName];
+  const orConds: string[] = [];
+  for (const v of variants) {
+    orConds.push(`english.ilike.%${v}%`);
+    orConds.push(`hindi.ilike.%${v}%`);
+    orConds.push(`transliteration.ilike.%${v}%`);
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('verses')
+      .select('reference,source,sanskrit,transliteration,hindi,english')
+      .or(orConds.join(','))
+      .limit(60);
+
+    if (error) {
+      console.error(`[getVersesForEntity] ${entityName} DB error:`, error.message);
+      return [];
+    }
+
+    type Row = {
+      reference: string;
+      source: string;
+      sanskrit: string | null;
+      transliteration: string | null;
+      hindi: string | null;
+      english: string | null;
+    };
+    const rows = (data ?? []) as Row[];
+    if (rows.length === 0) return [];
+
+    const preferred = ENTITY_PREFERRED_SOURCE[entityName];
+    const scored = rows.map((r) => {
+      const score =
+        occurrenceScore(r.english ?? '', variants) +
+        occurrenceScore(r.hindi ?? '', variants) +
+        occurrenceScore(r.transliteration ?? '', variants);
+      return { r, score, preferredHit: preferred ? r.source === preferred : false };
+    });
+
+    // Preferred-source first, then by entity-centrality (occurrence
+    // count), then by reference for stable ordering.
+    scored.sort((a, b) => {
+      if (a.preferredHit !== b.preferredHit) return a.preferredHit ? -1 : 1;
+      if (b.score !== a.score) return b.score - a.score;
+      return a.r.reference.localeCompare(b.r.reference);
+    });
+
+    return scored.slice(0, ENTITY_VERSES_PER).map(({ r }) => ({
+      reference: r.reference,
+      sanskrit: r.sanskrit ?? '',
+      transliteration: r.transliteration ?? '',
+      hindi: r.hindi ?? '',
+      english: r.english ?? '',
+    }));
+  } catch (e) {
+    console.error(`[getVersesForEntity] ${entityName} threw:`, e);
+    return [];
+  }
+}
+
+// Path B end-to-end: extract entities Krishna invoked, fetch their
+// verses in parallel, flatten. Dedupe/merge with Path C + the 5-card
+// cap happens in the chat route's buildResponseVerses. Returns the
+// entity list too so the caller can emit telemetry.
+export async function retrieveEntityVerses(
+  replyText: string,
+): Promise<{ entities: string[]; verses: ApiVerse[] }> {
+  const entities = await extractScripturalEntities(replyText);
+  if (entities.length === 0) return { entities: [], verses: [] };
+  const lists = await Promise.all(entities.map((e) => getVersesForEntity(e)));
+  return { entities, verses: lists.flat() };
+}

@@ -10,8 +10,10 @@ import {
   rerankByTheme,
   applyDiversityBoost,
   attestVerseReferences,
+  retrieveEntityVerses,
   getRagFlags,
   type VerseHit,
+  type ApiVerse,
 } from "@/lib/verses";
 import {
   QUERY_TAXONOMY_BLOCK,
@@ -781,13 +783,31 @@ export async function POST(req: Request) {
   // perceived reply latency is unchanged because the reply text has
   // already streamed.
   const VERSE_CARD_MIN_WORDS = 25;
-  async function buildResponseVerses(replyText: string) {
+  const VERSE_CARD_MAX = 5;
+  async function buildResponseVerses(replyText: string): Promise<ApiVerse[]> {
     const replyWordCount = replyText.trim().split(/\s+/).filter(Boolean).length;
+    // 25-word floor — short replies get NO cards and we run NEITHER the
+    // Path C nor the Path B Haiku call (latency + cost saver).
     if (replyWordCount < VERSE_CARD_MIN_WORDS) return [];
-    const attestedRefs = new Set(
-      await attestVerseReferences(replyText, verses),
-    );
-    return verses
+
+    // Path C (attest the cosine RAG pool) and Path B (entity-based
+    // retrieval for §4.5 figures the cosine search missed) run in
+    // parallel — total meta-frame delay ≈ max(PathC, PathB), not the
+    // sum. Both degrade gracefully internally; the extra .catch guards
+    // are belt-and-suspenders so Path C still surfaces if Path B throws.
+    const [attestedRefsArr, entityResult] = await Promise.all([
+      attestVerseReferences(replyText, verses).catch((e) => {
+        console.error("[buildResponseVerses] Path C threw:", e);
+        return verses.map((v) => v.reference); // silent-fail = full pool
+      }),
+      retrieveEntityVerses(replyText).catch((e) => {
+        console.error("[buildResponseVerses] Path B threw:", e);
+        return { entities: [] as string[], verses: [] as ApiVerse[] };
+      }),
+    ]);
+
+    const attestedRefs = new Set(attestedRefsArr);
+    const pathC: ApiVerse[] = verses
       .filter((v) => attestedRefs.has(v.reference))
       .map((v) => ({
         reference: v.reference,
@@ -796,6 +816,27 @@ export async function POST(req: Request) {
         hindi: v.hindi,
         english: v.english,
       }));
+
+    // Merge: Path C first (verses Krishna actually drew from take card
+    // priority), then Path B entity verses. Dedupe by reference so a
+    // verse attested AND entity-retrieved appears once. Cap at 5.
+    const merged: ApiVerse[] = [];
+    const seenRefs = new Set<string>();
+    for (const v of [...pathC, ...entityResult.verses]) {
+      if (seenRefs.has(v.reference)) continue;
+      seenRefs.add(v.reference);
+      merged.push(v);
+      if (merged.length >= VERSE_CARD_MAX) break;
+    }
+
+    console.log(
+      `[chat] verse cards: attested=${pathC.length} ` +
+        `entity_retrieved=${entityResult.verses.length} ` +
+        `merged=${merged.length} ` +
+        `entities=[${entityResult.entities.join(",")}]`,
+    );
+
+    return merged;
   }
   const safetyCard = safetyFlag ? buildSafetyCard(safetyFlag) : undefined;
 
