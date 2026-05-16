@@ -3,7 +3,8 @@ import {
   Cormorant_Garamond,
   Geist,
   Geist_Mono,
-  Noto_Sans_Devanagari,
+  Marcellus,
+  Tiro_Devanagari_Hindi,
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
@@ -27,10 +28,24 @@ const cormorant = Cormorant_Garamond({
   weight: ["400", "500", "600"],
 });
 
-const notoDevanagari = Noto_Sans_Devanagari({
-  variable: "--font-noto-devanagari",
-  subsets: ["devanagari"],
-  weight: ["400", "500", "700"],
+// Phase 8 cinematic-dark redesign — type system flipped to the
+// temple-aarti direction: Marcellus for English display/UI, Cormorant
+// Garamond italic for English body, Tiro Devanagari Hindi for all
+// Devanagari. notoDevanagari (Noto Sans Devanagari) retired — the
+// `--font-noto-devanagari` CSS alias is repointed at Tiro in
+// globals.css so every existing `font-devanagari` usage inherits the
+// new face without per-component edits.
+const marcellus = Marcellus({
+  variable: "--font-marcellus",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+const tiroDevanagari = Tiro_Devanagari_Hindi({
+  variable: "--font-tiro-devanagari",
+  subsets: ["devanagari", "latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -81,7 +96,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0a0a0a",
+  themeColor: "#050505",
 };
 
 export default function RootLayout({
@@ -92,10 +107,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${notoDevanagari.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${marcellus.variable} ${tiroDevanagari.variable} h-full antialiased`}
     >
       <body
-        className="h-dvh flex flex-col overflow-hidden bg-linear-to-b from-parchment to-parchment/95"
+        className="h-dvh flex flex-col overflow-hidden bg-[#050505]"
         suppressHydrationWarning
       >
         {children}

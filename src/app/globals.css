@@ -1,40 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Phase 8 cinematic-dark redesign. Base surface is deep near-black;
+     primary text is warm ivory. (Supersedes the Phase 2.5 parchment
+     base — see CLAUDE.md "Frontend design reference".) */
+  --background: #050505;
+  --foreground: #efe6d1;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Phase 2.5 temple-aesthetic palette. Single tokens; combine
-     with Tailwind v4 opacity modifiers (bg-devotional/10 etc.).
-     Contrast vs parchment background is documented in
-     src/lib/designTokens.ts — devotional + brass do NOT meet AA
-     as text colors at full saturation; use the *-dark variants
-     when these hues need to read as text. */
-  --color-devotional: #E89B3C;
-  --color-devotional-dark: #7A4F1E;
-  --color-sacred: #7C2D2A;
-  --color-krishna: #1E2A5E;
-  --color-brass: #B08D4C;
-  --color-brass-dark: #7C5F2E;
-  --color-parchment: #FBF4E8;
-  --color-peacock: #0E5566;
+  /* ── Phase 8 cinematic-dark — temple-aarti palette ──────────────────
+     The six Phase 2.5 semantic token NAMES are intentionally kept and
+     REMAPPED to the dark palette so every existing component
+     (ChatUI, settings, privacy, terms, seva, motifs) reskins globally
+     without per-className edits:
+
+       parchment      → deep ink surface base
+       krishna        → ivory primary text
+       brass          → gold line/accent
+       brass-dark     → light-gold secondary text (AA on near-black)
+       devotional     → gold accent
+       devotional-dark→ bright gold (AA text on near-black)
+       sacred         → terracotta-rose (headings + danger accent)
+       peacock        → ivory (link-hover, per design .dv-link:hover)
+
+     Contrast: ivory / light-gold / bright-gold / rose all clear WCAG
+     AA as text on the #050505–#1f1d26 range. Full-saturation gold
+     (#d4a24a) is reserved for lines, fills, and large display only —
+     not body text — mirroring the old parchment "*-dark for text" rule
+     inverted for a dark ground. */
+  --color-devotional: #d4a24a;
+  --color-devotional-dark: #e6bd6e;
+  --color-sacred: #d49a8e;
+  --color-krishna: #efe6d1;
+  --color-brass: #d4a24a;
+  --color-brass-dark: #cbb37e;
+  --color-parchment: #0a0a0d;
+  --color-peacock: #efe6d1;
+
+  /* New direct tokens for the redesign surfaces (landing, atmosphere,
+     ornaments) that need the full ink ramp + raw gold/ivory. */
+  --color-ink0: #050505;
+  --color-ink1: #0a0a0d;
+  --color-ink2: #14131a;
+  --color-ink3: #1f1d26;
+  --color-gold: #d4a24a;
+  --color-gold-dim: #a78544;
+  --color-gold-mute: #6e5a30;
+  --color-gold-faint: #3d3220;
+  --color-ivory: #efe6d1;
+  --color-red-seal: #7a2820;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* English body = Cormorant Garamond; English display/UI = Marcellus;
+     all Devanagari = Tiro Devanagari Hindi. `--font-devanagari` keeps
+     its name (every existing `font-devanagari` usage inherits Tiro). */
   --font-serif: var(--font-cormorant);
-  --font-devanagari: var(--font-noto-devanagari);
+  --font-display: var(--font-marcellus);
+  --font-devanagari: var(--font-tiro-devanagari);
 }
 
 body {
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--background);
+  font-family: var(--font-cormorant), Georgia, serif;
+  letter-spacing: 0.005em;
 }
 
+/* Staggered page-load reveal — unchanged from Phase 2.5. */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -51,9 +88,7 @@ body {
 }
 
 /* Phase 7.0 voice-input — sonar pulse for the listening mic state.
-   Two concentric brass rings emanate outward from the mic button at
-   staggered phases, signalling that the system is actively capturing
-   audio. CSS-only per the frontend-design "Motion: CSS-only" rule. */
+   Two concentric rings emanate outward at staggered phases. */
 @keyframes sonar {
   0% {
     transform: scale(1);
@@ -71,4 +106,60 @@ body {
 
 .sonar-ring-delayed {
   animation: sonar 1.6s ease-out 0.8s infinite;
+}
+
+/* Phase 8 cinematic-dark — atmospheric decorative motion (Krishna
+   vignette drift + soft accent pulse). CSS-only per the frontend-
+   design "Motion: CSS-only" rule. */
+@keyframes dv-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.dv-drift {
+  animation: dv-drift 6s ease-in-out infinite;
+}
+
+@keyframes dv-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.dv-pulse {
+  animation: dv-pulse 3s ease-in-out infinite;
+}
+
+/* Gold hairline divider (ornamental section rule). */
+.dv-hairline {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gold-faint) 20%,
+    var(--color-gold-mute) 50%,
+    var(--color-gold-faint) 80%,
+    transparent
+  );
+}
+
+/* Thin gold scrollbar on scrolling surfaces. */
+.dv-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.dv-scroll::-webkit-scrollbar-thumb {
+  background: rgba(212, 162, 74, 0.2);
+  border-radius: 3px;
+}
+.dv-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
