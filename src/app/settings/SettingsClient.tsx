@@ -120,15 +120,16 @@ export default function SettingsClient({
 
           <div className="flex-1">
             <p className="font-serif text-base italic leading-relaxed text-krishna">
-              May the founder review your conversations to improve
-              Krishna&apos;s voice?
+              Allow us to learn from your conversations to improve your
+              experience with Krishna
             </p>
           </div>
         </div>
 
         <p className="mt-5 font-serif text-sm italic leading-relaxed text-brass-dark">
-          If yes, your conversations are kept for 180 days. If no, future
-          conversations will not be saved.
+          When enabled, your conversations help us understand what users
+          need and refine how Krishna responds. Conversations are kept for
+          180 days, then permanently deleted.
         </p>
 
         {/* Subtle saved confirmation — appears for ~2 s on each toggle */}
@@ -155,11 +156,13 @@ export default function SettingsClient({
 
         <div className="mt-4 space-y-3">
           <p className="font-serif text-base italic leading-relaxed text-krishna">
-            This will remove all your conversations, name, and memory from
-            our system. This cannot be undone.
+            Krishna will no longer remember you. All your conversations, the
+            name he calls you by, and your shared moments will be permanently
+            deleted. This cannot be undone.
           </p>
           <p className="font-serif text-sm italic leading-relaxed text-brass-dark">
-            Payment records are retained as required by Indian financial law.
+            Payment records are retained as required by Indian financial
+            regulations.
           </p>
         </div>
 
