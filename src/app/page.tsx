@@ -32,7 +32,22 @@ export default function Landing() {
             className="font-devanagari text-[clamp(2.5rem,7vw,4.75rem)] font-normal leading-[1.18] text-ivory"
             style={{ textShadow: "0 2px 30px rgba(0,0,0,0.8)" }}
           >
-            {BRAND.tagline.hi}
+            {/* Gold-italic accent on "बात" per the design — derived from
+                the BRAND.tagline.hi constant (no copy change / no desync;
+                whole string renders unchanged if the word is absent). */}
+            {(() => {
+              const t = BRAND.tagline.hi;
+              const w = "बात";
+              const i = t.indexOf(w);
+              if (i === -1) return t;
+              return (
+                <>
+                  {t.slice(0, i)}
+                  <span className="italic text-gold">{w}</span>
+                  {t.slice(i + w.length)}
+                </>
+              );
+            })()}
           </h1>
 
           {/* Ornament */}
