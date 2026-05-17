@@ -1254,46 +1254,73 @@ function MessageCard({
   // English, so userLang (used for verse-card labels) is the wrong
   // signal for the body font.
   const contentLang = detectLang(message.content);
+  // Phase 8 cinematic-dark redesign — aligned avatar bubbles per the
+  // Claude Design handoff: user right-aligned in a gold-tinted bubble,
+  // Krishna left-aligned beside a peacock-feather avatar in a dark
+  // glass bubble (the Bansuri in-bubble motif is replaced by the
+  // design's avatar). Purely presentational — every data binding
+  // (message.content, contentLang/userLang font + label routing,
+  // VerseCardList, SafetyCardView, SevaPaywall + onPaywallSuccess) is
+  // preserved unchanged. The "You" label text is kept verbatim; no
+  // text is added (Krishna's identity reads from the avatar, not a
+  // new label string).
   return (
     <div
       className={
-        "fade-up rounded-2xl border px-4 py-3 text-lg leading-relaxed text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] " +
-        (isUser
-          ? "border-brass/20 bg-parchment/95"
-          : "border-brass/40 bg-parchment")
+        "fade-up flex " +
+        (isUser ? "flex-col items-end" : "items-start gap-3")
       }
     >
-      {/* Phase 5.5 — flute icon on Krishna's bubbles ties each reply to
-          the persona, parallel to the peacock-feather + bansuri header
-          motifs. User bubbles keep the "You" text label. In-flow rather
-          than absolute-positioned to dodge clip risk from the chat
-          scroll's overflow-y-auto ancestor. */}
-      <div className="mb-1 flex items-center">
-        {isUser ? (
-          <span className="text-[11px] font-medium uppercase tracking-wide text-brass-dark">
-            You
-          </span>
-        ) : (
-          <Bansuri className="h-5 w-auto" />
-        )}
-      </div>
-      <p
+      {!isUser && (
+        <PeacockFeather
+          className="mt-1 h-5 w-auto shrink-0"
+          width={20}
+          height={20}
+        />
+      )}
+      <div
         className={
-          "whitespace-pre-wrap leading-relaxed " +
-          (contentLang === "hi"
-            ? "font-medium font-devanagari"
-            : "font-semibold font-serif")
+          isUser
+            ? "flex max-w-[82%] flex-col items-end"
+            : "min-w-0 max-w-[84%] flex-1"
         }
       >
-        {message.content}
-      </p>
-      {hasVerses && <VerseCardList verses={message.verses!} lang={userLang} />}
-      {!isUser && message.safety_card && (
-        <SafetyCardView card={message.safety_card} />
-      )}
-      {showPaywall && (
-        <SevaPaywall tiers={message.tiers!} onSuccess={onPaywallSuccess} />
-      )}
+        {isUser && (
+          <span className="mb-1.5 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.14em] text-gold-dim">
+            You
+          </span>
+        )}
+        <div
+          className={
+            "border px-5 py-3.5 text-lg leading-relaxed text-ivory shadow-[0_4px_16px_rgba(0,0,0,0.35)] " +
+            (isUser
+              ? "rounded-[18px_18px_4px_18px] border-gold/30 bg-linear-to-b from-gold/20 to-gold-dim/15"
+              : "rounded-[18px_18px_18px_4px] border-gold-faint bg-ink2/70 backdrop-blur-sm")
+          }
+        >
+          <p
+            className={
+              "whitespace-pre-wrap leading-relaxed " +
+              (contentLang === "hi"
+                ? "font-normal font-devanagari"
+                : "font-medium font-serif")
+            }
+          >
+            {message.content}
+          </p>
+        </div>
+        {hasVerses && (
+          <div className="mt-2.5 w-full">
+            <VerseCardList verses={message.verses!} lang={userLang} />
+          </div>
+        )}
+        {!isUser && message.safety_card && (
+          <SafetyCardView card={message.safety_card} />
+        )}
+        {showPaywall && (
+          <SevaPaywall tiers={message.tiers!} onSuccess={onPaywallSuccess} />
+        )}
+      </div>
     </div>
   );
 }
