@@ -40,14 +40,18 @@ export default async function SettingsPage() {
             principle (one orchestrated entrance > scattered micro-
             interactions). Greeting 0ms → settings card 180ms →
             danger zone 360ms. */}
-        <header className="fade-up mb-3 [animation-delay:0ms] [animation-fill-mode:backwards]">
-          <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-peacock sm:text-4xl">
+        <header className="fade-up mb-7 [animation-delay:0ms] [animation-fill-mode:backwards]">
+          <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
+            व्यवस्था · settings
+          </p>
+          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal tracking-tight text-ivory">
             Your Settings
           </h1>
-          <p className="mt-3 font-serif text-base italic text-brass-dark">
+          <p className="mt-3 font-serif text-base italic text-gold-dim">
             Your data, your control
           </p>
         </header>
+        <div className="dv-hairline mb-10" />
 
         <SettingsClient initialOptOut={trainingOptOut} />
 
@@ -79,7 +83,7 @@ function NoSessionState() {
 
       <article className="relative mx-auto w-full max-w-xl px-6 py-20 text-center font-serif text-krishna sm:px-8 sm:py-28">
         <header className="fade-up mb-6 [animation-delay:0ms] [animation-fill-mode:backwards]">
-          <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-peacock sm:text-4xl">
+          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal tracking-tight text-ivory">
             Your Settings
           </h1>
         </header>

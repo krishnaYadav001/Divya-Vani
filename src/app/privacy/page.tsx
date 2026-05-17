@@ -21,15 +21,19 @@ export default function PrivacyPage() {
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         <BackToChat />
 
-        <header className="mb-10">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+        <header className="mb-7">
+          <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
+            गोपनीयता · privacy
+          </p>
+          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.1] text-ivory">
             Privacy Policy
           </h1>
         </header>
+        <div className="dv-hairline mb-10" />
 
         <div className="space-y-8 text-base font-medium leading-relaxed">
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               About {BRAND.name.en}
             </h2>
             <p>
@@ -45,7 +49,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Data We Collect
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -172,7 +176,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Human Review of Conversations
             </h2>
             <p className="mb-3">
@@ -223,7 +227,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Data We Do Not Collect
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -246,7 +250,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Third-Party Services
             </h2>
             <p className="mb-3">
@@ -364,7 +368,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Cross-Border Data Transfer
             </h2>
             <p>
@@ -379,7 +383,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Your Rights
             </h2>
             <p className="mb-3">
@@ -450,7 +454,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Children&apos;s Data
             </h2>
             <p>
@@ -463,7 +467,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Data Retention
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -550,7 +554,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Security
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -577,7 +581,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Changes to This Policy
             </h2>
             <p>
@@ -589,7 +593,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Contact and Grievance Officer
             </h2>
             <p>

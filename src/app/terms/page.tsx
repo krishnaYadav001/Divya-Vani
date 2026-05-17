@@ -21,15 +21,19 @@ export default function TermsPage() {
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         <BackToChat />
 
-        <header className="mb-10">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+        <header className="mb-7">
+          <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
+            नियम · terms
+          </p>
+          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.1] text-ivory">
             Terms of Service
           </h1>
         </header>
+        <div className="dv-hairline mb-10" />
 
         <div className="space-y-8 text-base font-medium leading-relaxed">
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Acceptance of Terms
             </h2>
             <p>
@@ -41,7 +45,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               What {BRAND.name.en} Is and Is Not
             </h2>
             <p className="mb-3">
@@ -67,7 +71,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               AI Safety Acknowledgment
             </h2>
             <p className="mb-3">
@@ -120,7 +124,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Account and Access
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -144,7 +148,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               User Conduct &mdash; Prohibited
             </h2>
             <p className="mb-3">The following uses are prohibited:</p>
@@ -175,7 +179,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Pricing and Payments
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -205,7 +209,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Refund Policy
             </h2>
             <p className="mb-3">
@@ -243,7 +247,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Intellectual Property
             </h2>
             <ul className="ml-5 list-disc space-y-2">
@@ -276,7 +280,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Disclaimer of Warranties
             </h2>
             <p>
@@ -289,7 +293,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Limitation of Liability
             </h2>
             <p>
@@ -303,7 +307,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Indemnification
             </h2>
             <p>
@@ -315,7 +319,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Modifications to Service
             </h2>
             <p>
@@ -327,7 +331,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Governing Law and Jurisdiction
             </h2>
             <p>
@@ -341,7 +345,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Severability
             </h2>
             <p>
@@ -352,7 +356,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl font-semibold text-sacred">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Contact
             </h2>
             <p>

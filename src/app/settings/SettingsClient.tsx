@@ -87,8 +87,8 @@ export default function SettingsClient({
   return (
     <div className="space-y-12">
       {/* SECTION 1 — Conversation Review toggle */}
-      <section className="fade-up rounded-2xl border border-brass/40 bg-parchment/80 p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] [animation-delay:180ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-serif text-xl font-semibold italic text-sacred">
+      <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:180ms] [animation-fill-mode:backwards] sm:p-8">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
           Conversation Review
         </h2>
 
@@ -149,8 +149,8 @@ export default function SettingsClient({
           (double border via outer + inner card). NO bright-red danger
           colour — temple aesthetic conveys gravity through typography
           weight, spacing, and the brass border, not chromatic alarm. */}
-      <section className="fade-up rounded-2xl border-2 border-brass bg-parchment/60 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] [animation-delay:360ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-serif text-xl font-semibold italic text-sacred">
+      <section className="fade-up rounded-md border border-red-seal/45 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.04)_inset,0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-md [animation-delay:360ms] [animation-fill-mode:backwards] sm:p-8">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
           Delete all my data
         </h2>
 
