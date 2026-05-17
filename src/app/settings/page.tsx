@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import Atmosphere from "../components/Atmosphere";
+import BackToChat from "../components/BackToChat";
 import { BRAND } from "@/lib/brand";
 import { fetchMemory } from "@/lib/supabase";
 import SettingsClient from "./SettingsClient";
@@ -36,6 +37,12 @@ export default async function SettingsPage() {
       <Atmosphere mode="corner" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
+        {/* Top-of-page return to /chat — same shared component and
+            placement as /privacy + /terms. /settings previously only
+            had the footer link, so a user had to scroll past every
+            card to get back into the app. */}
+        <BackToChat />
+
         {/* Staggered page-load reveal per CLAUDE.md frontend-design
             principle (one orchestrated entrance > scattered micro-
             interactions). Greeting 0ms → settings card 180ms →
