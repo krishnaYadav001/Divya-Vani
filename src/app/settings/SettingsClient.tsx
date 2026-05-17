@@ -86,8 +86,62 @@ export default function SettingsClient({
 
   return (
     <div className="space-y-12">
-      {/* SECTION 1 — Conversation Review toggle */}
+      {/* SECTION 0 — Contact & Grievance Officer (static info card).
+          Placed FIRST for highest visibility — DPDP-discoverability
+          benefit (previously only at the bottom of /privacy). Bilingual
+          (Hindi + English) per founder decision #4, which reverses the
+          Phase 8.0 c5725d3 English-only-admin convention for the
+          redesign. Hindi uses font-devanagari (Tiro) per the frontend-
+          design typography rule; English display = Marcellus, body =
+          Cormorant italic — matching the cards below. */}
       <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:180ms] [animation-fill-mode:backwards] sm:p-8">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
+          Contact &amp; Grievance Officer
+        </h2>
+        <p className="mt-1 font-devanagari text-base text-brass-dark">
+          संपर्क एवं शिकायत अधिकारी
+        </p>
+
+        <div className="mt-5 space-y-2">
+          <p className="font-serif text-base italic leading-relaxed text-krishna">
+            For privacy questions, deletion requests, or grievances under
+            the DPDP Act, contact:
+          </p>
+          <p className="font-devanagari text-sm leading-relaxed text-brass-dark">
+            गोपनीयता संबंधी प्रश्न, डेटा हटाने के अनुरोध, या DPDP अधिनियम के
+            अंतर्गत शिकायतों के लिए संपर्क करें:
+          </p>
+        </div>
+
+        <dl className="mt-5 space-y-1">
+          <dt className="font-serif text-sm italic text-brass-dark">
+            Grievance Officer · शिकायत अधिकारी
+          </dt>
+          <dd className="font-[family-name:var(--font-display)] text-lg text-ivory">
+            Krishna Yadav
+          </dd>
+          <dd>
+            <a
+              href="mailto:grievance.divyavani@gmail.com"
+              className="inline-flex min-h-11 items-center break-all font-serif text-base italic text-devotional-dark underline decoration-brass underline-offset-2 transition-colors hover:text-peacock focus:outline-none focus:ring-2 focus:ring-devotional/40"
+            >
+              grievance.divyavani@gmail.com
+            </a>
+          </dd>
+        </dl>
+
+        <p className="mt-5 font-serif text-sm italic leading-relaxed text-brass-dark">
+          Per Section 13 of the DPDP Act, we acknowledge grievances and
+          respond within 30 days.
+        </p>
+        <p className="mt-2 font-devanagari text-sm leading-relaxed text-brass-dark">
+          DPDP अधिनियम की धारा 13 के अनुसार, हम शिकायतों को स्वीकार करते हैं
+          और 30 दिनों के भीतर उत्तर देते हैं।
+        </p>
+      </section>
+
+      {/* SECTION 1 — Conversation Review toggle */}
+      <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:300ms] [animation-fill-mode:backwards] sm:p-8">
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
           Conversation Review
         </h2>
@@ -149,7 +203,7 @@ export default function SettingsClient({
           (double border via outer + inner card). NO bright-red danger
           colour — temple aesthetic conveys gravity through typography
           weight, spacing, and the brass border, not chromatic alarm. */}
-      <section className="fade-up rounded-md border border-red-seal/45 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.04)_inset,0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-md [animation-delay:360ms] [animation-fill-mode:backwards] sm:p-8">
+      <section className="fade-up rounded-md border border-red-seal/45 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.04)_inset,0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-md [animation-delay:420ms] [animation-fill-mode:backwards] sm:p-8">
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
           Delete all my data
         </h2>
