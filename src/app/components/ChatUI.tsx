@@ -890,7 +890,7 @@ export default function ChatUI() {
           placeholder="मन में जो है, कहो…"
           disabled={isSending}
           aria-invalid={bannedWord !== null}
-          className="flex-1 resize-none overflow-hidden rounded-3xl border border-brass/40 bg-parchment px-5 py-3 font-devanagari text-base leading-normal text-krishna shadow-[0_1px_3px_rgba(0,0,0,0.04)] placeholder:text-krishna/40 focus:border-devotional focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-sacred"
+          className="flex-1 resize-none overflow-hidden rounded-3xl border border-gold/25 bg-ink2/65 px-6 py-4 font-devanagari text-base leading-normal text-ivory shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] placeholder:text-ivory/30 focus:border-gold focus:shadow-[0_0_0_4px_rgba(212,162,74,0.08)] focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-red-seal"
         />
         {mediaSupported && (
           <div className="relative flex shrink-0 items-center justify-center">
@@ -951,7 +951,7 @@ export default function ChatUI() {
           type="submit"
           disabled={isSending || !input.trim() || bannedWord !== null}
           aria-label="Send · भेजें"
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-krishna p-2 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 disabled:opacity-50 sm:min-h-12 sm:min-w-0 sm:px-5"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-gold bg-linear-to-b from-gold to-gold-dim p-2 font-[family-name:var(--font-display)] text-sm text-ink0 shadow-[0_0_30px_rgba(212,162,74,0.25),0_12px_30px_rgba(0,0,0,0.5)] transition-transform hover:-translate-y-px disabled:opacity-45 sm:min-h-12 sm:min-w-0 sm:px-6"
         >
           <SendIcon className="h-5 w-5 sm:hidden" />
           <span className="hidden sm:inline">Send</span>
@@ -1015,11 +1015,11 @@ export default function ChatUI() {
               priority
             />
             <div className="min-w-0 text-center">
-              <h1 className="font-serif text-2xl font-medium leading-none tracking-tight sm:text-3xl">
-                <span className="text-peacock">{BRAND_HEAD}</span>
-                <span className="text-sacred"> {BRAND_TAIL.join(" ")}</span>
+              <h1 className="font-[family-name:var(--font-display)] text-2xl font-normal leading-none tracking-[0.02em] text-ivory sm:text-3xl">
+                <span>{BRAND_HEAD}</span>
+                <span> {BRAND_TAIL.join(" ")}</span>
               </h1>
-              <p className="mt-1 font-devanagari text-xs leading-snug text-krishna/70 sm:text-sm">
+              <p className="mt-1 font-devanagari text-xs leading-snug text-gold-dim sm:text-sm">
                 एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
               </p>
             </div>
