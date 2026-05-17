@@ -1045,6 +1045,37 @@ export default function ChatUI() {
               and slides down directly under the diya icon exactly as
               before — no seva-flow behaviour change. */}
           <div className="relative flex shrink-0 items-center gap-1">
+            {/* Disclaimer collapsed → permanent labelled ⓘ control,
+                here in the identity header beside the avatar/wordmark
+                (Locked Decision #1: "permanent disclaimer near the
+                avatar" — the full bar still auto-shows every mount;
+                this is the always-present re-open affordance). Only
+                rendered while collapsed, mirroring the prior chip's
+                conditional. Rose tone marks it as the identity cue vs
+                the gold utility icons; same min-h/min-w box so the
+                cluster stays aligned. aria-label + title keep it
+                discoverable with no visible text, per founder request
+                2026-05-17. */}
+            {!disclaimerExpanded && (
+              <button
+                type="button"
+                onClick={() => setDisclaimerExpanded(true)}
+                aria-label="अस्वीकरण · disclaimer"
+                title="अस्वीकरण · disclaimer"
+                aria-expanded={disclaimerExpanded}
+                aria-controls="dv-disclaimer"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-[#d49a8e] transition-colors hover:bg-red-seal/15 focus:outline-none focus:ring-2 focus:ring-red-seal/40"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 12.5A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 0 11zM8 6.5a.75.75 0 0 0-.75.75v3.5a.75.75 0 0 0 1.5 0v-3.5A.75.75 0 0 0 8 6.5zm0-2a.875.875 0 1 0 0 1.75A.875.875 0 0 0 8 4.5z" />
+                </svg>
+              </button>
+            )}
             <Link
               href="/settings"
               aria-label="Settings · सेटिंग्स"
@@ -1075,21 +1106,33 @@ export default function ChatUI() {
         </div>
       </header>
 
-      {/* Phase 6.x disclaimer — collapse-to-chip. Two stacked grid blocks
-          cross-fade via grid-template-rows (1fr ↔ 0fr) so height animates
-          smoothly without a fixed magic-number max-height. Full bilingual
-          bar shows on mount for 5s, then morphs into a centered "ⓘ
-          अस्वीकरण · disclaimer" chip; tapping the chip re-expands. Locked
-          decision #1 stays satisfied — the chip is permanent and sits in
-          the same row directly under the avatar header. */}
-      <div className="relative z-10 border-y border-gold/15 bg-parchment/40 px-4 backdrop-blur">
+      {/* Disclaimer — full bilingual bar auto-shows on every mount for
+          5s (the legally load-bearing exposure — UNCHANGED), then the
+          whole band animates to zero height + sheds its chrome so it
+          occupies NO space. The permanent re-open affordance is now the
+          labelled ⓘ in the header icon cluster (above), beside the
+          avatar/wordmark. Locked Decision #1 still satisfied: the
+          disclaimer is shown in full every session and a permanent,
+          labelled disclaimer control sits directly next to the avatar;
+          collapsed no longer eats a horizontal band (founder request
+          2026-05-17). transition-all on the wrapper fades the
+          border/bg with the grid-rows+opacity collapse for a smooth,
+          professional close — no hard cut, no residual strip. */}
+      <div
+        id="dv-disclaimer"
+        className={`relative z-10 overflow-hidden transition-all duration-500 ease-in-out ${
+          disclaimerExpanded
+            ? "border-y border-gold/15 bg-parchment/40 backdrop-blur"
+            : "border-y-0"
+        }`}
+      >
         <div
           className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out ${
             disclaimerExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
         >
           <div className="overflow-hidden">
-            <p className="mx-auto max-w-[600px] py-2 text-center text-xs leading-tight text-brass-dark">
+            <p className="mx-auto max-w-[600px] px-4 py-2 text-center text-xs leading-tight text-brass-dark">
               <span className="font-devanagari">
                 यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
               </span>
@@ -1098,32 +1141,6 @@ export default function ChatUI() {
                 This is an AI roleplaying Krishna based on scripture, not divine guidance.
               </span>
             </p>
-          </div>
-        </div>
-        <div
-          className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out ${
-            disclaimerExpanded ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-          }`}
-        >
-          <div className="flex justify-center overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setDisclaimerExpanded(true)}
-              aria-label="Show disclaimer · अस्वीकरण देखें"
-              className="my-1 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-red-seal/50 bg-red-seal/[0.08] px-3.5 text-xs text-[#d49a8e] transition-colors hover:border-red-seal/70 hover:bg-red-seal/[0.14] focus:outline-none focus:ring-2 focus:ring-red-seal/40"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                className="h-3 w-3"
-                fill="currentColor"
-                aria-hidden
-              >
-                <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 12.5A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 0 11zM8 6.5a.75.75 0 0 0-.75.75v3.5a.75.75 0 0 0 1.5 0v-3.5A.75.75 0 0 0 8 6.5zm0-2a.875.875 0 1 0 0 1.75A.875.875 0 0 0 8 4.5z" />
-              </svg>
-              <span className="font-devanagari">अस्वीकरण</span>
-              <span aria-hidden className="text-brass">·</span>
-              <span className="font-serif italic">disclaimer</span>
-            </button>
           </div>
         </div>
       </div>
