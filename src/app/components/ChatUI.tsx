@@ -1182,9 +1182,19 @@ export default function ChatUI() {
                 // is pushed (first text delta in streaming mode, or full
                 // response in plain-JSON mode). Once Krishna's bubble appears
                 // the bubble itself becomes the "thinking" indicator as it
-                // grows token-by-token.
-                <p className="fade-up text-center font-devanagari text-sm italic text-krishna/60">
-                  सोच रहा हूँ...
+                // grows token-by-token. The shimmer + breathing dots
+                // (dv-thinking-*, globals.css) keep it visibly alive so a
+                // slow first token never reads as a frozen UI.
+                <p
+                  role="status"
+                  className="fade-up flex items-center justify-center gap-1.5 text-center font-devanagari text-sm italic"
+                >
+                  <span className="dv-thinking-shimmer">सोच रहा हूँ</span>
+                  <span aria-hidden className="dv-thinking-dots">
+                    <span className="dv-thinking-dot" />
+                    <span className="dv-thinking-dot" />
+                    <span className="dv-thinking-dot" />
+                  </span>
                 </p>
               )}
               <div ref={bottomRef} />

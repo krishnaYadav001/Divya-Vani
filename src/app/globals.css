@@ -139,6 +139,97 @@ body {
   animation: dv-pulse 3s ease-in-out infinite;
 }
 
+/* Phase 8.x — Krishna "सोच रहा हूँ" thinking indicator. A calm aarti-
+   light sweep travels across the line (ivory highlight gliding over the
+   AA-safe light-gold base) while three dots breathe in sequence — one
+   cohesive "the presence is gathering thought" moment, not a mechanical
+   spinner (calm tone per CLAUDE.md). CSS-only per the frontend-design
+   motion rule. WCAG AA preserved: the text is brass-dark/ivory (both
+   AA-sanctioned on the near-black ground); the bg-clip:text fill is
+   guarded by @supports so the solid AA colour shows if it's
+   unsupported. */
+.dv-thinking-shimmer {
+  color: var(--color-brass-dark); /* AA fallback (no bg-clip:text) */
+}
+
+@supports (
+  (-webkit-background-clip: text) or (background-clip: text)
+) {
+  .dv-thinking-shimmer {
+    background: linear-gradient(
+      100deg,
+      var(--color-brass-dark) 0%,
+      var(--color-brass-dark) 35%,
+      var(--color-ivory) 50%,
+      var(--color-brass-dark) 65%,
+      var(--color-brass-dark) 100%
+    );
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: dv-shimmer 2.6s ease-in-out infinite;
+  }
+}
+
+@keyframes dv-shimmer {
+  0% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -130% 0;
+  }
+}
+
+.dv-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.dv-thinking-dot {
+  display: inline-block;
+  height: 4px;
+  width: 4px;
+  border-radius: 9999px;
+  background: var(--color-brass-dark);
+  animation: dv-dot 1.4s ease-in-out infinite;
+}
+
+.dv-thinking-dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.dv-thinking-dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes dv-dot {
+  0%,
+  75%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Honour reduced-motion: keep the indicator legible + present, drop
+   the movement. Scoped to the new classes so existing animations are
+   untouched. */
+@media (prefers-reduced-motion: reduce) {
+  .dv-thinking-shimmer {
+    animation: none;
+  }
+  .dv-thinking-dot {
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
 /* Gold hairline divider (ornamental section rule). */
 .dv-hairline {
   height: 1px;
