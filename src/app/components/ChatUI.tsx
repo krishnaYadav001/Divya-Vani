@@ -969,11 +969,20 @@ export default function ChatUI() {
           empty-state (no longer gated on isFirstTime — informational
           context is useful for returning users too). */}
       {isEmpty && (
-        <div className="mt-4 flex w-full flex-col items-center gap-3 text-center">
-          <p className="font-devanagari text-sm leading-relaxed text-krishna/70">
-            जो भी मन में हो — यहाँ कह सकते हो
-          </p>
-          <div className="flex flex-col gap-1.5 font-devanagari text-sm leading-relaxed text-krishna/55">
+        <div className="mt-2 flex w-full flex-col items-center gap-5 text-center">
+          <h2 className="font-devanagari text-2xl font-normal leading-snug text-ivory sm:text-3xl">
+            जो भी मन में हो —{" "}
+            <span className="text-gold">यहाँ कह सकते हो</span>
+          </h2>
+          <div
+            aria-hidden
+            className="flex items-center gap-2.5 text-gold-mute"
+          >
+            <span className="h-px w-12 bg-linear-to-r from-transparent to-gold-mute" />
+            <span className="h-[5px] w-[5px] rotate-45 bg-gold" />
+            <span className="h-px w-12 bg-linear-to-l from-transparent to-gold-mute" />
+          </div>
+          <div className="flex flex-col gap-2.5 font-devanagari text-base leading-relaxed text-ivory/70">
             <span>अपने सवाल पूछो</span>
             <span>मन की बात बाँटो</span>
             <span>गीता, महाभारत, भागवत से सीखो</span>
@@ -1073,7 +1082,7 @@ export default function ChatUI() {
           अस्वीकरण · disclaimer" chip; tapping the chip re-expands. Locked
           decision #1 stays satisfied — the chip is permanent and sits in
           the same row directly under the avatar header. */}
-      <div className="relative z-10 border-b border-brass/30 bg-parchment/40 px-4 backdrop-blur">
+      <div className="relative z-10 border-y border-gold/15 bg-parchment/40 px-4 backdrop-blur">
         <div
           className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out ${
             disclaimerExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
@@ -1101,7 +1110,7 @@ export default function ChatUI() {
               type="button"
               onClick={() => setDisclaimerExpanded(true)}
               aria-label="Show disclaimer · अस्वीकरण देखें"
-              className="my-1 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-brass/30 bg-parchment/60 px-3.5 text-xs text-brass-dark transition-colors hover:border-brass/50 hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-brass/40"
+              className="my-1 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-red-seal/50 bg-red-seal/[0.08] px-3.5 text-xs text-[#d49a8e] transition-colors hover:border-red-seal/70 hover:bg-red-seal/[0.14] focus:outline-none focus:ring-2 focus:ring-red-seal/40"
             >
               <svg
                 viewBox="0 0 16 16"
@@ -1136,7 +1145,7 @@ export default function ChatUI() {
               backwards holds each child at its pre-animation state during
               the delay so there's no flash-then-fade. */}
           <div className="flex w-full max-w-[600px] flex-col items-center gap-6">
-            <p className="fade-up text-center font-devanagari text-base italic leading-relaxed text-krishna/70 [animation-delay:0ms] [animation-fill-mode:backwards] sm:text-lg">
+            <p className="fade-up text-center font-serif text-xs uppercase italic leading-relaxed tracking-[0.18em] text-ivory/45 [animation-delay:0ms] [animation-fill-mode:backwards]">
               आज मन कैसा लग रहा है…
             </p>
             {/* Phase 8 pre-launch — value-prop subtitle for cold-acquired
