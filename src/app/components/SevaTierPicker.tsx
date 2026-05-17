@@ -155,10 +155,14 @@ export default function SevaTierPicker({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-3">
         {tiers.map((tier) => {
           const isPending = pendingTierId === tier.id;
           const isDisabledByOther = pendingTierId !== null && !isPending;
+          // Phase 8 redesign — Bhakti (₹101) is the design's emphasised
+          // tier. Conveyed by gold border + gold-tint fill only (no
+          // "अनुशंसित" badge text added — visual emphasis, not new copy).
+          const recommended = tier.priceInr === 101;
           return (
             <button
               key={tier.id}
@@ -166,31 +170,36 @@ export default function SevaTierPicker({
               onClick={() => handleTierTap(tier)}
               disabled={isDisabledByOther || isPending}
               aria-busy={isPending}
-              className="group relative flex flex-col items-center rounded-xl border border-brass/30 bg-parchment/70 px-3 py-4 text-center shadow-[0_1px_2px_rgba(124,95,46,0.05)] transition-[background-color,border-color,box-shadow] duration-200 hover:border-devotional/50 hover:bg-devotional/[0.06] hover:shadow-[0_4px_14px_-2px_rgba(232,155,60,0.18)] focus:outline-none focus-visible:border-devotional/60 focus-visible:ring-2 focus-visible:ring-devotional/30 disabled:cursor-not-allowed disabled:opacity-50"
+              className={
+                "group relative flex flex-col items-center rounded-lg border px-4 py-5 text-center transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 disabled:cursor-not-allowed disabled:opacity-50 " +
+                (recommended
+                  ? "border-gold bg-linear-to-b from-gold/[0.12] to-gold/[0.04]"
+                  : "border-gold-faint bg-ink2/60 hover:border-gold-dim")
+              }
             >
               <span className="text-2xl leading-none" aria-hidden>
                 {tier.symbol}
               </span>
-              <span className="mt-2 font-serif text-sm font-medium text-krishna">
+              <span className="mt-2 font-devanagari text-base text-ivory">
                 {tier.displayNameHi}
               </span>
-              <span className="text-[10px] uppercase tracking-[0.08em] text-brass-dark">
+              <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.14em] text-gold-dim">
                 {tier.displayName}
               </span>
-              <span className="mt-3 font-sans text-xl font-semibold tabular-nums text-devotional-dark">
+              <span className="mt-3 font-[family-name:var(--font-display)] text-2xl tabular-nums text-ivory">
                 ₹{tier.priceInr}
               </span>
-              <span className="mt-0.5 text-[11px] text-brass-dark">
-                <span className="font-sans tabular-nums">
+              <span className="mt-0.5 text-[11px] text-ivory/55">
+                <span className="font-serif italic tabular-nums">
                   {tier.messages} messages
                 </span>
-                <span aria-hidden className="mx-1 text-brass/70">
+                <span aria-hidden className="mx-1 text-gold/60">
                   ·
                 </span>
                 <span className="font-devanagari">संदेश</span>
               </span>
               {isPending && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-parchment/85 text-xs text-devotional-dark backdrop-blur-sm">
+                <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink1/85 text-xs text-gold backdrop-blur-sm">
                   …
                 </span>
               )}
