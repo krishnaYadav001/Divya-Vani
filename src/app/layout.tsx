@@ -58,20 +58,25 @@ export const metadata: Metadata = {
     siteName: BRAND.name.en,
     title: BRAND.name.en,
     description: BRAND.description.en,
-    // width/height reflect the ACTUAL public/og.png (1024×541), not
-    // the 1200×630 the Phase 8 spec assumed — the shipped asset
-    // exported smaller. Declared dims must match the real file or
-    // Twitter/Facebook validators reject or letterbox the card.
-    // Re-export at 1200×630 later for the optimal LinkedIn/FB hero;
-    // bump these two numbers when that lands. Relative /og.png
-    // resolves against metadataBase (set above) → absolute URL.
+    // og.jpg, NOT og.png — DO NOT revert to PNG. The 1024×541 PNG was
+    // 847 KB; WhatsApp silently drops any og:image over 600 KB (uses
+    // Facebook's crawler/cache; HTTPS-only), so the preview never
+    // rendered on WhatsApp. Re-encoded to JPEG q88 → 133 KB at the
+    // same dimensions (well under the 600 KB cap, under the 300 KB
+    // recommended target), visually identical for a photographic hero.
+    // og.png is kept in /public as the un-optimised source for the
+    // future 1200×630 final re-export — when that lands, re-encode it
+    // to JPEG too, keep it < ~300 KB, and bump these width/height.
+    // Declared dims must match the real file or Twitter/Facebook
+    // validators letterbox/reject the card. Relative /og.jpg resolves
+    // against metadataBase (set above) → absolute HTTPS URL.
     images: [
       {
-        url: "/og.png",
+        url: "/og.jpg",
         width: 1024,
         height: 541,
         alt: `${BRAND.name.en} — ${BRAND.description.en}`,
-        type: "image/png",
+        type: "image/jpeg",
       },
     ],
   },
@@ -79,7 +84,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: BRAND.name.en,
     description: BRAND.description.en,
-    images: ["/og.png"],
+    images: ["/og.jpg"],
   },
   // Phase 6.6 Stage C-1 — canonical removed from root layout. Each page
   // declares its own alternates.canonical so /chat / /privacy / /terms
