@@ -714,3 +714,75 @@ export async function deleteUserData(userId: string): Promise<void> {
     console.error("[supabase] deleteUserData threw:", e);
   }
 }
+
+/**
+ * Phase 8.x — store a user-submitted feedback message (Settings →
+ * "Share Feedback"). Founder reads these from the Supabase dashboard;
+ * no email-forwarding yet (deferred to Phase 8.x.3).
+ *
+ * FK safety — two real edge cases the `user_feedback.user_id REFERENCES
+ * users_memory(user_id)` constraint creates, both handled here so a
+ * valid feedback submission is NEVER lost:
+ *
+ *   1. Dangling cookie. `god_messenger_uid` is set by /api/chat, but the
+ *      users_memory row is only created on the first completed chat turn
+ *      / settings write. A user who got the cookie but never finished a
+ *      turn has no users_memory row — inserting feedback.user_id for
+ *      them would violate the FK. We probe users_memory first and null
+ *      the user_id out if the row is absent (feedback still saved, just
+ *      unattributed — strictly better than erroring on real feedback).
+ *   2. Probe failure. If the existence SELECT itself errors (network),
+ *      we conservatively null the user_id rather than risk an FK reject.
+ *
+ * Unlike the chat-persistence helpers this does NOT silent-fail-as-
+ * success: it returns { ok } so /api/feedback can surface a real error
+ * to the user (a feedback form must confirm receipt honestly). The
+ * schema's `ON DELETE SET NULL` (see final report SQL) keeps the
+ * existing /api/delete-account → deleteUserData flow working — a plain
+ * FK would make the users_memory delete fail once a user has feedback
+ * rows, silently breaking DPDP erasure.
+ */
+export async function insertFeedback(params: {
+  userId: string | null;
+  message: string;
+  userName: string | null;
+}): Promise<{ ok: boolean }> {
+  try {
+    const client = getClient();
+    if (!client) return { ok: false };
+
+    let userId = params.userId;
+    if (userId) {
+      const { data, error } = await client
+        .from("users_memory")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) {
+        // Don't know if the row exists — degrade to unattributed rather
+        // than risk an FK rejection on otherwise-valid feedback.
+        console.error(
+          "[supabase] insertFeedback users_memory probe error:",
+          error,
+        );
+        userId = null;
+      } else if (!data) {
+        userId = null;
+      }
+    }
+
+    const { error } = await client.from("user_feedback").insert({
+      user_id: userId,
+      message: params.message,
+      user_name: params.userName,
+    });
+    if (error) {
+      console.error("[supabase] insertFeedback error:", error);
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error("[supabase] insertFeedback threw:", e);
+    return { ok: false };
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Phase 8 pre-launch — Settings page client island.
@@ -198,6 +198,13 @@ export default function SettingsClient({
         </p>
       </section>
 
+      {/* SECTION 1.5 — Share Feedback (between Conversation Review and
+          the Danger Zone, per spec). Self-contained stateful component
+          so all form state stays encapsulated and the main component
+          stays lean — mirrors the co-located-component pattern in
+          settings/page.tsx (NoSessionState). */}
+      <FeedbackSection />
+
       {/* SECTION 2 — Danger Zone (DELETE MY DATA).
           Separated visually by extra mt + a different border treatment
           (double border via outer + inner card). NO bright-red danger
@@ -272,5 +279,265 @@ export default function SettingsClient({
         )}
       </section>
     </div>
+  );
+}
+
+// Phase 8.x — "Share Feedback" card + form. Bilingual per founder
+// decision #4. Posts to /api/feedback (validation + best-effort rate
+// limit + honeypot live server-side). Cinematic-dark tokens only,
+// matching the cards above.
+type FeedbackStatus = "idle" | "submitting" | "success" | "error";
+
+const FB_MSG_MIN = 10;
+const FB_MSG_MAX = 5000;
+const FB_NAME_MAX = 100;
+const FB_FETCH_TIMEOUT_MS = 15000;
+
+function FeedbackSection() {
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [hp, setHp] = useState(""); // honeypot — humans never fill this
+  const [status, setStatus] = useState<FeedbackStatus>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const composingRef = useRef(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  // Clear the pending success-dismiss timer if the user leaves the page
+  // mid-countdown (no setState-after-unmount).
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
+
+  const trimmedLen = message.trim().length;
+  const tooShort = message.length > 0 && trimmedLen < FB_MSG_MIN;
+  const counterWarn = message.length >= 4500;
+  const canSubmit =
+    status !== "submitting" &&
+    trimmedLen >= FB_MSG_MIN &&
+    message.length <= FB_MSG_MAX &&
+    name.trim().length <= FB_NAME_MAX;
+
+  async function submit() {
+    // IME guard — never submit while a Devanagari composition is open
+    // (mirrors the ChatUI compositionActiveRef pattern). Also blocks
+    // double-submit / invalid submit.
+    if (composingRef.current) return;
+    if (status === "submitting") return;
+    if (!canSubmit) return;
+
+    setStatus("submitting");
+    setErrorMsg(null);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      FB_FETCH_TIMEOUT_MS,
+    );
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: message.trim(),
+          user_name: name.trim() || undefined,
+          website: hp, // honeypot field — server treats non-empty as bot
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        let m = "Something went wrong. Please try again.";
+        try {
+          const j = await res.json();
+          if (j && typeof j.message === "string" && j.message) m = j.message;
+        } catch {
+          /* keep generic message */
+        }
+        setStatus("error");
+        setErrorMsg(m);
+        return;
+      }
+      setName("");
+      setMessage("");
+      setStatus("success");
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => {
+        setStatus((s) => (s === "success" ? "idle" : s));
+      }, 5000);
+    } catch (e) {
+      const aborted = e instanceof DOMException && e.name === "AbortError";
+      setStatus("error");
+      setErrorMsg(
+        aborted
+          ? "This is taking too long. Please check your connection and try again."
+          : "Network problem. Please check your connection and try again.",
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return (
+    <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:540ms] [animation-fill-mode:backwards] sm:p-8">
+      <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
+        Share Feedback
+      </h2>
+      <p className="mt-1 font-devanagari text-base text-brass-dark">
+        अपनी प्रतिक्रिया साझा करें
+      </p>
+
+      <div className="mt-4 space-y-2">
+        <p className="font-serif text-base italic leading-relaxed text-krishna">
+          Tell us how Krishna&apos;s voice is landing for you. Your words
+          help us refine.
+        </p>
+        <p className="font-devanagari text-sm leading-relaxed text-brass-dark">
+          हमें बताएं कि कृष्ण की वाणी आपको कैसी लग रही है। आपके शब्द हमें
+          इसे और बेहतर करने में मदद करते हैं।
+        </p>
+      </div>
+
+      <form
+        className="mt-6 space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        {/* Honeypot — off-screen, off the tab order, not announced.
+            Real users never see or fill it; the server rejects any
+            non-empty value silently. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden opacity-0"
+        >
+          <label htmlFor="fb-website">Website</label>
+          <input
+            id="fb-website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={hp}
+            onChange={(e) => setHp(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="fb-name"
+            className="block font-serif text-sm italic text-brass-dark"
+          >
+            Your name (optional) · आपका नाम (वैकल्पिक)
+          </label>
+          <input
+            id="fb-name"
+            type="text"
+            value={name}
+            maxLength={FB_NAME_MAX}
+            onChange={(e) => setName(e.target.value)}
+            onCompositionStart={() => {
+              composingRef.current = true;
+            }}
+            onCompositionEnd={() => {
+              composingRef.current = false;
+            }}
+            onFocus={(e) =>
+              e.currentTarget.scrollIntoView({
+                block: "center",
+                behavior: "smooth",
+              })
+            }
+            disabled={status === "submitting"}
+            className="mt-2 w-full rounded-2xl border border-gold/25 bg-ink2/65 px-4 py-3 font-serif text-base text-ivory shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] placeholder:text-ivory/30 focus:border-gold focus:shadow-[0_0_0_4px_rgba(212,162,74,0.08)] focus:outline-none disabled:opacity-60"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="fb-message"
+            className="block font-serif text-sm italic text-brass-dark"
+          >
+            Your feedback · आपकी प्रतिक्रिया
+          </label>
+          <textarea
+            id="fb-message"
+            value={message}
+            rows={5}
+            onChange={(e) => setMessage(e.target.value)}
+            onCompositionStart={() => {
+              composingRef.current = true;
+            }}
+            onCompositionEnd={() => {
+              composingRef.current = false;
+            }}
+            onFocus={(e) =>
+              e.currentTarget.scrollIntoView({
+                block: "center",
+                behavior: "smooth",
+              })
+            }
+            disabled={status === "submitting"}
+            aria-describedby="fb-counter"
+            className="mt-2 w-full resize-y rounded-2xl border border-gold/25 bg-ink2/65 px-4 py-3 font-serif text-base leading-relaxed text-ivory shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] placeholder:text-ivory/30 focus:border-gold focus:shadow-[0_0_0_4px_rgba(212,162,74,0.08)] focus:outline-none disabled:opacity-60"
+          />
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p
+              className="font-serif text-xs italic text-sacred"
+              role="status"
+              aria-live="polite"
+            >
+              {tooShort ? `Please write at least ${FB_MSG_MIN} characters.` : ""}
+            </p>
+            <span
+              id="fb-counter"
+              className={`shrink-0 font-serif text-xs italic ${
+                counterWarn ? "text-sacred" : "text-brass-dark"
+              }`}
+            >
+              {message.length}/{FB_MSG_MAX}
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brass bg-parchment px-6 py-2 font-serif text-sm font-semibold text-devotional-dark transition-colors hover:border-sacred hover:bg-parchment/80 hover:text-sacred focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
+        >
+          {status === "submitting"
+            ? "Sending… · भेजा जा रहा है…"
+            : "Send Feedback · प्रतिक्रिया भेजें"}
+        </button>
+
+        {status === "success" && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="font-serif text-sm italic text-peacock"
+          >
+            Thank you. Your feedback was received. · धन्यवाद। आपकी
+            प्रतिक्रिया मिल गई।
+          </p>
+        )}
+        {status === "error" && (
+          <div role="status" aria-live="polite" className="space-y-3">
+            <p className="font-serif text-sm italic text-sacred">
+              {errorMsg ?? "Something went wrong. Please try again."}
+            </p>
+            <button
+              type="button"
+              onClick={submit}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-brass/60 bg-parchment px-5 py-2 font-serif text-sm font-medium text-krishna transition-colors hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+            >
+              Retry · पुनः प्रयास करें
+            </button>
+          </div>
+        )}
+      </form>
+    </section>
   );
 }
