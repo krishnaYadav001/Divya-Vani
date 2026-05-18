@@ -3,6 +3,16 @@
 import { useState } from "react";
 import type { TierId, TierConfig } from "@/lib/seva";
 import { BRAND } from "@/lib/brand";
+import Diya from "./motifs/Diya";
+
+// Dawn Aarti redesign (2026-05-18) — sevā tier picker. Visual rebuild
+// to the handoff mock (dawn-seva.jsx): each tier is a Dawn row card —
+// a Diya on a tone-tinted panel + name + price + per-msg + arrow;
+// Bhakti (₹101) elevated with a lavender ring + "MOST CHOSEN" badge.
+// Row layout (not the desktop 4-col) because sevā renders inside the
+// narrow in-chat DiyaSevaPanel / SevaPaywall card, matching the
+// SevaPaywallMobile mock. EVERY Razorpay behaviour below is preserved
+// verbatim — only the rendered markup changed.
 
 interface RazorpayResponse {
   razorpay_order_id: string;
@@ -55,6 +65,33 @@ interface SevaTierPickerProps {
   onSuccess: (newBalance: number) => void;
   onError?: (msg: string) => void;
 }
+
+// Per-tier Dawn tone (by price) → tinted Diya panel + Diya palette.
+const TONE: Record<
+  number,
+  { bg: string; diya: "warm" | "peacock"; ring: string }
+> = {
+  11: {
+    bg: "linear-gradient(180deg, oklch(98% 0.012 60), oklch(94% 0.02 60))",
+    diya: "warm",
+    ring: "",
+  },
+  51: {
+    bg: "linear-gradient(180deg, oklch(95% 0.04 12), oklch(89% 0.07 12))",
+    diya: "warm",
+    ring: "",
+  },
+  101: {
+    bg: "linear-gradient(180deg, oklch(95% 0.03 305), oklch(88% 0.06 305))",
+    diya: "warm",
+    ring: "0 0 0 2px oklch(75% 0.1 285)",
+  },
+  501: {
+    bg: "linear-gradient(180deg, oklch(70% 0.12 205), oklch(45% 0.13 215))",
+    diya: "peacock",
+    ring: "",
+  },
+};
 
 export default function SevaTierPicker({
   tiers,
@@ -155,14 +192,13 @@ export default function SevaTierPicker({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-3">
         {tiers.map((tier) => {
           const isPending = pendingTierId === tier.id;
           const isDisabledByOther = pendingTierId !== null && !isPending;
-          // Phase 8 redesign — Bhakti (₹101) is the design's emphasised
-          // tier. Conveyed by gold border + gold-tint fill only (no
-          // "अनुशंसित" badge text added — visual emphasis, not new copy).
-          const recommended = tier.priceInr === 101;
+          const fav = tier.priceInr === 101;
+          const tone = TONE[tier.priceInr] ?? TONE[11];
+          const perMsg = (tier.priceInr / tier.messages).toFixed(2);
           return (
             <button
               key={tier.id}
@@ -170,36 +206,64 @@ export default function SevaTierPicker({
               onClick={() => handleTierTap(tier)}
               disabled={isDisabledByOther || isPending}
               aria-busy={isPending}
-              className={
-                "group relative flex flex-col items-center rounded-lg border px-4 py-5 text-center transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 disabled:cursor-not-allowed disabled:opacity-50 " +
-                (recommended
-                  ? "border-gold bg-linear-to-b from-gold/[0.12] to-gold/[0.04]"
-                  : "border-gold-faint bg-ink2/60 hover:border-gold-dim")
+              className="group relative flex items-stretch gap-4 overflow-hidden rounded-2xl border border-[oklch(86%_0.03_60)] bg-white/55 p-3 text-left backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:cursor-not-allowed disabled:opacity-50"
+              style={
+                fav
+                  ? {
+                      boxShadow: `0 1px 0 rgba(255,255,255,.6) inset, 0 16px 32px -22px oklch(50% 0.15 280 / .35), ${tone.ring}`,
+                    }
+                  : {
+                      boxShadow:
+                        "0 1px 0 rgba(255,255,255,.6) inset, 0 12px 24px -20px oklch(35% 0.05 30 / .3)",
+                    }
               }
             >
-              <span className="text-2xl leading-none" aria-hidden>
-                {tier.symbol}
+              {/* Diya thumbnail on a tone-tinted panel */}
+              <span
+                aria-hidden
+                className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl"
+                style={{ background: tone.bg }}
+              >
+                <Diya tone={tone.diya} className="h-full w-full" />
               </span>
-              <span className="mt-2 font-devanagari text-base text-ivory">
-                {tier.displayNameHi}
-              </span>
-              <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.14em] text-gold-dim">
-                {tier.displayName}
-              </span>
-              <span className="mt-3 font-[family-name:var(--font-display)] text-2xl tabular-nums text-ivory">
-                ₹{tier.priceInr}
-              </span>
-              <span className="mt-0.5 text-[11px] text-ivory/55">
-                <span className="font-serif italic tabular-nums">
-                  {tier.messages} messages
+
+              {/* Tier text */}
+              <span className="flex min-w-0 flex-1 flex-col justify-center">
+                <span className="flex items-baseline gap-2">
+                  <span className="font-[family-name:var(--font-devanagari)] text-xl leading-none text-ink">
+                    {tier.displayNameHi}
+                  </span>
+                  <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.28em] text-ink-soft">
+                    {tier.displayName} Sevā
+                  </span>
                 </span>
-                <span aria-hidden className="mx-1 text-gold/60">
-                  ·
+                <span className="mt-1.5 flex items-baseline gap-1.5">
+                  <span className="font-[family-name:var(--font-display)] text-2xl tabular-nums text-ink">
+                    ₹{tier.priceInr}
+                  </span>
+                  <span className="font-[family-name:var(--font-serif)] text-xs italic text-ink-soft">
+                    · {tier.messages} msgs · ≈ ₹{perMsg}/msg
+                  </span>
                 </span>
-                <span className="font-devanagari">संदेश</span>
+                <span className="mt-1 font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.26em] text-ink-faint">
+                  {fav ? "Most chosen · " : ""}No expiry · 72h refund
+                </span>
               </span>
+
+              {/* Arrow affordance */}
+              <span
+                aria-hidden
+                className={`flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full text-base transition-transform group-hover:translate-x-0.5 ${
+                  fav
+                    ? "bg-[oklch(53%_0.19_28)] text-white"
+                    : "border border-[oklch(85%_0.04_60)] bg-white/60 text-ink-soft"
+                }`}
+              >
+                →
+              </span>
+
               {isPending && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink1/85 text-xs text-gold backdrop-blur-sm">
+                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80 font-[family-name:var(--font-display)] text-xs tracking-[0.2em] text-ink backdrop-blur-sm">
                   …
                 </span>
               )}
@@ -211,7 +275,7 @@ export default function SevaTierPicker({
       {errorMessage && (
         <p
           role="alert"
-          className="mt-3 text-center text-xs font-medium text-sacred"
+          className="mt-3 text-center font-[family-name:var(--font-serif)] text-xs italic text-[oklch(53%_0.19_28)]"
         >
           {errorMessage}
         </p>
