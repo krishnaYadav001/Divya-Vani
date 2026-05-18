@@ -19,7 +19,7 @@ const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
-import Bansuri from "./motifs/Bansuri";
+import Flute from "./motifs/Flute";
 import DiyaIcon from "./motifs/DiyaIcon";
 import PeacockFeather from "./motifs/PeacockFeather";
 import Atmosphere from "./Atmosphere";
@@ -831,7 +831,7 @@ export default function ChatUI() {
       {/* Form row + sibling suggestion card. Both are width-capped by
           the outer max-w-[600px] container above. Mobile reality (~360px
           Android) made the prior nested-inside-the-textarea-column
-          layout cramped: Bansuri is hidden on mobile, so the textarea
+          layout cramped: Flute is hidden on mobile, so the textarea
           column shrank to fit between left edge and mic + Send, and
           the suggestion list inherited that squeezed width — each Hindi
           option wrapped to two lines. Lifting the list out keeps it
@@ -843,7 +843,7 @@ export default function ChatUI() {
         }}
         className="flex items-start gap-2"
       >
-        <Bansuri className="hidden h-12 w-auto shrink-0 sm:block" />
+        <Flute className="hidden h-12 w-auto shrink-0 self-center sm:block" />
         <textarea
           ref={textareaRef}
           rows={1}
@@ -1162,7 +1162,14 @@ export default function ChatUI() {
               backwards holds each child at its pre-animation state during
               the delay so there's no flash-then-fade. */}
           <div className="flex w-full max-w-[600px] flex-col items-center gap-6">
-            <p className="fade-up text-center font-serif text-xs uppercase italic leading-relaxed tracking-[0.18em] text-ivory/45 [animation-delay:0ms] [animation-fill-mode:backwards]">
+            {/* Dawn Aarti — a quietly floating bansuri above the
+                greeting (handoff empty-state spec). dawn-float is
+                CSS-only + reduced-motion-safe (globals.css). */}
+            <Flute className="fade-up dawn-float h-8 w-auto opacity-80 [animation-delay:0ms] [animation-fill-mode:backwards]" />
+            {/* Copy unchanged (product-locked); Devanagari now rendered
+                in Tiro — Cormorant has no Devanagari glyphs, so the
+                prior font-serif greeting was silently falling back. */}
+            <p className="fade-up text-center font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-soft [animation-delay:120ms] [animation-fill-mode:backwards]">
               आज मन कैसा लग रहा है…
             </p>
             {/* Phase 8 pre-launch — value-prop subtitle for cold-acquired
@@ -1174,10 +1181,10 @@ export default function ChatUI() {
                 greeting. brass-dark is the AA-safe text token on parchment
                 (full-saturation --devotional is not AA). Staggered at 90ms
                 — a breath between greeting (0ms) and input (180ms). */}
-            <p className="fade-up max-w-[460px] text-center font-devanagari text-sm italic leading-relaxed text-brass-dark [animation-delay:90ms] [animation-fill-mode:backwards]">
+            <p className="fade-up max-w-[460px] text-center font-devanagari text-sm leading-relaxed text-ink-faint [animation-delay:220ms] [animation-fill-mode:backwards]">
               भगवान कृष्ण से बात करो — हर उत्तर गीता, महाभारत, भागवत से
             </p>
-            <div className="fade-up w-full [animation-delay:180ms] [animation-fill-mode:backwards]">
+            <div className="fade-up w-full [animation-delay:340ms] [animation-fill-mode:backwards]">
               {inputBlock}
             </div>
           </div>
