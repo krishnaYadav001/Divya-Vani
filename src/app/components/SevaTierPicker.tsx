@@ -192,13 +192,20 @@ export default function SevaTierPicker({
 
   return (
     <>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         {tiers.map((tier) => {
           const isPending = pendingTierId === tier.id;
           const isDisabledByOther = pendingTierId !== null && !isPending;
           const fav = tier.priceInr === 101;
           const tone = TONE[tier.priceInr] ?? TONE[11];
-          const perMsg = (tier.priceInr / tier.messages).toFixed(2);
+          // displayName / displayNameHi already include "Seva / सेवा"
+          // — strip the suffix so it isn't doubled in the label.
+          const shortHi = tier.displayNameHi
+            .replace(/\s*सेवा\s*$/, "")
+            .trim();
+          const shortEn = tier.displayName
+            .replace(/\s*seva\s*$/i, "")
+            .trim();
           return (
             <button
               key={tier.id}
@@ -206,64 +213,61 @@ export default function SevaTierPicker({
               onClick={() => handleTierTap(tier)}
               disabled={isDisabledByOther || isPending}
               aria-busy={isPending}
-              className="group relative flex items-stretch gap-4 overflow-hidden rounded-2xl border border-[oklch(86%_0.03_60)] bg-white/55 p-3 text-left backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="group relative flex items-center gap-2.5 overflow-hidden rounded-xl border border-[oklch(86%_0.03_60)] bg-white/60 p-2 text-left transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:cursor-not-allowed disabled:opacity-50"
               style={
                 fav
-                  ? {
-                      boxShadow: `0 1px 0 rgba(255,255,255,.6) inset, 0 16px 32px -22px oklch(50% 0.15 280 / .35), ${tone.ring}`,
-                    }
-                  : {
-                      boxShadow:
-                        "0 1px 0 rgba(255,255,255,.6) inset, 0 12px 24px -20px oklch(35% 0.05 30 / .3)",
-                    }
+                  ? { boxShadow: tone.ring }
+                  : undefined
               }
             >
-              {/* Diya thumbnail on a tone-tinted panel */}
+              {/* Diya thumbnail */}
               <span
                 aria-hidden
-                className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl"
+                className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg"
                 style={{ background: tone.bg }}
               >
                 <Diya tone={tone.diya} className="h-full w-full" />
               </span>
 
-              {/* Tier text */}
-              <span className="flex min-w-0 flex-1 flex-col justify-center">
-                <span className="flex items-baseline gap-2">
-                  <span className="font-[family-name:var(--font-devanagari)] text-xl leading-none text-ink">
-                    {tier.displayNameHi}
+              {/* Tier text — two tight lines, no wrap */}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="flex items-baseline gap-1.5">
+                  <span className="truncate font-[family-name:var(--font-devanagari)] text-[15px] leading-tight text-ink">
+                    {shortHi}
                   </span>
-                  <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.28em] text-ink-soft">
-                    {tier.displayName} Sevā
+                  <span className="shrink-0 font-[family-name:var(--font-display)] text-[8px] uppercase tracking-[0.22em] text-ink-soft">
+                    {shortEn} Sevā
                   </span>
                 </span>
-                <span className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="font-[family-name:var(--font-display)] text-2xl tabular-nums text-ink">
+                <span className="mt-0.5 flex items-baseline gap-1.5">
+                  <span className="font-[family-name:var(--font-display)] text-lg tabular-nums leading-none text-ink">
                     ₹{tier.priceInr}
                   </span>
-                  <span className="font-[family-name:var(--font-serif)] text-xs italic text-ink-soft">
-                    · {tier.messages} msgs · ≈ ₹{perMsg}/msg
+                  <span className="font-[family-name:var(--font-serif)] text-[11px] italic text-ink-soft">
+                    · {tier.messages} msgs
                   </span>
-                </span>
-                <span className="mt-1 font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.26em] text-ink-faint">
-                  {fav ? "Most chosen · " : ""}No expiry · 72h refund
+                  {fav && (
+                    <span className="font-[family-name:var(--font-display)] text-[8px] uppercase tracking-[0.18em] text-[oklch(53%_0.19_28)]">
+                      · top
+                    </span>
+                  )}
                 </span>
               </span>
 
-              {/* Arrow affordance */}
+              {/* Arrow */}
               <span
                 aria-hidden
-                className={`flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full text-base transition-transform group-hover:translate-x-0.5 ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-sm transition-transform group-hover:translate-x-0.5 ${
                   fav
                     ? "bg-[oklch(53%_0.19_28)] text-white"
-                    : "border border-[oklch(85%_0.04_60)] bg-white/60 text-ink-soft"
+                    : "border border-[oklch(85%_0.04_60)] bg-white/70 text-ink-soft"
                 }`}
               >
                 →
               </span>
 
               {isPending && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80 font-[family-name:var(--font-display)] text-xs tracking-[0.2em] text-ink backdrop-blur-sm">
+                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80 font-[family-name:var(--font-display)] text-xs tracking-[0.2em] text-ink backdrop-blur-sm">
                   …
                 </span>
               )}

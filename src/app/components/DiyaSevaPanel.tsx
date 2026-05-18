@@ -148,8 +148,8 @@ export default function DiyaSevaPanel({
           <div className="relative inline-flex items-baseline justify-center rounded-full bg-parchment/60 px-6 py-1.5 ring-1 ring-devotional/30 backdrop-blur-[1px]">
             <p
               className={
-                "font-sans text-5xl font-semibold leading-none tracking-tight tabular-nums sm:text-6xl " +
-                (isDepleted ? "text-devotional/60" : "text-devotional-dark")
+                "font-[family-name:var(--font-display)] text-5xl leading-none tracking-tight tabular-nums sm:text-6xl " +
+                (isDepleted ? "text-ink-faint" : "text-ink")
               }
             >
               {countDisplay}

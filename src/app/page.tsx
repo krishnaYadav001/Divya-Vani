@@ -40,7 +40,7 @@ export default function Landing() {
     <main className="dv-scroll relative flex-1 overflow-y-auto overflow-x-hidden">
       <Atmosphere mode="hero" intensity={1} vignette={1} />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1240px] px-5 py-6 sm:px-8 sm:py-8 lg:px-14">
+      <div className="relative z-10 mx-auto w-full max-w-[1240px] px-5 py-6 sm:px-8 lg:flex lg:min-h-full lg:flex-col lg:justify-center lg:px-14 lg:py-8">
         {/* Header */}
         <header className="flex items-center justify-between gap-4">
           <Wordmark size="sm" stack="horizontal" />
@@ -61,12 +61,12 @@ export default function Landing() {
 
         {/* Composition: arch portal + text. Stacks on mobile (arch
             first), two columns from lg up. */}
-        <div className="mt-10 grid grid-cols-1 gap-12 lg:mt-14 lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-16">
+        <div className="mt-8 grid grid-cols-1 gap-10 lg:mt-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-center lg:gap-14">
           {/* ── Arch portal ─────────────────────────────────────── */}
-          <div className="fade-up mx-auto w-full max-w-[460px] [animation-delay:0ms] [animation-fill-mode:backwards]">
+          <div className="fade-up mx-auto w-full max-w-[260px] lg:max-w-[320px] [animation-delay:0ms] [animation-fill-mode:backwards]">
             <div
-              className="relative w-full overflow-hidden rounded-t-[clamp(96px,30vw,230px)] rounded-b-[24px] bg-[var(--color-mist-2)]"
-              style={{ aspectRatio: "46 / 70", boxShadow: ARCH_SHADOW }}
+              className="relative w-full overflow-hidden rounded-t-[clamp(80px,24vw,170px)] rounded-b-[20px] bg-[var(--color-mist-2)]"
+              style={{ aspectRatio: "46 / 60", boxShadow: ARCH_SHADOW }}
             >
               <Image
                 src="/dawn-fresco.jpg"
@@ -83,7 +83,7 @@ export default function Landing() {
               {/* Gold-leaf inner trim */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-1.5 rounded-t-[clamp(88px,28vw,224px)] rounded-b-[18px] border border-[oklch(76%_0.12_80_/_0.7)]"
+                className="pointer-events-none absolute inset-1.5 rounded-t-[clamp(74px,22vw,164px)] rounded-b-[15px] border border-[oklch(76%_0.12_80_/_0.7)]"
               />
             </div>
             {/* Plinth */}
@@ -107,19 +107,19 @@ export default function Landing() {
               Mathurā Edition
             </p>
 
-            <h1 className="mt-5 font-[family-name:var(--font-display)] text-[clamp(3.25rem,12vw,8.625rem)] font-normal leading-[0.88] text-ink">
+            <h1 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(2.75rem,8vw,5.25rem)] font-normal leading-[0.9] text-ink">
               {nameHead}
               <br />
               {nameRest.join(" ")}.
             </h1>
 
-            <p className="mt-6 max-w-[480px] font-[family-name:var(--font-serif)] text-lg italic leading-relaxed text-ink-soft sm:text-xl">
+            <p className="mt-4 max-w-[460px] font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink-soft sm:text-lg">
               Krishna in a chat window. The same flute, a smaller room.
               Ask in Hindi or English; the verses follow you.
             </p>
 
             {/* CTA */}
-            <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
               <Link
                 href="/chat"
                 className="inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 font-[family-name:var(--font-devanagari)] text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2"
@@ -138,7 +138,7 @@ export default function Landing() {
             </div>
 
             {/* Featured-question chips → start a chat */}
-            <div className="mt-8 flex max-w-[560px] flex-wrap gap-2.5">
+            <div className="mt-5 flex max-w-[560px] flex-wrap gap-2.5">
               {CHIPS.map((c) => (
                 <Link
                   key={c}
@@ -153,7 +153,7 @@ export default function Landing() {
             </div>
 
             {/* Sanskrit quote */}
-            <div className="mt-9 border-t border-[var(--color-ink-line)] pt-5">
+            <div className="mt-6 border-t border-[var(--color-ink-line)] pt-4">
               <p className="font-[family-name:var(--font-devanagari)] text-xl italic leading-[1.6] text-ink-soft">
                 {SANSKRIT}
               </p>
@@ -164,7 +164,7 @@ export default function Landing() {
 
             {/* Permanent identity disclaimer (Locked Decision #1) —
                 copy from BRAND, not the prototype mock. */}
-            <div className="mt-9 flex items-start gap-3">
+            <div className="mt-6 flex items-start gap-3">
               <SindoorSeal size={30} className="mt-0.5" />
               <div className="space-y-1">
                 <p className="font-[family-name:var(--font-devanagari)] text-[13px] leading-[1.6] text-ink-faint">
@@ -179,7 +179,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <DevoteeSilhouettes height={100} opacity={0.3} />
+      <DevoteeSilhouettes height={64} opacity={0.28} />
     </main>
   );
 }

@@ -20,6 +20,7 @@ import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
+import Bansuri from "./motifs/Bansuri";
 import DiyaIcon from "./motifs/DiyaIcon";
 import PeacockFeather from "./motifs/PeacockFeather";
 import Atmosphere from "./Atmosphere";
@@ -831,7 +832,7 @@ export default function ChatUI() {
       {/* Form row + sibling suggestion card. Both are width-capped by
           the outer max-w-[600px] container above. Mobile reality (~360px
           Android) made the prior nested-inside-the-textarea-column
-          layout cramped: Flute is hidden on mobile, so the textarea
+          layout cramped: Bansuri is hidden on mobile, so the textarea
           column shrank to fit between left edge and mic + Send, and
           the suggestion list inherited that squeezed width — each Hindi
           option wrapped to two lines. Lifting the list out keeps it
@@ -843,7 +844,7 @@ export default function ChatUI() {
         }}
         className="flex items-start gap-2"
       >
-        <Flute className="hidden h-12 w-auto shrink-0 self-center sm:block" />
+        <Bansuri className="hidden h-12 w-auto shrink-0 sm:block" />
         <textarea
           ref={textareaRef}
           rows={1}
