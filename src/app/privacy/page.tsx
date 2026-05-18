@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
+import PolicySummary from "../components/PolicySummary";
 import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -15,23 +16,18 @@ const LAST_UPDATED = "2026-05-15";
 
 export default function PrivacyPage() {
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
+    <main className="dv-scroll relative flex-1 overflow-y-auto overflow-x-hidden">
       <Atmosphere mode="distant" intensity={0.6} vignette={1} />
 
-      <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
+      <article className="relative z-10 mx-auto w-full max-w-[1100px] px-6 py-12 font-[family-name:var(--font-serif)] text-ink sm:px-10 sm:py-16">
         <BackToChat />
 
-        <header className="mb-7">
-          <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
-            गोपनीयता · privacy
-          </p>
-          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.1] text-ivory">
-            Privacy Policy
-          </h1>
-        </header>
-        <div className="dv-hairline mb-10" />
+        <PolicySummary lastUpdated={LAST_UPDATED} />
 
-        <div className="space-y-8 text-base font-medium leading-relaxed">
+        <div
+          id="full-policy"
+          className="mx-auto max-w-2xl scroll-mt-20 space-y-8 text-base font-medium leading-relaxed text-ink"
+        >
           <section>
             <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               About {BRAND.name.en}
