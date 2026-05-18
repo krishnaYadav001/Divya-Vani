@@ -101,7 +101,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#050505",
+  themeColor: "#faf7f2",
 };
 
 export default function RootLayout({
@@ -115,7 +115,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${marcellus.variable} ${tiroDevanagari.variable} h-full antialiased`}
     >
       <body
-        className="h-dvh flex flex-col overflow-hidden bg-[#050505]"
+        className="h-dvh flex flex-col overflow-hidden"
         suppressHydrationWarning
       >
         {children}

@@ -1,64 +1,88 @@
 @import "tailwindcss";
 
 :root {
-  /* Phase 8 cinematic-dark redesign. Base surface is deep near-black;
-     primary text is warm ivory. (Supersedes the Phase 2.5 parchment
-     base — see CLAUDE.md "Frontend design reference".) */
-  --background: #050505;
-  --foreground: #efe6d1;
+  /* Dawn Aarti redesign (2026-05-18) — soft watercolor pastel. The
+     ground is a warm mist; primary text is a deep aubergine "ink".
+     Supersedes the Phase 8 cinematic-dark base. See CLAUDE.md
+     "Frontend design reference" + design_handoff_dawn_aarti/. */
+  --background: #faf7f2;
+  --foreground: oklch(28% 0.035 30);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* ── Phase 8 cinematic-dark — temple-aarti palette ──────────────────
-     The six Phase 2.5 semantic token NAMES are intentionally kept and
-     REMAPPED to the dark palette so every existing component
+  /* ── Dawn Aarti — pastel palette ────────────────────────────────────
+     The Phase 2.5 semantic token NAMES + the Phase-8 direct tokens
+     (ink0..3 / gold* / ivory / red-seal) are intentionally KEPT and
+     REMAPPED to the Dawn palette so every existing live component
      (ChatUI, settings, privacy, terms, seva, motifs) reskins globally
-     without per-className edits:
+     without per-className edits — same strategy as the 2026-05-17
+     cinematic remap, inverted back to a light ground.
 
-       parchment      → deep ink surface base
-       krishna        → ivory primary text
-       brass          → gold line/accent
-       brass-dark     → light-gold secondary text (AA on near-black)
-       devotional     → gold accent
-       devotional-dark→ bright gold (AA text on near-black)
-       sacred         → terracotta-rose (headings + danger accent)
-       peacock        → ivory (link-hover, per design .dv-link:hover)
+       parchment       → mist surface
+       krishna / ivory  → ink (primary dark text on the light ground)
+       brass / gold     → gold-leaf line/accent
+       brass-dark / gold-dim → deeper gold (caption/accent text)
+       devotional       → gold-leaf accent
+       devotional-dark / red-seal → vermillion (sindoor seal / danger)
+       sacred           → rose petal
+       peacock          → peacock teal
+       ink0..3          → the pale mist surface ramp (were dark surfaces)
 
-     Contrast: ivory / light-gold / bright-gold / rose all clear WCAG
-     AA as text on the #050505–#1f1d26 range. Full-saturation gold
-     (#d4a24a) is reserved for lines, fills, and large display only —
-     not body text — mirroring the old parchment "*-dark for text" rule
-     inverted for a dark ground. */
-  --color-devotional: #d4a24a;
-  --color-devotional-dark: #e6bd6e;
-  --color-sacred: #d49a8e;
-  --color-krishna: #efe6d1;
-  --color-brass: #d4a24a;
-  --color-brass-dark: #cbb37e;
-  --color-parchment: #0a0a0d;
-  --color-peacock: #efe6d1;
+     Contrast: --color-ink (oklch 28% 0.035 30) on mist passes WCAG AA
+     at 16px+ body size. ink-soft / ink-faint are caption / italic
+     ornament ONLY — never body text (CLAUDE.md principle 3). */
+  --color-devotional: oklch(76% 0.12 80);
+  --color-devotional-dark: oklch(53% 0.19 28);
+  --color-sacred: oklch(89% 0.06 12);
+  --color-krishna: oklch(28% 0.035 30);
+  --color-brass: oklch(76% 0.12 80);
+  --color-brass-dark: oklch(58% 0.12 75);
+  --color-parchment: oklch(98.5% 0.006 70);
+  --color-peacock: oklch(52% 0.13 205);
 
-  /* New direct tokens for the redesign surfaces (landing, atmosphere,
-     ornaments) that need the full ink ramp + raw gold/ivory. */
-  --color-ink0: #050505;
-  --color-ink1: #0a0a0d;
-  --color-ink2: #14131a;
-  --color-ink3: #1f1d26;
-  --color-gold: #d4a24a;
-  --color-gold-dim: #a78544;
-  --color-gold-mute: #6e5a30;
-  --color-gold-faint: #3d3220;
-  --color-ivory: #efe6d1;
-  --color-red-seal: #7a2820;
+  /* Phase-8 direct tokens — remapped (NOT in the handoff table, but
+     every live component uses the ink / ivory / gold / red-seal
+     utilities, so they must reskin too or the live app is a broken
+     dark/light hybrid until steps 4–8 rebuild components). */
+  --color-ink0: oklch(98.5% 0.006 70);
+  --color-ink1: oklch(96.5% 0.012 60);
+  --color-ink2: oklch(96.5% 0.012 60);
+  --color-ink3: oklch(93% 0.018 50);
+  --color-gold: oklch(76% 0.12 80);
+  --color-gold-dim: oklch(58% 0.12 75);
+  --color-gold-mute: oklch(70% 0.10 80);
+  --color-gold-faint: oklch(86% 0.05 80);
+  --color-ivory: oklch(28% 0.035 30);
+  --color-red-seal: oklch(53% 0.19 28);
+
+  /* New Dawn direct tokens (handoff list + token table). */
+  --color-mist: oklch(98.5% 0.006 70);
+  --color-mist-2: oklch(96.5% 0.012 60);
+  --color-mist-3: oklch(93% 0.018 50);
+  --color-cloud: #ffffff;
+  --color-peach: oklch(91% 0.05 50);
+  --color-rose: oklch(89% 0.06 12);
+  --color-lavender: oklch(86% 0.045 305);
+  --color-sky: oklch(91% 0.035 240);
+  --color-buttermilk: oklch(94% 0.05 90);
+  --color-peacock-deep: oklch(38% 0.11 225);
+  --color-gold-leaf: oklch(76% 0.12 80);
+  --color-gold-soft: oklch(85% 0.07 80);
+  --color-vermillion: oklch(53% 0.19 28);
+  --color-ink: oklch(28% 0.035 30);
+  --color-ink-soft: oklch(45% 0.025 30);
+  --color-ink-faint: oklch(62% 0.02 30);
+  --color-ink-line: oklch(80% 0.015 30);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  /* English body = Cormorant Garamond; English display/UI = Marcellus;
-     all Devanagari = Tiro Devanagari Hindi. `--font-devanagari` keeps
-     its name (every existing `font-devanagari` usage inherits Tiro). */
+  /* Type stack UNCHANGED — Marcellus (display/UI), Cormorant Garamond
+     italic (English body), Tiro Devanagari Hindi (all Devanagari).
+     `--font-devanagari` keeps its name so every existing usage
+     inherits Tiro. */
   --font-serif: var(--font-cormorant);
   --font-display: var(--font-marcellus);
   --font-devanagari: var(--font-tiro-devanagari);
@@ -66,12 +90,81 @@
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  /* Soft watercolor ground (dawn-styles .bg-wash-soft) — never a flat
+     untextured background (CLAUDE.md principle 6). The richer fresco +
+     petals + sparkles are layered by the Atmosphere component (step 5). */
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 50% 0%,
+      var(--color-peach) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 90% 70% at 50% 100%,
+      var(--color-sky) 0%,
+      transparent 50%
+    ),
+    var(--color-mist);
+  background-attachment: fixed;
   font-family: var(--font-cormorant), Georgia, serif;
   letter-spacing: 0.005em;
 }
 
-/* Staggered page-load reveal — unchanged from Phase 2.5. */
+/* ── Foundational background washes (token-only; used by body +
+   Atmosphere + page grounds). ─────────────────────────────────────── */
+.dawn-wash {
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 18%,
+      var(--color-peach) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at 18% 78%,
+      var(--color-rose) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 70% 70% at 85% 70%,
+      var(--color-lavender) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 50% 100%,
+      var(--color-sky) 0%,
+      transparent 60%
+    ),
+    var(--color-mist);
+}
+
+.dawn-wash-soft {
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 50% 0%,
+      var(--color-peach) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 90% 70% at 50% 100%,
+      var(--color-sky) 0%,
+      transparent 50%
+    ),
+    var(--color-mist);
+}
+
+/* Extremely soft paper grain (dawn-styles .grain::after). Opt-in on a
+   positioned ancestor; Atmosphere (step 5) toggles it. 18% opacity. */
+.dawn-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' seed='2'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/></svg>");
+}
+
+/* Staggered page-load reveal — unchanged. */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -87,8 +180,8 @@ body {
   animation: fade-up 350ms ease-out;
 }
 
-/* Phase 7.0 voice-input — sonar pulse for the listening mic state.
-   Two concentric rings emanate outward at staggered phases. */
+/* Phase 7.0 voice-input — legacy sonar (kept; some components still
+   reference .sonar-ring). The Dawn mic uses .dawn-sonar below. */
 @keyframes sonar {
   0% {
     transform: scale(1);
@@ -108,9 +201,7 @@ body {
   animation: sonar 1.6s ease-out 0.8s infinite;
 }
 
-/* Phase 8 cinematic-dark — atmospheric decorative motion (Krishna
-   vignette drift + soft accent pulse). CSS-only per the frontend-
-   design "Motion: CSS-only" rule. */
+/* Decorative drift + pulse (kept — used by existing components). */
 @keyframes dv-drift {
   0%,
   100% {
@@ -139,17 +230,114 @@ body {
   animation: dv-pulse 3s ease-in-out infinite;
 }
 
-/* Phase 8.x — Krishna "सोच रहा हूँ" thinking indicator. A calm aarti-
-   light sweep travels across the line (ivory highlight gliding over the
-   AA-safe light-gold base) while three dots breathe in sequence — one
-   cohesive "the presence is gathering thought" moment, not a mechanical
-   spinner (calm tone per CLAUDE.md). CSS-only per the frontend-design
-   motion rule. WCAG AA preserved: the text is brass-dark/ivory (both
-   AA-sanctioned on the near-black ground); the bg-clip:text fill is
-   guarded by @supports so the solid AA colour shows if it's
-   unsupported. */
+/* ── Dawn Aarti keyframes (handoff step 3) ──────────────────────────
+   drift-down: petal fall. twinkle: sparkle motes. float-y: flute /
+   feather idle. breathe: diya flame. sonar-pulse: mic listening.
+   Petals/sparkles set per-instance --drift-* / duration / delay
+   inline (Petals component, step 4); the keyframes live here so they
+   exist app-wide. */
+@keyframes drift-down {
+  0% {
+    transform: translate3d(0, -30px, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(
+        var(--drift-x, 30px),
+        var(--drift-d, 800px),
+        0
+      )
+      rotate(var(--drift-r, 320deg));
+    opacity: 0;
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+}
+
+@keyframes sonar-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.dawn-petal {
+  animation-name: drift-down;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.dawn-sparkle {
+  animation-name: twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.dawn-float {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+.dawn-breathe {
+  animation: breathe 1.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.dawn-sonar {
+  animation: sonar-pulse 1.8s ease-out infinite;
+}
+
+.dawn-sonar-delayed {
+  animation: sonar-pulse 1.8s ease-out 0.9s infinite;
+}
+
+/* Krishna "सोच रहा हूँ" thinking indicator — kept. The shimmer/dot
+   colours ride the remapped brass-dark/ivory tokens (now gold/ink on
+   the light ground), so the indicator reskins with the palette. The
+   ChatUI rebuild (step 7) revisits its exact treatment. */
 .dv-thinking-shimmer {
-  color: var(--color-brass-dark); /* AA fallback (no bg-clip:text) */
+  color: var(--color-brass-dark);
 }
 
 @supports (
@@ -160,7 +348,7 @@ body {
       100deg,
       var(--color-brass-dark) 0%,
       var(--color-brass-dark) 35%,
-      var(--color-ivory) 50%,
+      var(--color-ink) 50%,
       var(--color-brass-dark) 65%,
       var(--color-brass-dark) 100%
     );
@@ -217,20 +405,8 @@ body {
   }
 }
 
-/* Honour reduced-motion: keep the indicator legible + present, drop
-   the movement. Scoped to the new classes so existing animations are
-   untouched. */
-@media (prefers-reduced-motion: reduce) {
-  .dv-thinking-shimmer {
-    animation: none;
-  }
-  .dv-thinking-dot {
-    animation: none;
-    opacity: 0.55;
-  }
-}
-
-/* Gold hairline divider (ornamental section rule). */
+/* Gold hairline divider (ornamental). Now rides gold-leaf tints on
+   the light ground. */
 .dv-hairline {
   height: 1px;
   background: linear-gradient(
@@ -248,9 +424,35 @@ body {
   width: 6px;
 }
 .dv-scroll::-webkit-scrollbar-thumb {
-  background: rgba(212, 162, 74, 0.2);
+  background: oklch(76% 0.12 80 / 0.35);
   border-radius: 3px;
 }
 .dv-scroll::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ── Accessibility: honour reduced-motion across every decorative
+   animation (existing + Dawn). The handoff edge-case list requires
+   this for petals / sparkles / drift / breathe / sonar. None of these
+   animations are load-bearing. ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .sonar-ring,
+  .sonar-ring-delayed,
+  .dv-drift,
+  .dv-pulse,
+  .dv-thinking-shimmer,
+  .dv-thinking-dot,
+  .dawn-petal,
+  .dawn-sparkle,
+  .dawn-float,
+  .dawn-breathe,
+  .dawn-sonar,
+  .dawn-sonar-delayed {
+    animation: none !important;
+  }
+  /* keep the thinking dots visible when motion is off */
+  .dv-thinking-dot {
+    opacity: 0.55;
+  }
 }
