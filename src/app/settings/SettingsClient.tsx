@@ -1,20 +1,87 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// Phase 8 pre-launch — Settings page client island.
+// Dawn Aarti redesign (2026-05-18) — Settings client island.
+// Visual rebuild to the handoff mock (desktop two-column aside +
+// card stack; single column on mobile) with EVERY behaviour
+// preserved verbatim: the opt-out toggle (training_opt_out,
+// optimistic + revert + "saved"), the two-step delete-account flow,
+// and the full feedback form (honeypot, IME guard, timeout,
+// counter). Only presentational JSX/classes changed. The mock's
+// name / Language / Voice controls have no backend in this app and
+// are NOT rendered as dead controls — the name is shown read-only
+// (Krishna captures it in chat, Locked Decision #3).
 //
-// State mapping (deliberately inverted in the UI):
-//   - Toggle ON  = founder review ALLOWED  = training_opt_out FALSE
-//   - Toggle OFF = founder review DISABLED = training_opt_out TRUE
-//
-// `initialOptOut` comes from the server component (users_memory.training_opt_out).
-// We keep a local optimistic state for the toggle; on save failure we revert.
+// State mapping (deliberately inverted): Toggle ON = founder review
+// ALLOWED = training_opt_out FALSE.
+
+const CARD =
+  "rounded-2xl border border-[oklch(88%_0.02_60)] bg-white/55 p-6 shadow-[0_1px_0_rgba(255,255,255,.6)_inset,0_12px_28px_-18px_oklch(35%_0.05_30_/_0.35)] backdrop-blur-sm sm:p-8";
+
+function CardHeader({ title, hi }: { title: string; hi: string }) {
+  return (
+    <header className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ink">
+        {title}
+      </h2>
+      <span className="font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-faint">
+        · {hi}
+      </span>
+    </header>
+  );
+}
+
+function DawnToggle({
+  label,
+  on,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  on: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-6 border-b border-[var(--color-ink-line)] py-4">
+      <span className="font-[family-name:var(--font-serif)] text-base not-italic text-ink">
+        {label}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        onClick={onClick}
+        disabled={disabled}
+        className="relative h-[26px] w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 disabled:opacity-60"
+        style={{
+          background: on
+            ? "linear-gradient(90deg, oklch(70% 0.13 80), oklch(60% 0.16 50))"
+            : "oklch(86% 0.02 60)",
+        }}
+      >
+        <span
+          aria-hidden
+          className="absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_3px_oklch(40%_0.04_30_/_.35)] transition-[left]"
+          style={{ left: on ? 20 : 2 }}
+        />
+      </button>
+    </div>
+  );
+}
+
 export default function SettingsClient({
   initialOptOut,
+  sevaBalance,
+  userName,
 }: {
   initialOptOut: boolean;
+  sevaBalance: number;
+  userName: string | null;
 }) {
   const [optOut, setOptOut] = useState<boolean>(initialOptOut);
   const [saving, setSaving] = useState(false);
@@ -59,9 +126,6 @@ export default function SettingsClient({
     try {
       const res = await fetch("/api/delete-account", { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Best-effort clear of any divya-vani-chat:* localStorage keys
-      // so the cleared cookie doesn't get an orphaned history on the
-      // next visit. Silent-fail per existing chatStorage pattern.
       try {
         if (typeof window !== "undefined") {
           for (let i = window.localStorage.length - 1; i >= 0; i--) {
@@ -84,214 +148,293 @@ export default function SettingsClient({
     }
   }
 
+  // Visual-only progress: cap against the largest tier (Param = 350).
+  const balancePct = Math.max(
+    4,
+    Math.min(100, Math.round((sevaBalance / 350) * 100)),
+  );
+
+  const navItems = [
+    { label: "Identity", href: "#identity" },
+    { label: "Privacy & Data", href: "#privacy" },
+    { label: "Share feedback", href: "#feedback" },
+    { label: "Delete account", href: "#delete" },
+  ];
+
   return (
-    <div className="space-y-12">
-      {/* SECTION 0 — Contact & Grievance Officer (static info card).
-          Placed FIRST for highest visibility — DPDP-discoverability
-          benefit (previously only at the bottom of /privacy). Bilingual
-          (Hindi + English) per founder decision #4, which reverses the
-          Phase 8.0 c5725d3 English-only-admin convention for the
-          redesign. Hindi uses font-devanagari (Tiro) per the frontend-
-          design typography rule; English display = Marcellus, body =
-          Cormorant italic — matching the cards below. */}
-      <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:180ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
-          Contact &amp; Grievance Officer
-        </h2>
-        <p className="mt-1 font-devanagari text-base text-brass-dark">
-          संपर्क एवं शिकायत अधिकारी
-        </p>
-
-        <div className="mt-5 space-y-2">
-          <p className="font-serif text-base italic leading-relaxed text-krishna">
-            For privacy questions, deletion requests, or grievances under
-            the DPDP Act, contact:
-          </p>
-          <p className="font-devanagari text-sm leading-relaxed text-brass-dark">
-            गोपनीयता संबंधी प्रश्न, डेटा हटाने के अनुरोध, या DPDP अधिनियम के
-            अंतर्गत शिकायतों के लिए संपर्क करें:
-          </p>
-        </div>
-
-        <dl className="mt-5 space-y-1">
-          <dt className="font-serif text-sm italic text-brass-dark">
-            Grievance Officer · शिकायत अधिकारी
-          </dt>
-          <dd className="font-[family-name:var(--font-display)] text-lg text-ivory">
-            Krishna Yadav
-          </dd>
-          <dd>
-            <a
-              href="mailto:grievance.divyavani@gmail.com"
-              className="inline-flex min-h-11 items-center break-all font-serif text-base italic text-devotional-dark underline decoration-brass underline-offset-2 transition-colors hover:text-peacock focus:outline-none focus:ring-2 focus:ring-devotional/40"
-            >
-              grievance.divyavani@gmail.com
-            </a>
-          </dd>
-        </dl>
-
-        <p className="mt-5 font-serif text-sm italic leading-relaxed text-brass-dark">
-          Per Section 13 of the DPDP Act, we acknowledge grievances and
-          respond within 30 days.
-        </p>
-        <p className="mt-2 font-devanagari text-sm leading-relaxed text-brass-dark">
-          DPDP अधिनियम की धारा 13 के अनुसार, हम शिकायतों को स्वीकार करते हैं
-          और 30 दिनों के भीतर उत्तर देते हैं।
-        </p>
-      </section>
-
-      {/* SECTION 1 — Conversation Review toggle */}
-      <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:300ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
-          Conversation Review
-        </h2>
-
-        <div className="mt-5 flex items-start gap-5">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={reviewAllowed}
-            aria-label={
-              reviewAllowed
-                ? "Disable conversation review"
-                : "Enable conversation review"
-            }
-            onClick={handleToggle}
-            disabled={saving}
-            className={`relative inline-flex h-11 w-20 shrink-0 items-center rounded-full border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-60 ${
-              reviewAllowed
-                ? "border-brass/60 bg-devotional/30"
-                : "border-brass/40 bg-parchment"
-            }`}
+    <div className="relative z-10 mx-auto w-full max-w-[1240px] px-5 py-10 sm:px-8 lg:px-14 lg:py-16">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16">
+        {/* ── Aside ───────────────────────────────────────────── */}
+        <aside className="fade-up lg:sticky lg:top-16 lg:self-start [animation-delay:0ms] [animation-fill-mode:backwards]">
+          <Link
+            href="/chat"
+            className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
           >
-            <span
-              aria-hidden
-              className={`block h-7 w-7 rounded-full bg-krishna shadow-[0_1px_3px_rgba(0,0,0,0.15)] transition-transform ${
-                reviewAllowed ? "translate-x-10" : "translate-x-1"
-              }`}
-            />
-          </button>
+            ← Back to chat
+          </Link>
 
-          <div className="flex-1">
-            <p className="font-serif text-base italic leading-relaxed text-krishna">
-              Allow us to learn from your conversations to improve your
-              experience with Krishna
+          <p className="mt-9 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.4em] text-ink-faint">
+            Settings
+          </p>
+          <h1 className="mt-5 font-[family-name:var(--font-display)] text-[clamp(2.5rem,6vw,3.6rem)] font-normal leading-[1.02] text-ink">
+            Your
+            <br />
+            own room.
+          </h1>
+          <p className="mt-4 font-[family-name:var(--font-serif)] text-lg italic leading-relaxed text-ink-soft">
+            How Krishna speaks to you, and what we keep.
+          </p>
+
+          <nav className="mt-10 flex flex-col gap-1">
+            {navItems.map((item, i) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`rounded-[10px] border px-3.5 py-2.5 font-[family-name:var(--font-display)] text-sm tracking-[0.08em] transition-colors ${
+                  i === 0
+                    ? "border-[oklch(86%_0.04_70)] bg-white/70 text-ink"
+                    : "border-transparent text-ink-soft hover:bg-white/40 hover:text-ink"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Sevā balance card — real balance */}
+          <div className="mt-12 rounded-2xl border border-[oklch(86%_0.03_60)] bg-white/55 p-5">
+            <p className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.3em] text-ink-faint">
+              Sevā balance
             </p>
+            <div className="mt-2.5 flex items-baseline gap-1.5">
+              <span className="font-[family-name:var(--font-display)] text-4xl text-ink">
+                {sevaBalance}
+              </span>
+              <span className="font-[family-name:var(--font-serif)] text-sm italic text-ink-soft">
+                messages
+              </span>
+            </div>
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-[oklch(92%_0.02_60)]">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${balancePct}%`,
+                  background:
+                    "linear-gradient(90deg, oklch(78% 0.1 80), oklch(68% 0.14 30))",
+                }}
+              />
+            </div>
+            <Link
+              href="/chat"
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.2em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+            >
+              Light another diya
+            </Link>
           </div>
-        </div>
+        </aside>
 
-        <p className="mt-5 font-serif text-sm italic leading-relaxed text-brass-dark">
-          When enabled, your conversations help us understand what users
-          need and refine how Krishna responds. Conversations are kept for
-          180 days, then permanently deleted.
-        </p>
-
-        {/* Subtle saved confirmation — appears for ~2 s on each toggle */}
-        <p
-          role="status"
-          aria-live="polite"
-          className={`mt-3 font-serif text-xs italic text-peacock transition-opacity duration-500 ${
-            savedAt && Date.now() - savedAt < 3000 ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          saved
-        </p>
-      </section>
-
-      {/* SECTION 1.5 — Share Feedback (between Conversation Review and
-          the Danger Zone, per spec). Self-contained stateful component
-          so all form state stays encapsulated and the main component
-          stays lean — mirrors the co-located-component pattern in
-          settings/page.tsx (NoSessionState). */}
-      <FeedbackSection />
-
-      {/* SECTION 2 — Danger Zone (DELETE MY DATA).
-          Separated visually by extra mt + a different border treatment
-          (double border via outer + inner card). NO bright-red danger
-          colour — temple aesthetic conveys gravity through typography
-          weight, spacing, and the brass border, not chromatic alarm. */}
-      <section className="fade-up rounded-md border border-red-seal/45 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.04)_inset,0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-md [animation-delay:420ms] [animation-fill-mode:backwards] sm:p-8">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
-          Delete all my data
-        </h2>
-
-        <div className="mt-4 space-y-3">
-          <p className="font-serif text-base italic leading-relaxed text-krishna">
-            Krishna will no longer remember you. All your conversations, the
-            name he calls you by, and your shared moments will be permanently
-            deleted. This cannot be undone.
-          </p>
-          <p className="font-serif text-sm italic leading-relaxed text-brass-dark">
-            Payment records are retained as required by Indian financial
-            regulations.
-          </p>
-        </div>
-
-        {!confirmDelete ? (
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brass bg-parchment px-6 py-2 font-serif text-sm font-semibold text-devotional-dark transition-colors hover:border-sacred hover:bg-parchment/80 hover:text-sacred focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
+        {/* ── Main card stack ─────────────────────────────────── */}
+        <main className="space-y-6">
+          {/* Identity — name is captured in chat (Locked #3); shown
+              read-only, no dead Save control. */}
+          <section
+            id="identity"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:120ms] [animation-fill-mode:backwards]`}
           >
-            Delete everything
-          </button>
-        ) : (
-          <div
-            role="alertdialog"
-            aria-labelledby="confirm-delete-heading"
-            className="mt-6 rounded-2xl border-2 border-sacred/60 bg-parchment p-5"
-          >
-            <p
-              id="confirm-delete-heading"
-              className="font-serif text-base font-semibold italic text-sacred"
-            >
-              Are you sure?
+            <CardHeader
+              title="What Krishna calls you"
+              hi="किस नाम से पुकारूँ?"
+            />
+            {userName ? (
+              <p className="font-[family-name:var(--font-serif)] text-lg italic text-ink">
+                {userName}
+              </p>
+            ) : (
+              <p className="font-[family-name:var(--font-serif)] text-base italic text-ink-soft">
+                Krishna hasn&apos;t learned your name yet.
+              </p>
+            )}
+            <p className="mt-3 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
+              Krishna asks your name softly in conversation and addresses
+              you by it — any respectful name will do. To change it, just
+              tell him in chat.
             </p>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          </section>
+
+          {/* Contact & Grievance Officer (DPDP discoverability) */}
+          <section
+            className={`fade-up ${CARD} [animation-delay:180ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader
+              title="Contact & Grievance Officer"
+              hi="संपर्क एवं शिकायत अधिकारी"
+            />
+            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+              For privacy questions, deletion requests, or grievances
+              under the DPDP Act, contact:
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
+              गोपनीयता संबंधी प्रश्न, डेटा हटाने के अनुरोध, या DPDP अधिनियम
+              के अंतर्गत शिकायतों के लिए संपर्क करें:
+            </p>
+            <dl className="mt-5 space-y-1">
+              <dt className="font-[family-name:var(--font-serif)] text-sm italic text-ink-faint">
+                Grievance Officer · शिकायत अधिकारी
+              </dt>
+              <dd className="font-[family-name:var(--font-display)] text-lg text-ink">
+                Krishna Yadav
+              </dd>
+              <dd>
+                <a
+                  href="mailto:grievance.divyavani@gmail.com"
+                  className="inline-flex min-h-11 items-center break-all font-[family-name:var(--font-serif)] text-base italic text-[oklch(53%_0.19_28)] underline decoration-[oklch(76%_0.12_80)] underline-offset-2 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+                >
+                  grievance.divyavani@gmail.com
+                </a>
+              </dd>
+            </dl>
+            <p className="mt-5 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
+              Per Section 13 of the DPDP Act, we acknowledge grievances
+              and respond within 30 days.
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-faint">
+              DPDP अधिनियम की धारा 13 के अनुसार, हम शिकायतों को स्वीकार
+              करते हैं और 30 दिनों के भीतर उत्तर देते हैं।
+            </p>
+          </section>
+
+          {/* Privacy & Data — the real opt-out toggle */}
+          <section
+            id="privacy"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:240ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title="Privacy & Data" hi="निजता" />
+            <DawnToggle
+              label="Allow us to learn from your conversations to improve Krishna"
+              on={reviewAllowed}
+              onClick={handleToggle}
+              disabled={saving}
+            />
+            <p
+              role="status"
+              aria-live="polite"
+              className={`mt-3 font-[family-name:var(--font-serif)] text-xs italic text-[oklch(52%_0.13_205)] transition-opacity duration-500 ${
+                savedAt && Date.now() - savedAt < 3000
+                  ? "opacity-100"
+                  : "opacity-0"
+              }`}
+            >
+              saved
+            </p>
+            <p className="mt-4 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
+              When enabled, your conversations help us understand what
+              users need and refine how Krishna responds. Server-side,
+              chats are kept 180 days for safety review, then permanently
+              deleted.
+            </p>
+            <div className="mt-5">
+              <Link
+                href="/privacy"
+                className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-xs tracking-[0.1em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+              >
+                Read privacy in full →
+              </Link>
+            </div>
+          </section>
+
+          {/* Share Feedback */}
+          <FeedbackSection />
+
+          {/* Delete all my data — two-step confirm preserved */}
+          <section
+            id="delete"
+            className={`fade-up scroll-mt-20 rounded-2xl border border-[oklch(60%_0.18_25_/_0.4)] bg-white/55 p-6 shadow-[0_1px_0_rgba(255,255,255,.6)_inset,0_12px_28px_-18px_oklch(45%_0.12_25_/_0.3)] backdrop-blur-sm [animation-delay:360ms] [animation-fill-mode:backwards] sm:p-8`}
+          >
+            <CardHeader title="Delete all my data" hi="सब हटाएँ" />
+            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+              Krishna will no longer remember you. All your conversations,
+              the name he calls you by, and your shared moments will be
+              permanently deleted. This cannot be undone.
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
+              Payment records are retained as required by Indian financial
+              regulations.
+            </p>
+
+            {!confirmDelete ? (
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border-2 border-sacred bg-sacred/10 px-5 py-2 font-serif text-sm font-semibold italic text-sacred transition-colors hover:bg-sacred/20 focus:outline-none focus:ring-2 focus:ring-sacred/40 disabled:opacity-50"
+                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(60%_0.18_25)] bg-transparent px-6 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.06em] text-[oklch(50%_0.18_25)] transition-colors hover:bg-[oklch(60%_0.18_25_/_0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(60%_0.18_25)] disabled:opacity-50"
               >
-                {deleting ? "Deleting…" : "Yes, delete"}
+                Delete all my data
               </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                disabled={deleting}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-brass/60 bg-parchment px-5 py-2 font-serif text-sm font-medium text-krishna transition-colors hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
+            ) : (
+              <div
+                role="alertdialog"
+                aria-labelledby="confirm-delete-heading"
+                className="mt-6 rounded-2xl border border-[oklch(60%_0.18_25_/_0.5)] bg-[oklch(60%_0.18_25_/_0.05)] p-5"
               >
-                Cancel
-              </button>
-            </div>
-            {deleteError && (
-              <p
-                role="status"
-                aria-live="polite"
-                className="mt-3 text-sm text-sacred"
-              >
-                {deleteError}
-              </p>
+                <p
+                  id="confirm-delete-heading"
+                  className="font-[family-name:var(--font-serif)] text-base font-semibold italic text-[oklch(50%_0.18_25)]"
+                >
+                  Are you sure?
+                </p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-[oklch(60%_0.18_25)] bg-[oklch(60%_0.18_25_/_0.1)] px-5 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-[oklch(50%_0.18_25)] transition-colors hover:bg-[oklch(60%_0.18_25_/_0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(60%_0.18_25)] disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting…" : "Yes, delete"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/55 px-5 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-ink transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {deleteError && (
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className="mt-3 font-[family-name:var(--font-serif)] text-sm italic text-[oklch(50%_0.18_25)]"
+                  >
+                    {deleteError}
+                  </p>
+                )}
+              </div>
             )}
-          </div>
-        )}
-      </section>
+          </section>
+
+          <p className="pt-2 text-center font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.3em] text-ink-faint">
+            v1.0 · divyavani.co.in
+          </p>
+        </main>
+      </div>
     </div>
   );
 }
 
-// Phase 8.x — "Share Feedback" card + form. Bilingual per founder
-// decision #4. Posts to /api/feedback (validation + best-effort rate
-// limit + honeypot live server-side). Cinematic-dark tokens only,
-// matching the cards above.
+// ── Share Feedback — Dawn card. ALL form behaviour preserved
+// verbatim (honeypot, IME composition guard, 15s timeout, counter,
+// idle/submitting/success(auto-dismiss)/error+retry); only the
+// presentational JSX/classes were restyled to Dawn.
 type FeedbackStatus = "idle" | "submitting" | "success" | "error";
 
 const FB_MSG_MIN = 10;
 const FB_MSG_MAX = 5000;
 const FB_NAME_MAX = 100;
 const FB_FETCH_TIMEOUT_MS = 15000;
+
+const FB_FIELD =
+  "mt-2 w-full rounded-xl border border-[oklch(86%_0.04_70)] bg-white/70 px-4 py-3 font-[family-name:var(--font-serif)] text-base italic text-ink shadow-[0_1px_0_rgba(255,255,255,.6)_inset] placeholder:text-ink-faint/60 focus:border-[oklch(76%_0.12_80)] focus:outline-none focus:ring-2 focus:ring-[oklch(76%_0.12_80_/_0.25)] disabled:opacity-60";
 
 function FeedbackSection() {
   const [name, setName] = useState("");
@@ -300,12 +443,8 @@ function FeedbackSection() {
   const [status, setStatus] = useState<FeedbackStatus>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const composingRef = useRef(false);
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear the pending success-dismiss timer if the user leaves the page
-  // mid-countdown (no setState-after-unmount).
   useEffect(() => {
     return () => {
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
@@ -322,9 +461,6 @@ function FeedbackSection() {
     name.trim().length <= FB_NAME_MAX;
 
   async function submit() {
-    // IME guard — never submit while a Devanagari composition is open
-    // (mirrors the ChatUI compositionActiveRef pattern). Also blocks
-    // double-submit / invalid submit.
     if (composingRef.current) return;
     if (status === "submitting") return;
     if (!canSubmit) return;
@@ -381,24 +517,19 @@ function FeedbackSection() {
   }
 
   return (
-    <section className="fade-up rounded-md border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 p-6 shadow-[0_1px_0_rgba(212,162,74,0.06)_inset,0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md [animation-delay:540ms] [animation-fill-mode:backwards] sm:p-8">
-      <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ivory">
-        Share Feedback
-      </h2>
-      <p className="mt-1 font-devanagari text-base text-brass-dark">
-        अपनी प्रतिक्रिया साझा करें
+    <section
+      id="feedback"
+      className={`fade-up scroll-mt-20 ${CARD} [animation-delay:300ms] [animation-fill-mode:backwards]`}
+    >
+      <CardHeader title="Share feedback" hi="अपनी प्रतिक्रिया साझा करें" />
+      <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+        Tell us how Krishna&apos;s voice is landing for you. Your words
+        help us refine.
       </p>
-
-      <div className="mt-4 space-y-2">
-        <p className="font-serif text-base italic leading-relaxed text-krishna">
-          Tell us how Krishna&apos;s voice is landing for you. Your words
-          help us refine.
-        </p>
-        <p className="font-devanagari text-sm leading-relaxed text-brass-dark">
-          हमें बताएं कि कृष्ण की वाणी आपको कैसी लग रही है। आपके शब्द हमें
-          इसे और बेहतर करने में मदद करते हैं।
-        </p>
-      </div>
+      <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
+        हमें बताएं कि कृष्ण की वाणी आपको कैसी लग रही है। आपके शब्द हमें इसे
+        और बेहतर करने में मदद करते हैं।
+      </p>
 
       <form
         className="mt-6 space-y-4"
@@ -407,9 +538,6 @@ function FeedbackSection() {
           submit();
         }}
       >
-        {/* Honeypot — off-screen, off the tab order, not announced.
-            Real users never see or fill it; the server rejects any
-            non-empty value silently. */}
         <div
           aria-hidden
           className="pointer-events-none absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden opacity-0"
@@ -429,7 +557,7 @@ function FeedbackSection() {
         <div>
           <label
             htmlFor="fb-name"
-            className="block font-serif text-sm italic text-brass-dark"
+            className="block font-[family-name:var(--font-serif)] text-sm italic text-ink-soft"
           >
             Your name (optional) · आपका नाम (वैकल्पिक)
           </label>
@@ -452,14 +580,14 @@ function FeedbackSection() {
               })
             }
             disabled={status === "submitting"}
-            className="mt-2 w-full rounded-2xl border border-gold/25 bg-ink2/65 px-4 py-3 font-serif text-base text-ivory shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] placeholder:text-ivory/30 focus:border-gold focus:shadow-[0_0_0_4px_rgba(212,162,74,0.08)] focus:outline-none disabled:opacity-60"
+            className={FB_FIELD}
           />
         </div>
 
         <div>
           <label
             htmlFor="fb-message"
-            className="block font-serif text-sm italic text-brass-dark"
+            className="block font-[family-name:var(--font-serif)] text-sm italic text-ink-soft"
           >
             Your feedback · आपकी प्रतिक्रिया
           </label>
@@ -482,20 +610,22 @@ function FeedbackSection() {
             }
             disabled={status === "submitting"}
             aria-describedby="fb-counter"
-            className="mt-2 w-full resize-y rounded-2xl border border-gold/25 bg-ink2/65 px-4 py-3 font-serif text-base leading-relaxed text-ivory shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] placeholder:text-ivory/30 focus:border-gold focus:shadow-[0_0_0_4px_rgba(212,162,74,0.08)] focus:outline-none disabled:opacity-60"
+            className={`${FB_FIELD} resize-y not-italic leading-relaxed`}
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <p
-              className="font-serif text-xs italic text-sacred"
+              className="font-[family-name:var(--font-serif)] text-xs italic text-[oklch(53%_0.19_28)]"
               role="status"
               aria-live="polite"
             >
-              {tooShort ? `Please write at least ${FB_MSG_MIN} characters.` : ""}
+              {tooShort
+                ? `Please write at least ${FB_MSG_MIN} characters.`
+                : ""}
             </p>
             <span
               id="fb-counter"
-              className={`shrink-0 font-serif text-xs italic ${
-                counterWarn ? "text-sacred" : "text-brass-dark"
+              className={`shrink-0 font-[family-name:var(--font-serif)] text-xs italic ${
+                counterWarn ? "text-[oklch(53%_0.19_28)]" : "text-ink-faint"
               }`}
             >
               {message.length}/{FB_MSG_MAX}
@@ -506,18 +636,18 @@ function FeedbackSection() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-brass bg-parchment px-6 py-2 font-serif text-sm font-semibold text-devotional-dark transition-colors hover:border-sacred hover:bg-parchment/80 hover:text-sacred focus:outline-none focus:ring-2 focus:ring-devotional/40 disabled:opacity-50"
+          className="inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-6 py-2.5 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:translate-y-0 disabled:opacity-50"
         >
           {status === "submitting"
             ? "Sending… · भेजा जा रहा है…"
-            : "Send Feedback · प्रतिक्रिया भेजें"}
+            : "Send feedback · प्रतिक्रिया भेजें"}
         </button>
 
         {status === "success" && (
           <p
             role="status"
             aria-live="polite"
-            className="font-serif text-sm italic text-peacock"
+            className="font-[family-name:var(--font-serif)] text-sm italic text-[oklch(52%_0.13_205)]"
           >
             Thank you. Your feedback was received. · धन्यवाद। आपकी
             प्रतिक्रिया मिल गई।
@@ -525,13 +655,13 @@ function FeedbackSection() {
         )}
         {status === "error" && (
           <div role="status" aria-live="polite" className="space-y-3">
-            <p className="font-serif text-sm italic text-sacred">
+            <p className="font-[family-name:var(--font-serif)] text-sm italic text-[oklch(53%_0.19_28)]">
               {errorMsg ?? "Something went wrong. Please try again."}
             </p>
             <button
               type="button"
               onClick={submit}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-brass/60 bg-parchment px-5 py-2 font-serif text-sm font-medium text-krishna transition-colors hover:bg-parchment/80 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/55 px-5 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-ink transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
             >
               Retry · पुनः प्रयास करें
             </button>

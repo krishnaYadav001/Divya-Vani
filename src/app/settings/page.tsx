@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import Atmosphere from "../components/Atmosphere";
-import BackToChat from "../components/BackToChat";
 import { BRAND } from "@/lib/brand";
 import { fetchMemory } from "@/lib/supabase";
 import SettingsClient from "./SettingsClient";
@@ -13,97 +12,62 @@ export const metadata: Metadata = {
   title: `Settings — ${BRAND.name.en}`,
   description: `Manage your data and conversation-review preferences for ${BRAND.name.en}.`,
   alternates: { canonical: "/settings" },
-  // Settings is an authenticated-by-cookie surface — keep it out of
-  // search indexes. The page is useful to the cookied user only.
   robots: { index: false, follow: false },
 };
 
+// Dawn Aarti redesign (2026-05-18) — Settings shell. Server component
+// keeps the data fetch + no-session guard; SettingsClient owns the
+// Dawn two-column layout (aside + card stack) and all behaviour
+// (opt-out / delete / feedback). The mock's name/Language/Voice
+// controls have no backend in this app, so only real, wired sections
+// are rendered (no dead controls).
 export default async function SettingsPage() {
   const jar = await cookies();
   const userId = jar.get(USER_COOKIE)?.value;
 
-  // Fresh visitor — no cookie yet. Show the polite empty state with
-  // a CTA to start a conversation. /settings only becomes meaningful
-  // once a user_id exists.
   if (!userId) {
     return <NoSessionState />;
   }
 
   const memory = await fetchMemory(userId);
   const trainingOptOut = memory?.training_opt_out === true;
+  const sevaBalance =
+    typeof memory?.seva_balance === "number" ? memory.seva_balance : 0;
+  const userName = memory?.user_name ?? null;
 
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
-      <Atmosphere mode="corner" intensity={0.6} vignette={1} />
-
-      <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
-        {/* Top-of-page return to /chat — same shared component and
-            placement as /privacy + /terms. /settings previously only
-            had the footer link, so a user had to scroll past every
-            card to get back into the app. */}
-        <BackToChat />
-
-        {/* Staggered page-load reveal per CLAUDE.md frontend-design
-            principle (one orchestrated entrance > scattered micro-
-            interactions). Greeting 0ms → settings card 180ms →
-            danger zone 360ms. */}
-        <header className="fade-up mb-7 [animation-delay:0ms] [animation-fill-mode:backwards]">
-          <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
-            व्यवस्था · settings
-          </p>
-          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal tracking-tight text-ivory">
-            Your Settings
-          </h1>
-          <p className="mt-3 font-serif text-base italic text-gold-dim">
-            Your data, your control
-          </p>
-        </header>
-        <div className="dv-hairline mb-10" />
-
-        <SettingsClient initialOptOut={trainingOptOut} />
-
-        <footer className="fade-up mt-16 border-t border-brass/30 pt-6 text-sm text-brass-dark [animation-delay:540ms] [animation-fill-mode:backwards]">
-          <Link
-            href="/privacy"
-            className="inline-flex min-h-11 items-center font-serif italic underline decoration-brass underline-offset-2 hover:text-peacock"
-          >
-            Privacy Policy
-          </Link>
-          <p className="mt-3">
-            <Link
-              href="/chat"
-              className="underline decoration-brass underline-offset-2 hover:text-peacock"
-            >
-              ← {BRAND.name.en}
-            </Link>
-          </p>
-        </footer>
-      </article>
+    <main className="dv-scroll relative flex-1 overflow-y-auto overflow-x-hidden">
+      <Atmosphere mode="corner" intensity={0.7} vignette={1} />
+      <SettingsClient
+        initialOptOut={trainingOptOut}
+        sevaBalance={sevaBalance}
+        userName={userName}
+      />
     </main>
   );
 }
 
 function NoSessionState() {
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
-      <Atmosphere mode="corner" intensity={0.6} vignette={1} />
-
-      <article className="relative mx-auto w-full max-w-xl px-6 py-20 text-center font-serif text-krishna sm:px-8 sm:py-28">
-        <header className="fade-up mb-6 [animation-delay:0ms] [animation-fill-mode:backwards]">
-          <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal tracking-tight text-ivory">
-            Your Settings
-          </h1>
-        </header>
-        <p className="fade-up font-serif text-base italic leading-relaxed text-krishna/80 [animation-delay:180ms] [animation-fill-mode:backwards]">
+    <main className="dv-scroll relative flex-1 overflow-y-auto">
+      <Atmosphere mode="corner" intensity={0.7} vignette={1} />
+      <div className="relative z-10 mx-auto w-full max-w-xl px-6 py-24 text-center sm:px-8 sm:py-32">
+        <p className="fade-up font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.4em] text-ink-faint [animation-delay:0ms] [animation-fill-mode:backwards]">
+          Settings
+        </p>
+        <h1 className="fade-up mt-4 font-[family-name:var(--font-display)] text-[clamp(2.5rem,7vw,3.5rem)] font-normal leading-[1.02] text-ink [animation-delay:90ms] [animation-fill-mode:backwards]">
+          Your own room.
+        </h1>
+        <p className="fade-up mt-4 font-[family-name:var(--font-serif)] text-lg italic leading-relaxed text-ink-soft [animation-delay:180ms] [animation-fill-mode:backwards]">
           Start a conversation first to manage your data.
         </p>
         <Link
           href="/chat"
-          className="fade-up mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-krishna px-6 py-2 font-serif text-sm font-medium text-parchment shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-colors hover:bg-krishna/90 [animation-delay:360ms] [animation-fill-mode:backwards]"
+          className="fade-up mt-8 inline-flex min-h-12 items-center justify-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-7 py-3 font-[family-name:var(--font-display)] text-sm tracking-[0.06em] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] [animation-delay:270ms] [animation-fill-mode:backwards]"
         >
           Open chat
         </Link>
-      </article>
+      </div>
     </main>
   );
 }
