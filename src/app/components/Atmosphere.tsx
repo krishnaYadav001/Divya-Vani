@@ -1,91 +1,121 @@
-// Phase 8 cinematic-dark redesign — atmospheric Krishna vignette.
+// Atmosphere — Dawn Aarti redesign (2026-05-18).
 //
-// Renders the founder-supplied Krishna image (public/krishna.jpg) as a
-// vignetted background masked into a soft elliptical pool that fades to
-// pure black at the edges, plus an outer vignette, a warm tone wash,
-// and faint film grain. `mode` picks the crop + intensity per surface
-// so each page feels distinct without changing the asset.
+// The z-0 ground on every page: a soft watercolor wash, drifting
+// petals + sparkle motes (the <Petals> layer), an optional masked
+// fresco vignette (the founder's pastel Pichwai dawn painting — used
+// on the landing hero only), and an optional paper-grain overlay.
+// Supersedes the Phase 8 dark Krishna vignette.
 //
-// Purely presentational — aria-hidden + pointer-events-none — so it
-// never interferes with the chat/disclaimer/identity layers stacked
-// above it (Locked Decision #1: the disclaimer must stay legible over
-// this; callers keep the disclaimer on an opaque/blurred surface).
+// The `mode` / `intensity` / `vignette` prop API is preserved exactly
+// so existing callers (ChatUI, settings, privacy, terms) keep
+// working; `mode` is reinterpreted for Dawn (hero = fresco + dense
+// petals, chat = light petals + sparkles, deep/mobile/distant =
+// reduced density). New optional props (`density`, `fresco`, `grain`)
+// override the per-mode defaults. Purely presentational —
+// aria-hidden + pointer-events-none — so it never interferes with the
+// content / disclaimer / identity layers above it (Locked Decision
+// #1: callers keep the disclaimer on an opaque/blurred surface).
+//
+// Fresco fallback: if /dawn-fresco.jpg 404s the layer is simply
+// transparent and the wash shows through — never a blank ground.
+
+import Petals from "./motifs/Petals";
 
 type Mode = "hero" | "chat" | "corner" | "deep" | "mobile" | "distant";
 
 const CONFIGS: Record<
   Mode,
-  { pos: string; scale: number; opacity: number; blur: number }
+  { density: number; fresco: boolean; grain: boolean }
 > = {
-  hero: { pos: "72% 50%", scale: 1.05, opacity: 0.85, blur: 0 },
-  chat: { pos: "50% 35%", scale: 1.4, opacity: 0.32, blur: 2 },
-  corner: { pos: "92% 8%", scale: 0.95, opacity: 0.55, blur: 0 },
-  deep: { pos: "50% 50%", scale: 1.6, opacity: 0.18, blur: 6 },
-  mobile: { pos: "50% 30%", scale: 1.8, opacity: 0.28, blur: 3 },
-  distant: { pos: "85% 60%", scale: 0.7, opacity: 0.45, blur: 0 },
+  hero: { density: 85, fresco: true, grain: true },
+  chat: { density: 45, fresco: false, grain: false },
+  corner: { density: 30, fresco: false, grain: false },
+  deep: { density: 18, fresco: false, grain: false },
+  mobile: { density: 25, fresco: false, grain: false },
+  distant: { density: 22, fresco: false, grain: false },
 };
-
-const GRAIN =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.8 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")";
 
 export default function Atmosphere({
   mode = "hero",
   intensity = 1,
   vignette = 1,
+  density,
+  fresco,
+  grain,
 }: {
   mode?: Mode;
   intensity?: number;
   vignette?: number;
+  /** Override the per-mode petal/sparkle density (0–100). */
+  density?: number;
+  /** Force the fresco vignette on/off (default: per mode). */
+  fresco?: boolean;
+  /** Force the paper grain on/off (default: per mode). */
+  grain?: boolean;
 }) {
   const c = CONFIGS[mode] ?? CONFIGS.hero;
-  const op = Math.max(0, Math.min(1, c.opacity * intensity));
-  const mask = `radial-gradient(ellipse 60% 70% at ${c.pos}, black 0%, black 30%, rgba(0,0,0,0.4) 60%, transparent 85%)`;
+  const resolvedDensity = Math.max(
+    0,
+    Math.min(100, (density ?? c.density) * intensity),
+  );
+  const showFresco = fresco ?? c.fresco;
+  const showGrain = grain ?? c.grain;
+  const edge = Math.max(0, Math.min(1, vignette));
+
+  const frescoMask =
+    "radial-gradient(ellipse 75% 80% at 50% 45%, rgba(0,0,0,1) 35%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0) 100%)";
 
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden bg-ink0"
+      className={`dawn-wash-soft pointer-events-none absolute inset-0 overflow-hidden ${
+        showGrain ? "dawn-grain" : ""
+      }`}
     >
-      {/* Krishna image — masked into a soft elliptical pool */}
-      <div
-        className="absolute inset-0 bg-no-repeat"
-        style={{
-          backgroundImage: "url(/krishna.jpg)",
-          backgroundSize: `${c.scale * 100}% auto`,
-          backgroundPosition: c.pos,
-          opacity: op,
-          filter: c.blur ? `blur(${c.blur}px)` : "none",
-          maskImage: mask,
-          WebkitMaskImage: mask,
-        }}
-      />
-      {/* Outer vignette — heavy black at the corners */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse 75% 90% at center, transparent 0%, transparent 35%, rgba(0,0,0,${
-            0.55 * vignette
-          }) 70%, rgba(0,0,0,${0.95 * vignette}) 100%)`,
-        }}
-      />
-      {/* Warm tone wash rising from the base */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 100%, rgba(122,40,32,0.06), transparent 50%)",
-          mixBlendMode: "screen",
-        }}
-      />
-      {/* Faint film grain */}
-      <div
-        className="absolute inset-0"
-        style={{
-          opacity: 0.04,
-          mixBlendMode: "overlay",
-          backgroundImage: GRAIN,
-        }}
-      />
+      {/* Fresco vignette — the founder's pastel dawn painting, masked
+          to a soft pool. Background-image so a 404 just yields a
+          transparent layer over the wash (never blank). */}
+      {showFresco && (
+        <>
+          <div
+            className="absolute inset-0 bg-cover"
+            style={{
+              backgroundImage: "url(/dawn-fresco.jpg)",
+              backgroundPosition: "center",
+              backgroundColor: "var(--color-mist-2)",
+              opacity: 0.5,
+              filter: "saturate(0.85) brightness(1.05) blur(0.5px)",
+              maskImage: frescoMask,
+              WebkitMaskImage: frescoMask,
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, oklch(94% 0.04 50 / .35) 0%, transparent 40%, oklch(94% 0.04 280 / .35) 100%)",
+            }}
+          />
+        </>
+      )}
+
+      {/* Drifting petals + sparkles (CSS-only; reduced-motion handled
+          in globals.css). */}
+      <Petals density={resolvedDensity} />
+
+      {/* Soft cream edge vignette — the light-ground inverse of the
+          old black vignette; keeps page edges calm without darkening
+          the pastel ground. */}
+      {edge > 0 && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse 80% 92% at center, transparent 0%, transparent 55%, oklch(98.5% 0.006 70 / ${
+              0.4 * edge
+            }) 82%, oklch(98.5% 0.006 70 / ${0.75 * edge}) 100%)`,
+          }}
+        />
+      )}
     </div>
   );
 }
