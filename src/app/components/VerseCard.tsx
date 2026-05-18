@@ -11,18 +11,16 @@ import {
   tryParseReference,
 } from "@/lib/referenceParser";
 
-// VerseCardList + VerseCard — extracted from ChatUI.tsx in Phase 2.5.
-// Phase 2.5 deliverables on this surface:
-//   2.5.3 — source-tinted pill (acts as the badge in collapsed view)
-//           + explicit badge chip in expanded header
-//           + 44px touch target on the collapsed pill (was 28px, failed AA)
-//   2.5.4 — formatReferenceLabel + Hindi/English label per user lang
-//           (parent ChatUI computes lang from the most recent user
-//           message and threads it down through MessageCard)
-//   2.5.5 — empty-Sanskrit handling: omit Sanskrit + transliteration
-//           panes; append a brass-toned footer caveat noting the
-//           Phase 9+ Sanskrit-alignment audit is still pending
-//           (MBh + Bhagavata rows have sanskrit = '')
+// VerseCardList + VerseCard — Dawn Aarti rebuild (2026-05-18) to the
+// handoff verse-leaf mock (dawn-chat.jsx → ChatVerse): a tone-tinted
+// collapsed chip ("GITA 2.14 ↓") that inflates into a paper "leaf" —
+// label small-caps + sindoor dot, Sanskrit (Tiro), hairline,
+// transliteration, Hindi gloss, English italic, then a "TAP TO
+// COLLAPSE" row. ALL behaviour preserved (expand state, reference
+// parsing, per-source badge, lang routing, empty-Sanskrit caveat) —
+// only presentational classes changed. The mock's SAVE / SHARE
+// affordances have no backend in this app and are intentionally NOT
+// rendered as dead controls.
 
 export function VerseCardList({
   verses,
@@ -57,17 +55,14 @@ function VerseCard({
   const badgeText = source ? SOURCE_BADGE_LABEL[source].short[lang] : "";
   const ariaLabel = source ? SOURCE_BADGE_LABEL[source].aria : "Verse";
   const hasSanskrit = verse.sanskrit.trim().length > 0;
+  const hiFont = "font-[family-name:var(--font-devanagari)]";
+  const enFont = "font-[family-name:var(--font-serif)]";
   const footerCaveat =
     lang === "hi"
       ? "संस्कृत संरेखण: फेज 9+ ऑडिट लंबित"
       : "Sanskrit alignment: Phase 9+ audit pending";
 
   if (!expanded) {
-    // Collapsed pill IS the badge. Source-tinted background + border
-    // doubles as visual identifier. Founder shrunk 44 → 32px on
-    // 2026-05-05 for visual density; this re-introduces a WCAG 2.5.5
-    // touch-target fail — bump back to min-h-11 + px-3.5 + py-2 if
-    // mobile mis-tapping shows up in beta.
     return (
       <button
         type="button"
@@ -75,80 +70,101 @@ function VerseCard({
         aria-expanded={false}
         aria-label={`${ariaLabel}: ${label}`}
         className={
-          "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors hover:brightness-95 " +
-          (badgeClasses || "border-zinc-200 bg-white text-zinc-700")
+          "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs tracking-[0.06em] shadow-[0_1px_2px_oklch(40%_0.04_30_/_0.08)] transition-transform hover:-translate-y-0.5 " +
+          (badgeClasses || "border-[oklch(86%_0.04_70)] bg-white/70 text-ink")
         }
       >
-        <span aria-hidden>📖</span>
-        <span className={lang === "hi" ? "font-devanagari" : "font-serif"}>
+        <span
+          className={`uppercase ${lang === "hi" ? hiFont : enFont} ${
+            lang === "hi" ? "" : "not-italic"
+          }`}
+        >
           {label}
+        </span>
+        <span aria-hidden className="text-ink-faint">
+          ↓
         </span>
       </button>
     );
   }
 
   return (
-    <div className="mt-1 w-full rounded-2xl border border-brass/40 bg-parchment px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {source && (
-            <span
-              className={
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide " +
-                badgeClasses
-              }
-              aria-label={ariaLabel}
-            >
-              {badgeText}
-            </span>
-          )}
+    <div className="mt-1 w-full overflow-hidden rounded-xl border border-[oklch(86%_0.04_70)] bg-linear-to-b from-[oklch(98%_0.012_80)] to-[oklch(95%_0.025_60)] shadow-[0_1px_3px_oklch(40%_0.04_30_/_0.06)]">
+      {/* Gold hairline at the very top of the leaf */}
+      <div
+        aria-hidden
+        className="h-px w-full bg-linear-to-r from-transparent via-[oklch(76%_0.12_80_/_0.5)] to-transparent"
+      />
+      <div className="px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
           <p
-            className={
-              "text-xs text-krishna/80 " +
-              (lang === "hi" ? "font-devanagari" : "font-serif")
-            }
+            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-soft ${
+              lang === "hi" ? hiFont : ""
+            }`}
+            aria-label={ariaLabel}
           >
+            {badgeText ? `${badgeText} · ` : ""}
             {label}
           </p>
+          <span
+            aria-hidden
+            className="mt-0.5 h-3 w-3 shrink-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 35% 35%, oklch(60% 0.2 30), oklch(45% 0.18 25))",
+            }}
+          />
         </div>
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          aria-expanded={true}
-          aria-label="Close verse"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm text-krishna/50 hover:bg-brass/10 hover:text-krishna"
-        >
-          ✕
-        </button>
-      </div>
-      <div className="mt-2 space-y-2 leading-relaxed">
-        {hasSanskrit && (
-          <p className="whitespace-pre-wrap font-serif text-base text-krishna">
-            {verse.sanskrit}
+
+        <div className="mt-3 space-y-3 leading-relaxed">
+          {hasSanskrit && (
+            <p
+              className={`whitespace-pre-wrap ${hiFont} text-[15px] leading-[1.7] text-ink`}
+            >
+              {verse.sanskrit}
+            </p>
+          )}
+          {hasSanskrit && verse.transliteration && (
+            <p
+              className={`whitespace-pre-wrap border-t border-[oklch(88%_0.03_70)] pt-3 ${enFont} text-xs italic text-ink-faint`}
+            >
+              {verse.transliteration}
+            </p>
+          )}
+          <p
+            className={`whitespace-pre-wrap ${hiFont} text-[13px] leading-[1.7] text-ink`}
+          >
+            {verse.hindi}
+          </p>
+          <p
+            className={`whitespace-pre-wrap ${enFont} text-sm italic leading-relaxed text-ink-soft`}
+          >
+            {verse.english}
+          </p>
+        </div>
+
+        {!hasSanskrit && (
+          <p
+            className={`mt-3 border-t border-[oklch(88%_0.03_70)] pt-2 text-[11px] italic text-ink-faint ${
+              lang === "hi" ? hiFont : enFont
+            }`}
+          >
+            {footerCaveat}
           </p>
         )}
-        {hasSanskrit && verse.transliteration && (
-          <p className="whitespace-pre-wrap text-xs italic text-krishna/60">
-            {verse.transliteration}
-          </p>
-        )}
-        <p className="whitespace-pre-wrap font-devanagari text-sm leading-relaxed text-krishna">
-          {verse.hindi}
-        </p>
-        <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed text-krishna/80">
-          {verse.english}
-        </p>
+
+        <div className="mt-4 border-t border-[oklch(88%_0.03_70)] pt-3">
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            aria-expanded={true}
+            aria-label="Collapse verse"
+            className="inline-flex min-h-8 items-center gap-1.5 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.24em] text-ink-faint transition-colors hover:text-ink"
+          >
+            <span aria-hidden>↑</span> Tap to collapse
+          </button>
+        </div>
       </div>
-      {!hasSanskrit && (
-        <p
-          className={
-            "mt-3 border-t border-brass/30 pt-2 text-[11px] italic text-brass-dark/90 " +
-            (lang === "hi" ? "font-devanagari" : "font-serif")
-          }
-        >
-          {footerCaveat}
-        </p>
-      )}
     </div>
   );
 }
