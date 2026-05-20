@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { BRAND } from "@/lib/brand";
-import { scriptFontClass } from "@/lib/devanagari";
 import Atmosphere from "./components/Atmosphere";
 import Wordmark from "./components/motifs/Wordmark";
 import DevoteeSilhouettes from "./components/motifs/DevoteeSilhouettes";
@@ -22,13 +21,6 @@ export const metadata: Metadata = {
 // Decision #1 is satisfied by a single subtle line + the permanent
 // in-chat disclaimer.
 
-const CHIPS = [
-  "मन शांत नहीं है",
-  "I can't forgive him",
-  "काम में जी नहीं लगता",
-  "Tell me about karma",
-];
-
 const SANSKRIT = "“कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।”";
 
 const ARCH_SHADOW =
@@ -47,7 +39,12 @@ export default function Landing() {
           <nav className="flex items-center gap-6 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.26em] text-ink-soft sm:gap-8">
             <span className="hidden sm:inline">About</span>
             <span className="hidden sm:inline">Sevā</span>
-            <span className="hidden sm:inline">Verses</span>
+            <Link
+              href="/demo"
+              className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
+            >
+              EXAMPLES
+            </Link>
             <Link
               href="/chat"
               className="inline-flex min-h-9 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-1.5 text-[11px] tracking-[0.2em] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
@@ -128,24 +125,18 @@ export default function Landing() {
                   · Ask the first thing
                 </span>
               </Link>
+              <Link
+                href="/demo"
+                className="inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 font-[family-name:var(--font-devanagari)] text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2"
+              >
+                एक झलक
+                <span className="ml-2 font-[family-name:var(--font-serif)] text-sm italic text-ink-soft">
+                  · A glimpse →
+                </span>
+              </Link>
               <span className="font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-soft">
                 10 निःशुल्क संदेश
               </span>
-            </div>
-
-            {/* Featured-question chips — single row on desktop */}
-            <div className="mt-5 flex flex-wrap gap-2 lg:flex-nowrap">
-              {CHIPS.map((c) => (
-                <Link
-                  key={c}
-                  href="/chat"
-                  className={`inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full border border-[oklch(86%_0.04_70)] bg-white/50 px-3.5 py-1.5 text-[13px] leading-none text-ink transition-colors hover:bg-white/75 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${scriptFontClass(
-                    c,
-                  )}`}
-                >
-                  {c}
-                </Link>
-              ))}
             </div>
 
             {/* Sanskrit quote */}

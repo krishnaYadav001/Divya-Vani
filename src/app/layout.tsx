@@ -127,7 +127,7 @@ export default function RootLayout({
             href="/demo"
             className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
           >
-            Demo
+            Examples
           </Link>
           <span aria-hidden className="text-brass">
             ·

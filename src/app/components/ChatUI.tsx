@@ -1077,6 +1077,30 @@ export default function ChatUI() {
                 </svg>
               </button>
             )}
+            {/* /demo link — small "examples" affordance for visitors who
+                landed straight on /chat (Reddit/X traffic) and want to
+                see what conversations look like. Icon-only on mobile to
+                fit the 360px header alongside disclaimer/Settings/Seva;
+                Tiro Devanagari label fades in from sm+. Sparkle glyph
+                matches the ✦ ornaments used on /demo itself. */}
+            <Link
+              href="/demo"
+              aria-label="See examples · एक झलक"
+              title="See examples · एक झलक"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40 sm:px-2.5"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path d="M12 2L13.6 10.4L22 12L13.6 13.6L12 22L10.4 13.6L2 12L10.4 10.4L12 2Z" />
+              </svg>
+              <span className="hidden font-devanagari text-sm leading-none text-brass-dark sm:inline">
+                एक झलक
+              </span>
+            </Link>
             <Link
               href="/settings"
               aria-label="Settings · सेटिंग्स"

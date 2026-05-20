@@ -251,9 +251,6 @@ export default function DemoPage() {
               · Begin
             </span>
           </Link>
-          <span className="font-[family-name:var(--font-devanagari)] text-sm leading-relaxed text-ink-faint">
-            10 निःशुल्क संदेश
-          </span>
         </section>
       </div>
     </main>
