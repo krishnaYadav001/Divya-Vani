@@ -124,6 +124,15 @@ export default function RootLayout({
             HIG and Google MWG. Static © text stays inline. */}
         <footer className="shrink-0 py-3 text-center text-sm text-brass-dark">
           <Link
+            href="/demo"
+            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
+          >
+            Demo
+          </Link>
+          <span aria-hidden className="text-brass">
+            ·
+          </span>
+          <Link
             href="/privacy"
             className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
           >

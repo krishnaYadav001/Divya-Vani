@@ -1,0 +1,30 @@
+{
+  "videos": [
+    { "id": "PLACEHOLDER_ID_1", "title_hi": "जल्द आ रहा है", "title_en": "Coming soon" },
+    { "id": "PLACEHOLDER_ID_2", "title_hi": "जल्द आ रहा है", "title_en": "Coming soon" },
+    { "id": "PLACEHOLDER_ID_3", "title_hi": "जल्द आ रहा है", "title_en": "Coming soon" }
+  ],
+  "screenshots": [
+    { "src": "/demo/placeholder-1.png", "alt_hi": "Krishna के साथ बातचीत", "alt_en": "Conversation with Krishna" },
+    { "src": "/demo/placeholder-2.png", "alt_hi": "Krishna के साथ बातचीत", "alt_en": "Conversation with Krishna" },
+    { "src": "/demo/placeholder-3.png", "alt_hi": "Krishna के साथ बातचीत", "alt_en": "Conversation with Krishna" },
+    { "src": "/demo/placeholder-4.png", "alt_hi": "Krishna के साथ बातचीत", "alt_en": "Conversation with Krishna" }
+  ],
+  "examples": [
+    {
+      "question_lang": "hi",
+      "question": "मन बहुत भारी है आज, कुछ समझ नहीं आ रहा।",
+      "reply": "थोड़ी देर बैठो। साँस लो। जो भारीपन है, उसे बाहर निकालने की जल्दी मत करो — पहले देखो वो क्या कह रहा है। कभी-कभी मन अपनी ही बात सुनाना चाहता है, और हम सुनते नहीं।"
+    },
+    {
+      "question_lang": "en",
+      "question": "I keep comparing myself to everyone on Instagram. It's exhausting.",
+      "reply": "Sit with that exhaustion for a moment. The comparing is a habit the mind has picked up — it isn't who you are. Step back. Look at what is actually in your hands right now, not what's on the screen."
+    },
+    {
+      "question_lang": "hi",
+      "question": "पापा से कल फिर झगड़ा हो गया। माफ़ी कैसे माँगूँ?",
+      "reply": "पहले अपने आप से पूछो — माफ़ी किस बात की? गलती की, या रिश्ते को बचाने की? दोनों जगह जवाब अलग होगा। और एक बात याद रखो — माफ़ी शब्दों से नहीं, बैठ कर बात करने से शुरू होती है।"
+    }
+  ]
+}
