@@ -189,6 +189,13 @@ class VoiceSession {
     for (const cb of this.listeners) cb(this.state, { safety: card });
   }
 
+  // Phase 10.6 — diagnostic trace of the loop (mirrors the [chat]/[tts] log
+  // style). Lets a stuck session be pinpointed: speech-end fired? transcript
+  // empty? chat reply empty? tts ok? playback started/ended?
+  private dbg(...args: unknown[]): void {
+    console.log("[voice]", ...args);
+  }
+
   // ── audio element listeners ───────────────────────────────────────────
   private onAudioEnded = (): void => {
     if (this.isEnded()) return;
@@ -198,6 +205,7 @@ class VoiceSession {
     }
     if (this.playingPhase === "real") {
       // Krishna's real reply finished.
+      this.dbg("reply audio ended → breath → listening");
       this.playingPhase = "none";
       this.stopSpeakingAnalyser();
       this.revokeLastReal();
@@ -331,6 +339,9 @@ class VoiceSession {
           // One utterance == one turn; only count utterances while listening
           // (no barge-in). The floated promise is caught so an abort/teardown
           // never becomes an unhandled rejection.
+          this.dbg(
+            `onSpeechEnd: state=${this.state} samples=${audio.length}`,
+          );
           if (this.state !== "listening") return;
           this.handleUtterance(audio).catch((e) => {
             if (!isAbortError(e)) console.error("[voiceSession] turn failed:", e);
@@ -487,6 +498,7 @@ class VoiceSession {
     if (!this.turnRealUrl || !this.audioEl) return;
     this.playingPhase = "real";
     this.waitingForReal = false;
+    this.dbg(`playReal: ctx=${this.audioCtx?.state ?? "none"}`);
     try {
       this.audioEl.src = this.turnRealUrl;
       this.audioEl.currentTime = 0;
@@ -521,6 +533,7 @@ class VoiceSession {
       if (!res.ok) throw new Error(`transcribe HTTP ${res.status}`);
       const data = (await res.json()) as { text?: string };
       transcript = (data.text ?? "").trim();
+      this.dbg(`transcript (${transcript.length} chars): ${JSON.stringify(transcript.slice(0, 80))}`);
     } catch (e) {
       if (this.aborted(signal) || isAbortError(e)) return;
       this.setTurnError(
@@ -533,6 +546,7 @@ class VoiceSession {
 
     // Nothing parseable → quietly stop the filler and re-open the mic.
     if (!transcript) {
+      this.dbg("empty transcript → back to listening");
       this.cancelTurnToListening();
       return;
     }
@@ -585,7 +599,9 @@ class VoiceSession {
       return;
     }
 
+    this.dbg(`chat reply: ${reply.length} chars, safety=${!!safety}`);
     if (!reply) {
+      this.dbg("empty reply → back to listening");
       this.cancelTurnToListening();
       return;
     }
@@ -619,6 +635,7 @@ class VoiceSession {
       const blob = await res.blob();
       if (this.isEnded()) return;
       const url = URL.createObjectURL(blob);
+      this.dbg(`tts ok: ${(blob.size / 1024).toFixed(1)} KB → queueing reply audio`);
       this.onRealReady(url);
     } catch (e) {
       if (this.aborted(signal) || isAbortError(e)) return;
@@ -959,6 +976,7 @@ class VoiceSession {
   }
 
   private failError(err: VoiceError): void {
+    this.dbg(`error: code=${err.code} recoverable=${err.recoverable} — ${err.message}`);
     this.stopAudio();
     this.stopSpeakingAnalyser();
     this.clearSafetyCap();
