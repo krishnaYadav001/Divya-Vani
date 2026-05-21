@@ -37,16 +37,19 @@ import { hasVoiceAccess } from "@/lib/voiceAccess";
 // Pipeline: validate → auth (cookie) → paywall (verified payment) →
 // rate limit (per-user + site-wide 24h caps) → strip markup + word-cap →
 // tag injection → content-addressed cache (Supabase Storage) →
-// ElevenLabs v3 stream (tee'd: one branch to the client, one to the
+// ElevenLabs stream (tee'd: one branch to the client, one to the
 // cache). Telemetry stores hashes only (DPDP-aligned). All third-party
 // keys (ElevenLabs, Supabase service role) stay server-only.
 //
 // Phase 10.6 — voice mode: callers send `mode: "voice"` for the low-latency
 // path: a 60-word cap + a single static mode-default tag, SKIPPING the Haiku
-// tagger entirely. The model stays eleven_v3 in BOTH modes (quality parity);
-// the latency win is the skipped Haiku round-trip + shorter audio, never a
-// model switch. Default mode (flag omitted) keeps the full Haiku flow + the
+// tagger entirely. Default mode (flag omitted) keeps the full Haiku flow + the
 // 100-word cap unchanged.
+//
+// Phase 10.7 — voice mode also switches the model to eleven_turbo_v2_5 (much
+// lower TTS inference latency than v3; voice mode already skips Haiku tags so
+// it loses nothing by dropping v3's audio-tag support). Default mode stays on
+// eleven_v3 (DEFAULT_MODEL) for quality parity with the chat-side play path.
 //
 // Node runtime: needs crypto (SHA-256), Buffer, the ElevenLabs Node SDK,
 // and the Supabase service client. maxDuration headroom for the v3 call.
@@ -70,6 +73,11 @@ const MAX_REPLY_WORDS = intFromEnv("VOICE_MAX_REPLY_WORDS", 100);
 // Phase 10.6 — voice mode hears shorter, snappier replies. Sonnet's full
 // reply still lives in /api/chat history; only the audio is truncated.
 const VOICE_MODE_MAX_WORDS = 60;
+
+// Phase 10.7 — voice mode's TTS model. Turbo v2.5 trades v3's audio-tag
+// support (which voice mode already forgoes) for markedly lower inference
+// latency. Default mode keeps DEFAULT_MODEL (eleven_v3) untouched.
+const VOICE_MODE_MODEL = "eleven_turbo_v2_5";
 
 // Phase 10.6 — the single static tag voice mode wraps the reply in (skipping
 // Haiku). Mirrors voiceTagInjector's private MODE_DEFAULT_TAG; kept inline
@@ -227,10 +235,12 @@ export async function POST(req: Request) {
     ({ taggedText, mode, tagCount } = await injectTags(spokenText, modeHint));
   }
 
-  // Config snapshot for cache key + telemetry. The model stays eleven_v3 in
-  // both modes — voice mode's win is skipping Haiku, not switching model.
+  // Config snapshot for cache key + telemetry. Phase 10.7: voice mode uses
+  // eleven_turbo_v2_5 (lower latency); default mode keeps DEFAULT_MODEL
+  // (eleven_v3). The chosen model flows through to the cache key, the
+  // ElevenLabs call, telemetry, and the stored row, so all four agree.
   const voiceId = DEFAULT_VOICE_ID;
-  const model = DEFAULT_MODEL;
+  const model = isVoiceMode ? VOICE_MODE_MODEL : DEFAULT_MODEL;
   const stability = DEFAULT_STABILITY;
   // Fold the effective word-cap into the cache key so a 60-word voice-mode
   // entry never collides with a 100-word default-mode entry from the same
