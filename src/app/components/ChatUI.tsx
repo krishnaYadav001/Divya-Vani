@@ -19,6 +19,8 @@ const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
+import VoicePlayButton from "./VoicePlayButton";
+import { setAudioElement, stopVoice } from "@/lib/voiceClient";
 import Flute from "./motifs/Flute";
 import Bansuri from "./motifs/Bansuri";
 import DiyaIcon from "./motifs/DiyaIcon";
@@ -131,6 +133,11 @@ export default function ChatUI() {
   const sentryReportedRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Phase 10.2 — the single shared <audio> element the voiceClient
+  // singleton drives for every per-reply play button. Registered on
+  // mount; stopVoice + detach on unmount so audio never keeps playing
+  // after leaving /chat (voice edge case 3).
+  const voiceAudioRef = useRef<HTMLAudioElement>(null);
 
   // Phase 5.5 — auto-grow the chat textarea up to ~6 lines, then scroll
   // internally past that. height: auto on every change resets layout so
@@ -149,6 +156,16 @@ export default function ChatUI() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, isSending]);
+
+  // Phase 10.2 — register the shared <audio> with the voiceClient
+  // singleton on mount; stop playback + detach on unmount.
+  useEffect(() => {
+    setAudioElement(voiceAudioRef.current);
+    return () => {
+      stopVoice();
+      setAudioElement(null);
+    };
+  }, []);
 
   // Phase 6.x — re-arm the auto-collapse timer every time disclaimerExpanded
   // flips back to true. Mount fires once with true → 5s → false. Tapping the
@@ -1224,6 +1241,12 @@ export default function ChatUI() {
                   message={m}
                   userLang={resolveUserLang(messages, i)}
                   onPaywallSuccess={() => handlePaywallSuccess(m.id)}
+                  isStreaming={
+                    isSending &&
+                    i === messages.length - 1 &&
+                    m.role === "assistant"
+                  }
+                  onVoicePaywall={() => setIsDiyaOpen(true)}
                 />
               ))}
               {isSending && messages[messages.length - 1]?.role === "user" && (
@@ -1255,6 +1278,11 @@ export default function ChatUI() {
           </div>
         </>
       )}
+
+      {/* Phase 10.2 — single shared, hidden audio element. Driven entirely
+          by the voiceClient singleton (src/lib/voiceClient.ts) via
+          setAudioElement(); no visible controls, never auto-plays. */}
+      <audio ref={voiceAudioRef} preload="none" className="hidden" />
     </main>
   );
 }
@@ -1295,10 +1323,14 @@ function MessageCard({
   message,
   userLang,
   onPaywallSuccess,
+  isStreaming,
+  onVoicePaywall,
 }: {
   message: Message;
   userLang: "hi" | "en";
   onPaywallSuccess: () => void;
+  isStreaming: boolean;
+  onVoicePaywall: () => void;
 }) {
   const isUser = message.role === "user";
   const hasVerses =
@@ -1308,6 +1340,14 @@ function MessageCard({
     message.paywall === true &&
     Array.isArray(message.tiers) &&
     message.tiers.length > 0;
+  // Phase 10.2 — voice play button on every finished Krishna reply.
+  // Hidden on: user messages, paywall replies (no Krishna prose to speak),
+  // empty bubbles, and the still-streaming reply (voice edge cases 6/8/9).
+  const showVoice =
+    !isUser &&
+    !showPaywall &&
+    !isStreaming &&
+    message.content.trim().length > 0;
   // Pick font from this message's OWN content language. Krishna's
   // first-time greeting is always Hindi even when the user wrote
   // English, so userLang (used for verse-card labels) is the wrong
@@ -1378,6 +1418,15 @@ function MessageCard({
         )}
         {showPaywall && (
           <SevaPaywall tiers={message.tiers!} onSuccess={onPaywallSuccess} />
+        )}
+        {showVoice && (
+          <div className="mt-1.5 flex justify-end">
+            <VoicePlayButton
+              replyId={message.id}
+              text={message.content}
+              onPaywall={onVoicePaywall}
+            />
+          </div>
         )}
       </div>
     </div>
