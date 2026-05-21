@@ -75,9 +75,18 @@ interface TranscriptTurn {
 
 // VAD config — mirrors ChatUI's Sarvam mic exactly (Phase 8.0). The
 // per-utterance silence (redemptionMs) ends an UTTERANCE; in voice mode one
-// utterance == one conversational turn (the flow in the spec: speak → end →
-// transcribe → reply), so we pause the VAD on the first onSpeechEnd and
-// resume it only when we return to listening.
+// utterance == one conversational turn (speak → end → transcribe → reply).
+//
+// The VAD runs CONTINUOUSLY for the whole session — we do NOT pause/start it
+// per turn. The library's pause() calls track.stop() and start() re-acquires
+// the mic via getUserMedia, so per-turn pause/start would (a) churn the mic
+// indicator + add latency every turn and (b) float an un-awaitable
+// getUserMedia that can reject with AbortError. Instead we GATE onSpeechEnd +
+// amplitude by state: utterances detected while not "listening" (e.g. the
+// mic catching Krishna's own voice) are ignored — no barge-in (edge case 8).
+// The library's getUserMedia sets echoCancellation:true, which suppresses the
+// speaker output from the mic input during speaking. Only background
+// pause/resume touches the mic, and those are awaited + abort-swallowed.
 const VAD_OPTIONS = {
   baseAssetPath: "/vad/",
   onnxWASMBasePath: "/vad/",
@@ -95,9 +104,10 @@ const SAFETY_CAP_MS = 60_000;
 const BREATH_GAP_MS = 400;
 
 // Minimal MicVAD surface we rely on (the library types its instance, but the
-// dynamic import is loosely shaped, so we narrow to what we call).
+// dynamic import is loosely shaped, so we narrow to what we call). The library
+// methods are async; we always await them with an abort-swallowing catch.
 interface MicVadInstance {
-  start: () => void;
+  start: () => Promise<void> | void;
   pause: () => Promise<void> | void;
   destroy: () => Promise<void> | void;
 }
@@ -286,11 +296,15 @@ class VoiceSession {
           this.emitAmplitude(rms(frame));
         },
         onSpeechEnd: (audio: Float32Array) => {
-          // One utterance == one turn. Only the first onSpeechEnd while
-          // listening counts; ignore anything that arrives in another state
-          // (e.g. mic catching Krishna's own voice — no barge-in, edge 8).
+          // One utterance == one turn. Only utterances detected while
+          // listening count; ignore anything in another state (e.g. mic
+          // catching Krishna's own voice — no barge-in, edge 8). The floated
+          // promise is caught so an abort/teardown never becomes an unhandled
+          // rejection (which Next's dev overlay would surface).
           if (this.state !== "listening") return;
-          void this.handleUtterance(audio);
+          this.handleUtterance(audio).catch((e) => {
+            if (!isAbortError(e)) console.error("[voiceSession] turn failed:", e);
+          });
         },
       });
 
@@ -305,7 +319,9 @@ class VoiceSession {
       }
 
       this.vad = vad as unknown as MicVadInstance;
-      this.vad.start();
+      // startOnLoad already begins listening; this awaited start() is a
+      // no-op-if-already-listening that we await + catch so nothing floats.
+      await this.startVad();
       this.emit("listening", { amplitude: 0 });
     } catch (e) {
       // MicVAD.new() calls getUserMedia internally — permission / hardware
@@ -330,9 +346,9 @@ class VoiceSession {
 
   // ── one conversational turn ──────────────────────────────────────────
   private async handleUtterance(audio: Float32Array): Promise<void> {
-    // Stop the mic for the rest of the turn (no barge-in; also stops the
-    // mic catching the upcoming TTS through the speakers).
-    await this.pauseVad();
+    // The VAD keeps running; leaving "listening" gates further onSpeechEnd +
+    // amplitude (no barge-in). echoCancellation suppresses the upcoming TTS
+    // from re-triggering the VAD through the speakers.
     this.clearSafetyCap();
     this.emit("transcribing");
 
@@ -355,7 +371,7 @@ class VoiceSession {
       const data = (await res.json()) as { text?: string };
       transcript = (data.text ?? "").trim();
     } catch (e) {
-      if (this.aborted(signal)) return;
+      if (this.aborted(signal) || isAbortError(e)) return;
       this.fail(
         "transcribe_failed",
         e instanceof Error ? e.message : String(e),
@@ -430,7 +446,7 @@ class VoiceSession {
         safety = data.safety_card ?? undefined;
       }
     } catch (e) {
-      if (this.aborted(signal)) return;
+      if (this.aborted(signal) || isAbortError(e)) return;
       this.fail("network", e instanceof Error ? e.message : String(e), true);
       return;
     }
@@ -624,18 +640,22 @@ class VoiceSession {
   }
 
   // ── VAD helpers ──────────────────────────────────────────────────────
+  // The VAD runs continuously, so resuming the loop is purely a state flip —
+  // the mic is already live and gating does the rest.
   private resumeListening(): void {
     if (this.state === "ended" || this.state === "error") return;
     this.abortTurn();
-    if (this.vad) {
-      try {
-        this.vad.start();
-      } catch (e) {
-        console.error("[voiceSession] vad resume failed:", e);
-      }
-    }
     this.armSafetyCap();
     this.emit("listening", { amplitude: 0 });
+  }
+
+  private async startVad(): Promise<void> {
+    if (!this.vad) return;
+    try {
+      await this.vad.start();
+    } catch (e) {
+      if (!isAbortError(e)) console.error("[voiceSession] vad start failed:", e);
+    }
   }
 
   private async pauseVad(): Promise<void> {
@@ -643,7 +663,7 @@ class VoiceSession {
     try {
       await this.vad.pause();
     } catch (e) {
-      console.error("[voiceSession] vad pause failed:", e);
+      if (!isAbortError(e)) console.error("[voiceSession] vad pause failed:", e);
     }
   }
 
@@ -687,7 +707,9 @@ class VoiceSession {
   }
 
   /** Resume after a background pause. MUST be called from a user gesture so
-   *  mobile re-grants the autoplay token (we replay the silent unlock). */
+   *  mobile re-grants the autoplay token (we replay the silent unlock). The
+   *  VAD was paused (mic released) when backgrounded, so we re-acquire it here
+   *  — awaited + abort-swallowed, never floated. */
   async resumeFromBackground(): Promise<void> {
     if (!this.pausedFromBackground) return;
     this.pausedFromBackground = false;
@@ -700,6 +722,7 @@ class VoiceSession {
         /* ignore */
       }
     }
+    await this.startVad();
     this.resumeListening();
   }
 
@@ -741,7 +764,9 @@ class VoiceSession {
       try {
         await this.vad.destroy();
       } catch (e) {
-        console.error("[voiceSession] vad destroy failed:", e);
+        if (!isAbortError(e)) {
+          console.error("[voiceSession] vad destroy failed:", e);
+        }
       }
       this.vad = null;
     }
@@ -797,14 +822,25 @@ class VoiceSession {
   }
 
   private fail(code: string, message: string, recoverable: boolean): void {
-    void this.pauseVad();
+    // VAD keeps running; the "error" state gates onSpeechEnd so nothing is
+    // processed until retry flips back to "listening".
     this.stopSpeakingAnalyser();
     this.clearSafetyCap();
     this.emit("error", { error: { code, message, recoverable } });
   }
 }
 
-// ── module-level RMS + silent-unlock helpers ─────────────────────────────
+// ── module-level helpers ─────────────────────────────────────────────────
+// Aborts (fetch cancellation, mic re-acquire interruption, worklet teardown)
+// are expected control flow during exit / background — never surface them.
+function isAbortError(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    (e as { name?: string }).name === "AbortError"
+  );
+}
+
 function rms(frame: Float32Array): number {
   let sum = 0;
   for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
