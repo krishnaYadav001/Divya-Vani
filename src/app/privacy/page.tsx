@@ -137,6 +137,24 @@ export default function PrivacyPage() {
                 audio files.
               </li>
               <li>
+                <strong>Krishna&apos;s voice (text-to-speech).</strong>{" "}
+                <span className="italic">
+                  To play Krishna&apos;s voice, the reply text is sent to
+                  ElevenLabs (a US-based company) so the audio can be
+                  generated. This data may be stored in the United States.
+                  We use this service only to generate audio; the text sent
+                  is not used by ElevenLabs to train their models.
+                </span>
+                <span className="mt-2 block font-[family-name:var(--font-devanagari)] not-italic leading-[1.7]">
+                  कृष्ण की आवाज़ सुनने के लिए, उनका जवाब-पाठ ElevenLabs (एक
+                  अमेरिकी कंपनी) के सर्वरों पर भेजा जाता है ताकि वहाँ ध्वनि
+                  बनाई जा सके। यह डेटा अमेरिका में संग्रहीत हो सकता है। हम इस
+                  सेवा का उपयोग केवल आवाज़ बनाने के लिए करते हैं, और भेजा गया
+                  पाठ ElevenLabs द्वारा अपने मॉडल को प्रशिक्षित करने के लिए
+                  उपयोग नहीं किया जाता।
+                </span>
+              </li>
+              <li>
                 <strong>Local chat history.</strong> To keep your
                 conversation visible if you refresh the page or return
                 later, the messages shown in your chat are stored in
@@ -285,6 +303,21 @@ export default function PrivacyPage() {
                 .
               </li>
               <li>
+                <strong>ElevenLabs (USA)</strong> — generates Krishna&apos;s
+                spoken voice (text-to-speech). Receives the reply text to be
+                voiced. Per ElevenLabs&apos; terms, text submitted via the
+                API is not used to train their models. Privacy:{" "}
+                <a
+                  href="https://elevenlabs.io/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  elevenlabs.io/privacy
+                </a>
+                .
+              </li>
+              <li>
                 <strong>Supabase</strong> — stores the data described above
                 in a managed Postgres database. Service-role access from
                 our server only. Privacy:{" "}
@@ -368,8 +401,9 @@ export default function PrivacyPage() {
               Cross-Border Data Transfer
             </h2>
             <p>
-              Some of our processors (Anthropic, Google, Vercel, Sentry,
-              Plausible) are based outside India. Under Section 16 of the Digital
+              Some of our processors (Anthropic, Google, ElevenLabs,
+              Vercel, Sentry, Plausible) are based outside India. Under
+              Section 16 of the Digital
               Personal Data Protection Act 2023, cross-border transfer is
               permitted subject to government-notified restrictions. As of
               the effective date of this notice, no such restrictions
