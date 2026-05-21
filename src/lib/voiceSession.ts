@@ -498,19 +498,34 @@ class VoiceSession {
     if (!this.turnRealUrl || !this.audioEl) return;
     this.playingPhase = "real";
     this.waitingForReal = false;
-    this.dbg(`playReal: ctx=${this.audioCtx?.state ?? "none"}`);
-    try {
-      this.audioEl.src = this.turnRealUrl;
-      this.audioEl.currentTime = 0;
-      void this.audioEl.play().catch((e) => {
-        if (!isAbortError(e)) this.fail("audio_failed", "play rejected", true);
-      });
-    } catch {
-      this.fail("audio_failed", "play threw", true);
-      return;
+    const ctx = this.audioCtx;
+    this.dbg(`playReal: ctx=${ctx?.state ?? "none"}`);
+
+    const start = () => {
+      if (this.isEnded() || !this.audioEl || !this.turnRealUrl) return;
+      try {
+        this.audioEl.src = this.turnRealUrl;
+        this.audioEl.currentTime = 0;
+        void this.audioEl.play().catch((e) => {
+          if (!isAbortError(e)) this.fail("audio_failed", "play rejected", true);
+        });
+      } catch {
+        this.fail("audio_failed", "play threw", true);
+        return;
+      }
+      this.emit("speaking", { isFiller: false, amplitude: 0 });
+      this.startSpeakingAnalyser();
+    };
+
+    // The element is routed through the AudioContext graph for the amplitude
+    // analyser, so a SUSPENDED context plays the reply silently. The gesture
+    // resume can lapse during a long pipeline wait (cold dev compile, slow
+    // backend), so resume BEFORE playing to guarantee the reply is audible.
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().then(start).catch(start);
+    } else {
+      start();
     }
-    this.emit("speaking", { isFiller: false, amplitude: 0 });
-    this.startSpeakingAnalyser();
   }
 
   private async runPipeline(audio: Float32Array): Promise<void> {
