@@ -23,6 +23,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      // Phase 10.5 — voice-to-voice mode (paid seva; orb UI).
+      url: `${BRAND.url}/voice`,
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${BRAND.url}/demo`,
       lastModified,
       changeFrequency: "weekly",

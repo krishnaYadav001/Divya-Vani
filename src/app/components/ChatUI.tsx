@@ -1077,6 +1077,32 @@ export default function ChatUI() {
                 </svg>
               </button>
             )}
+            {/* Phase 10.5 — /voice link. Icon-only sound-wave glyph in
+                gold-leaf (text-devotional) opening voice-to-voice mode.
+                44×44 tap target; sits beside the /demo affordance in the
+                header cluster. */}
+            <Link
+              href="/voice"
+              aria-label="Voice mode · आवाज़ में बात करो"
+              title="Voice mode · आवाज़ में बात करो"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <line x1="4" y1="10" x2="4" y2="14" />
+                <line x1="8" y1="6" x2="8" y2="18" />
+                <line x1="12" y1="9" x2="12" y2="15" />
+                <line x1="16" y1="4" x2="16" y2="20" />
+                <line x1="20" y1="10" x2="20" y2="14" />
+              </svg>
+            </Link>
             {/* /demo link — small "examples" affordance for visitors who
                 landed straight on /chat (Reddit/X traffic) and want to
                 see what conversations look like. Icon-only on mobile to

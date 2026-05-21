@@ -133,6 +133,13 @@ export default function RootLayout({
             ·
           </span>
           <Link
+            href="/voice"
+            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
+          >Voice</Link>
+          <span aria-hidden className="text-brass">
+            ·
+          </span>
+          <Link
             href="/privacy"
             className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
           >

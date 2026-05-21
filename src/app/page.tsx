@@ -134,6 +134,17 @@ export default function Landing() {
                   · A glimpse →
                 </span>
               </Link>
+              {/* Phase 10.5 — voice-to-voice mode entry. Quiet secondary
+                  weight matching the "एक झलक" glimpse button. */}
+              <Link
+                href="/voice"
+                className="inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 font-[family-name:var(--font-devanagari)] text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2"
+              >
+                🎤 बात करो
+                <span className="ml-2 font-[family-name:var(--font-serif)] text-sm italic text-ink-soft">
+                  · Talk with Krishna →
+                </span>
+              </Link>
               <span className="font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-soft">
                 10 निःशुल्क संदेश
               </span>
