@@ -21,22 +21,32 @@ import {
   readAudio,
   writeAudio,
   bumpCacheHit,
-  logVoiceGeneration,
   countUserGenerationsLast24h,
   countTotalGenerationsLast24h,
 } from "@/lib/voiceCache";
+// Phase 10.6 — telemetry insert that carries the new tts_mode column. Lives in
+// its own module because voiceCache.logVoiceGeneration is locked this phase
+// (byte-identical) and its INSERT doesn't include tts_mode.
+import { logVoiceGeneration } from "@/lib/voiceTelemetry";
 import { hasVoiceAccess } from "@/lib/voiceAccess";
 
 // Phase 10.1 — Krishna Voice TTS backend (standalone endpoint).
 //
-// POST { text, modeHint?, conversationId? } → MP3 audio stream.
+// POST { text, modeHint?, mode?, conversationId? } → MP3 audio stream.
 //
 // Pipeline: validate → auth (cookie) → paywall (verified payment) →
 // rate limit (per-user + site-wide 24h caps) → strip markup + word-cap →
-// Haiku tag injection → content-addressed cache (Supabase Storage) →
+// tag injection → content-addressed cache (Supabase Storage) →
 // ElevenLabs v3 stream (tee'd: one branch to the client, one to the
 // cache). Telemetry stores hashes only (DPDP-aligned). All third-party
 // keys (ElevenLabs, Supabase service role) stay server-only.
+//
+// Phase 10.6 — voice mode: callers send `mode: "voice"` for the low-latency
+// path: a 60-word cap + a single static mode-default tag, SKIPPING the Haiku
+// tagger entirely. The model stays eleven_v3 in BOTH modes (quality parity);
+// the latency win is the skipped Haiku round-trip + shorter audio, never a
+// model switch. Default mode (flag omitted) keeps the full Haiku flow + the
+// 100-word cap unchanged.
 //
 // Node runtime: needs crypto (SHA-256), Buffer, the ElevenLabs Node SDK,
 // and the Supabase service client. maxDuration headroom for the v3 call.
@@ -57,6 +67,21 @@ function intFromEnv(name: string, fallback: number): number {
 const DAILY_CAP_PER_USER = intFromEnv("VOICE_DAILY_CAP_PER_USER", 50);
 const DAILY_CAP_TOTAL = intFromEnv("VOICE_DAILY_CAP_TOTAL", 10000);
 const MAX_REPLY_WORDS = intFromEnv("VOICE_MAX_REPLY_WORDS", 100);
+// Phase 10.6 — voice mode hears shorter, snappier replies. Sonnet's full
+// reply still lives in /api/chat history; only the audio is truncated.
+const VOICE_MODE_MAX_WORDS = 60;
+
+// Phase 10.6 — the single static tag voice mode wraps the reply in (skipping
+// Haiku). Mirrors voiceTagInjector's private MODE_DEFAULT_TAG; kept inline
+// here so voiceTagInjector stays untouched. Default mode is unaffected — it
+// still runs the full Haiku tagger.
+const VOICE_MODE_TAG: Record<KrishnaMode, string> = {
+  gita: "[serious]",
+  sakhya: "[warmly]",
+  bhagavata: "[gently]",
+  vrindavan: "[playfully]",
+  mahabharata: "[resolutely]",
+};
 
 const AUDIO_HEADERS: Record<string, string> = {
   "Content-Type": "audio/mpeg",
@@ -136,6 +161,12 @@ export async function POST(req: Request) {
     ? modeHintRaw
     : undefined;
 
+  // Phase 10.6 — voice mode flag (low-latency path). Anything other than the
+  // literal "voice" (or omitted) → default behavior, unchanged.
+  const isVoiceMode = raw.mode === "voice";
+  const ttsMode: string | null = isVoiceMode ? "voice" : null;
+  const wordCap = isVoiceMode ? VOICE_MODE_MAX_WORDS : MAX_REPLY_WORDS;
+
   // 2. Auth — existing cookie only. Voice never mints a new identity.
   const jar = await cookies();
   const userId = jar.get(USER_COOKIE)?.value;
@@ -172,9 +203,9 @@ export async function POST(req: Request) {
     );
   }
 
-  // 5. Strip markup, then word-cap. (Length >2000 already 400'd above.)
+  // 5. Strip markup, then word-cap (60 words in voice mode, else 100).
   const cleaned = stripSpeechMarkup(text);
-  const { text: spokenText } = capWords(cleaned, MAX_REPLY_WORDS);
+  const { text: spokenText } = capWords(cleaned, wordCap);
   if (!spokenText) {
     return NextResponse.json(
       { error: "bad_request", detail: "no speakable text after cleanup" },
@@ -182,14 +213,31 @@ export async function POST(req: Request) {
     );
   }
 
-  // 6. Haiku tag injection (never throws).
-  const { taggedText, mode, tagCount } = await injectTags(spokenText, modeHint);
+  // 6. Tag the reply.
+  //   - voice mode: SKIP Haiku — wrap in a single static mode-default tag.
+  //   - default mode: full Haiku tag injection (never throws), unchanged.
+  let taggedText: string;
+  let mode: KrishnaMode;
+  let tagCount: number;
+  if (isVoiceMode) {
+    mode = modeHint ?? "bhagavata";
+    taggedText = `${VOICE_MODE_TAG[mode]} ${spokenText}`;
+    tagCount = 1;
+  } else {
+    ({ taggedText, mode, tagCount } = await injectTags(spokenText, modeHint));
+  }
 
-  // Config snapshot for cache key + telemetry.
+  // Config snapshot for cache key + telemetry. The model stays eleven_v3 in
+  // both modes — voice mode's win is skipping Haiku, not switching model.
   const voiceId = DEFAULT_VOICE_ID;
   const model = DEFAULT_MODEL;
   const stability = DEFAULT_STABILITY;
-  const key = cacheKey(taggedText, voiceId, model, stability);
+  // Fold the effective word-cap into the cache key so a 60-word voice-mode
+  // entry never collides with a 100-word default-mode entry from the same
+  // reply text (their tagged text can be identical for short replies). The
+  // stored row keeps the real model; only the KEY is mode-distinguished.
+  const cacheModel = isVoiceMode ? `${model}#voice60` : model;
+  const key = cacheKey(taggedText, voiceId, cacheModel, stability);
   const replyTextHash = sha256Hex(spokenText);
   const replyLength = spokenText.length;
 
@@ -211,6 +259,7 @@ export async function POST(req: Request) {
           tagCount,
           mode,
           latencyMs: Date.now() - startedAt,
+          ttsMode,
         }),
       );
       return new Response(stream, { status: 200, headers: AUDIO_HEADERS });
@@ -249,6 +298,7 @@ export async function POST(req: Request) {
         tagCount,
         mode: "error",
         latencyMs: Date.now() - startedAt,
+        ttsMode,
       }),
     );
     return NextResponse.json({ error: "tts_unavailable" }, { status: 503 });
@@ -279,6 +329,7 @@ export async function POST(req: Request) {
         tagCount,
         mode,
         latencyMs: Date.now() - startedAt,
+        ttsMode,
       });
       if (bytes && bytes.length > 0) {
         try {
