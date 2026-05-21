@@ -7,9 +7,9 @@
 // this component is the view + the gesture entry points.
 //
 // Audio: it mounts ONE dedicated hidden <audio>. Phase 10.6 — voiceSession
-// drives playback directly (filler clip → real reply, with mode:"voice"), so
-// the element is handed to voiceSession via primeAudio()/startSession() rather
-// than registered with the locked Phase-10.2 voiceClient.
+// drives playback directly (the reply via mode:"voice" TTS), so the element is
+// handed to voiceSession via primeAudio()/startSession() rather than registered
+// with the locked Phase-10.2 voiceClient.
 //
 // Paywall note: /api/me does not expose a lifetime "ever paid" flag (the
 // authoritative signal is the server-side payments table via
@@ -63,7 +63,6 @@ function stateStrip(
   state: VoiceState,
   error: VoiceError | null,
   needsResume: boolean,
-  isFiller: boolean,
 ): { hi: string; en: string } {
   if (state === "error") {
     return error?.code === "paywall"
@@ -72,11 +71,6 @@ function stateStrip(
   }
   if (state === "starting" && needsResume) {
     return { hi: C.backgrounded.hi, en: C.backgrounded.en };
-  }
-  // While a filler clip plays we're technically "speaking" but it's not yet
-  // Krishna's real reply — show a quieter "थोड़ा रुको…" indicator.
-  if (state === "speaking" && isFiller) {
-    return { hi: C.fillerWait.hi, en: C.fillerWait.en };
   }
   return C.states[state] ?? C.states.idle;
 }
@@ -92,8 +86,6 @@ export default function VoiceClient() {
   const [error, setError] = useState<VoiceError | null>(null);
   const [safety, setSafety] = useState<SafetyCard | null>(null);
   const [needsResume, setNeedsResume] = useState(false);
-  // Phase 10.6 — true while a filler clip plays (quieter orb + indicator).
-  const [isFiller, setIsFiller] = useState(false);
 
   const [accessChecked, setAccessChecked] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
@@ -116,15 +108,12 @@ export default function VoiceClient() {
       }
       if (ctx?.error) setError(ctx.error);
       if (ctx?.safety) setSafety(ctx.safety);
-      // Filler ↔ real toggle (only present on "speaking" emits).
-      if (ctx?.isFiller !== undefined) setIsFiller(ctx.isFiller);
 
       // Discrete state transitions only.
       if (s !== stateRef.current) {
         stateRef.current = s;
         setState(s);
         if (s !== "error") setError(null);
-        if (s !== "speaking") setIsFiller(false);
         setNeedsResume(s === "starting" && voice.isPausedFromBackground());
       }
     });
@@ -236,15 +225,7 @@ export default function VoiceClient() {
   }, []);
 
   // ── derived view state ─────────────────────────────────────────────────
-  // While a filler clip plays the loop is in "speaking" but it's not Krishna's
-  // real reply yet — render the calmer "thinking" orb (not the full speaking
-  // animation) per the filler spec.
-  const orbState: OrbState =
-    state === "ended"
-      ? "idle"
-      : state === "speaking" && isFiller
-        ? "thinking"
-        : state;
+  const orbState: OrbState = state === "ended" ? "idle" : state;
   const isActive =
     state === "starting" ||
     state === "listening" ||
@@ -254,14 +235,14 @@ export default function VoiceClient() {
   const showPaywallOverlay = accessChecked && !hasAccess && state === "idle";
   const isPaywallError = state === "error" && error?.code === "paywall";
   const strip = useMemo(
-    () => stateStrip(state, error, needsResume, isFiller),
-    [state, error, needsResume, isFiller],
+    () => stateStrip(state, error, needsResume),
+    [state, error, needsResume],
   );
   const transcriptTurns = state === "ended" ? transcript : [];
 
   return (
     <>
-      {/* TTS + filler audio element — driven directly by voiceSession. */}
+      {/* TTS reply audio element — driven directly by voiceSession. */}
       <audio ref={audioRef} className="hidden" preload="auto" aria-hidden />
 
       {/* ── Zone 1: top bar ─────────────────────────────────────────── */}

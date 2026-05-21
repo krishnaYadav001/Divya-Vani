@@ -61,10 +61,6 @@ export const BRAND = {
     exit: { hi: "रुको", en: "Exit" },
     retry: { hi: "दोबारा कोशिश", en: "Retry" },
     resume: { hi: "जारी रखो", en: "Resume" },
-    // Phase 10.6 — perceived-latency filler. Shown while a short filler clip
-    // ("हाँ…", "सुनो…") plays over the orb during the transcribe→chat→tts
-    // pipeline, before Krishna's real reply audio is ready.
-    fillerWait: { hi: "थोड़ा रुको…", en: "One moment…" },
     // State-indicator strip text (zone 4). speaking deliberately conveys
     // "no text — just the voice" per the voice-only spec.
     states: {
