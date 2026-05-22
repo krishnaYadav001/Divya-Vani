@@ -64,6 +64,25 @@ interface TranscriptTurn {
   content: string;
 }
 
+// ── voice-turn timing instrumentation (diagnostic) ─────────────────────────
+// One console line per pipeline step so a single voice turn's latency can be
+// reconstructed from the browser console. Pure timing — NEVER logs the
+// transcript, reply text, audio bytes, or user_id (telemetry covers PII
+// separately). `lastStepAt` is module state, reset to turnStart whenever a
+// `turn_start` step is logged, so per-step deltas are scoped to one turn (the
+// loop is strictly sequential — at most one turn is in flight at a time).
+let lastStepAt = 0;
+function logTiming(turnId: string, turnStart: number, step: string): void {
+  if (step === "turn_start") lastStepAt = turnStart;
+  const now = performance.now();
+  const elapsed_ms = Math.round(now - lastStepAt);
+  const total_ms = Math.round(now - turnStart);
+  console.log(
+    `[voice-timing-client] req_id=${turnId} step=${step} elapsed_ms=${elapsed_ms} total_ms=${total_ms}`,
+  );
+  lastStepAt = now;
+}
+
 // VAD config — mirrors ChatUI's Sarvam mic (Phase 8.0), EXCEPT redemptionMs,
 // which is intentionally much longer here (see below). The VAD runs
 // CONTINUOUSLY for the whole session (Phase 10.5 fix); onSpeechEnd + amplitude
@@ -99,6 +118,10 @@ class VoiceSession {
   private state: VoiceState = "idle";
   private listeners = new Set<Listener>();
   private turns: TranscriptTurn[] = [];
+
+  // per-turn timing diagnostics — new id + clock each turn (see runPipeline T0)
+  private turnId = "";
+  private turnStart = 0;
 
   // mic / VAD
   private vad: MicVadInstance | null = null;
@@ -179,10 +202,17 @@ class VoiceSession {
     console.log("[voice]", ...args);
   }
 
+  /** Emit one [voice-timing-client] line for the current turn. No-op until a
+   *  turnId is assigned at T0 (so stray events between turns don't log). */
+  private timing(step: string): void {
+    if (this.turnId) logTiming(this.turnId, this.turnStart, step);
+  }
+
   // ── audio element listeners ───────────────────────────────────────────
   private onAudioEnded = (): void => {
     if (this.isEnded()) return;
     if (this.playingPhase === "real") {
+      this.timing("turn_end");
       // Krishna's reply finished.
       this.dbg("reply audio ended → breath → listening");
       this.playingPhase = "none";
@@ -207,10 +237,18 @@ class VoiceSession {
     }
   };
 
+  // Fires when the element actually starts producing sound — the user-audible
+  // moment. Gated to the real reply (the silent unlock clip plays with
+  // playingPhase "none" and must not log).
+  private onAudioPlaying = (): void => {
+    if (this.playingPhase === "real") this.timing("audio_audible");
+  };
+
   private bindAudioListeners(el: HTMLAudioElement): void {
     if (this.audioListenersBound) return;
     el.addEventListener("ended", this.onAudioEnded);
     el.addEventListener("error", this.onAudioError);
+    el.addEventListener("playing", this.onAudioPlaying);
     this.audioListenersBound = true;
   }
 
@@ -218,6 +256,7 @@ class VoiceSession {
     if (this.audioEl && this.audioListenersBound) {
       this.audioEl.removeEventListener("ended", this.onAudioEnded);
       this.audioEl.removeEventListener("error", this.onAudioError);
+      this.audioEl.removeEventListener("playing", this.onAudioPlaying);
     }
     this.audioListenersBound = false;
   }
@@ -389,17 +428,25 @@ class VoiceSession {
       return;
     }
     this.turns.push({ role: "user", content: transcript });
+
+    // T0 — the post-STT turn clock starts here. New id per turn; propagated to
+    // /api/chat + /api/tts via X-Voice-Turn-Id so the server logs correlate.
+    this.turnId = Math.random().toString(16).slice(2, 10);
+    this.turnStart = performance.now();
+    this.timing("turn_start");
     this.emit("thinking");
 
     // 2. chat (Sonnet)
     let reply = "";
     let safety: SafetyCard | undefined;
     try {
+      this.timing("chat_request_fired");
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/x-ndjson",
+          "X-Voice-Turn-Id": this.turnId,
         },
         body: JSON.stringify({ message: transcript }),
         signal,
@@ -419,6 +466,7 @@ class VoiceSession {
         if (this.isEnded()) return;
         reply = parsed.reply;
         safety = parsed.safety;
+        this.timing("chat_stream_complete");
       } else {
         const data = (await res.json()) as {
           reply?: string;
@@ -457,9 +505,13 @@ class VoiceSession {
     // 3. tts (low-latency voice path — POST /api/tts with mode: "voice").
     //    State stays "thinking" until the reply audio starts playing.
     try {
+      this.timing("tts_request_fired");
       const res = await fetch("/api/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Voice-Turn-Id": this.turnId,
+        },
         body: JSON.stringify({ text: reply, mode: "voice" }),
         signal,
       });
@@ -472,9 +524,12 @@ class VoiceSession {
         );
         return;
       }
+      // fetch resolves on response headers ≈ first byte of the TTS response.
+      this.timing("tts_first_byte_received");
       const blob = await res.blob();
       if (this.isEnded()) return;
       const url = URL.createObjectURL(blob);
+      this.timing("audio_buffered");
       this.dbg(`tts ok: ${(blob.size / 1024).toFixed(1)} KB → playing reply`);
       this.onRealReady(url);
     } catch (e) {
@@ -509,6 +564,7 @@ class VoiceSession {
         void this.audioEl.play().catch((e) => {
           if (!isAbortError(e)) this.fail("audio_failed", "play rejected", true);
         });
+        this.timing("audio_play_called");
       } catch {
         this.fail("audio_failed", "play threw", true);
         return;
@@ -536,6 +592,7 @@ class VoiceSession {
     const decoder = new TextDecoder();
     let buffer = "";
     let reply = "";
+    let firstToken = true;
     let safety: SafetyCard | undefined;
     try {
       for (;;) {
@@ -554,6 +611,10 @@ class VoiceSession {
             continue;
           }
           if (frame.type === "text" && typeof frame.delta === "string") {
+            if (firstToken) {
+              firstToken = false;
+              this.timing("chat_first_token_received");
+            }
             reply += frame.delta;
           } else if (frame.type === "meta") {
             if (frame.safety_card && typeof frame.safety_card === "object") {

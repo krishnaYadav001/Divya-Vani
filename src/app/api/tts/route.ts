@@ -122,8 +122,37 @@ async function collectStream(
   return Buffer.concat(chunks);
 }
 
+// Voice-turn latency instrumentation (diagnostic). One console line per step,
+// correlated to the client + /api/chat logs by req_id (the X-Voice-Turn-Id
+// header). Pure timing — NEVER logs reply text, audio bytes, or user_id.
+// Stateless (lastStepAt threaded through the return) so it is concurrency-safe.
+function logTiming(
+  turnId: string,
+  turnStart: number,
+  step: string,
+  lastStepAt: number,
+): number {
+  const now = Date.now();
+  console.log(
+    `[voice-timing-tts] req_id=${turnId} step=${step} ` +
+      `elapsed_ms=${now - lastStepAt} total_ms=${now - turnStart}`,
+  );
+  return now;
+}
+
 export async function POST(req: Request) {
   const startedAt = Date.now();
+
+  // Voice-turn timing (diagnostic). req_id from the client's X-Voice-Turn-Id;
+  // absent (default-mode / direct call) → a fallback id. Reuses startedAt as
+  // the turn clock on the server side.
+  const turnId =
+    req.headers.get("X-Voice-Turn-Id") ||
+    "tts" + Math.random().toString(16).slice(2, 8);
+  let timingLast = startedAt;
+  const timing = (step: string): void => {
+    timingLast = logTiming(turnId, startedAt, step, timingLast);
+  };
 
   // 1. Parse + validate body.
   let body: unknown;
@@ -135,6 +164,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  timing("tts_received");
   const raw = (body ?? {}) as Record<string, unknown>;
   const text = typeof raw.text === "string" ? raw.text.trim() : "";
   const modeHintRaw = raw.modeHint;
@@ -249,6 +279,7 @@ export async function POST(req: Request) {
 
   // 7. Cache check.
   const hit = await lookupCache(key);
+  timing("cache_check_done");
   if (hit) {
     try {
       const stream = await readAudio(hit.storagePath);
@@ -268,6 +299,7 @@ export async function POST(req: Request) {
           ttsMode,
         }),
       );
+      timing("tts_response_first_byte_sent");
       return new Response(stream, { status: 200, headers: AUDIO_HEADERS });
     } catch (e) {
       // Cache row present but object missing/unreadable → regenerate.
@@ -279,11 +311,14 @@ export async function POST(req: Request) {
   //    4xx / 5xx / timeout) → 503; no audio byte has been committed yet.
   let elevenStream: ReadableStream<Uint8Array>;
   try {
+    timing("elevenlabs_call_start");
     elevenStream = await convertToAudio(taggedText, {
       voiceId,
       model,
       stability,
     });
+    // convertToAudio resolves once the ElevenLabs response begins ≈ first byte.
+    timing("elevenlabs_first_byte");
   } catch (e) {
     const isConfig = e instanceof TtsConfigError;
     console.error(
@@ -321,6 +356,9 @@ export async function POST(req: Request) {
       let bytes: Buffer | null = null;
       try {
         bytes = await collectStream(cacheBranch);
+        // All ElevenLabs bytes have now arrived server-side (the tee's cache
+        // branch fully drained) — the end of audio production for this turn.
+        timing("tts_response_complete");
       } catch (e) {
         console.error("[tts] cache-branch collection failed:", e);
       }
@@ -355,5 +393,6 @@ export async function POST(req: Request) {
     })(),
   );
 
+  timing("tts_response_first_byte_sent");
   return new Response(clientBranch, { status: 200, headers: AUDIO_HEADERS });
 }

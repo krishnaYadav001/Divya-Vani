@@ -82,6 +82,26 @@ function isRetryableOverload(err: unknown): boolean {
   return false;
 }
 
+// Voice-turn latency instrumentation (diagnostic). One console line per
+// pipeline step, correlated to the client + /api/tts logs by req_id (the
+// X-Voice-Turn-Id header). Pure timing — NEVER logs message / reply text or
+// user_id. Stateless (lastStepAt is threaded through the return value) so it
+// is safe under concurrent requests. Server uses its own Date.now() clock;
+// only per-step deltas matter, not cross-process absolute timestamps.
+function logTiming(
+  turnId: string,
+  turnStart: number,
+  step: string,
+  lastStepAt: number,
+): number {
+  const now = Date.now();
+  console.log(
+    `[voice-timing-chat] req_id=${turnId} step=${step} ` +
+      `elapsed_ms=${now - lastStepAt} total_ms=${now - turnStart}`,
+  );
+  return now;
+}
+
 // =============================================================================
 // DUAL-MODE RESPONSE CONTRACT (Phase 3.9 — 2026-05-05)
 // =============================================================================
@@ -435,7 +455,20 @@ function withCookie(
 }
 
 export async function POST(req: Request) {
+  // Voice-turn timing (diagnostic). req_id comes from the client via
+  // X-Voice-Turn-Id; absent (text chat / non-browser) → a fallback id so the
+  // line is still self-consistent. turnStart is the server's own clock.
+  const turnId =
+    req.headers.get("X-Voice-Turn-Id") ||
+    "chat" + Math.random().toString(16).slice(2, 8);
+  const turnStart = Date.now();
+  let timingLast = turnStart;
+  const timing = (step: string): void => {
+    timingLast = logTiming(turnId, turnStart, step, timingLast);
+  };
+
   const { message } = await req.json();
+  timing("chat_received");
 
   if (typeof message !== "string" || !message.trim()) {
     return NextResponse.json(
@@ -940,9 +973,11 @@ export async function POST(req: Request) {
           // token — so in practice it IS retryable; `hasEmittedText` guards
           // the rare mid-stream case.
           let hasEmittedText = false;
+          let sonnetFirstTokenLogged = false;
           const runSonnetStream = async () => {
             let lastErr: unknown;
             for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
+              timing("sonnet_call_start");
               const messageStream = client.messages.stream(
                 {
                   model: "claude-sonnet-4-6",
@@ -954,6 +989,10 @@ export async function POST(req: Request) {
               );
 
               messageStream.on("text", (delta) => {
+                if (!sonnetFirstTokenLogged) {
+                  sonnetFirstTokenLogged = true;
+                  timing("sonnet_first_token");
+                }
                 hasEmittedText = true;
                 try {
                   controller.enqueue(
@@ -968,7 +1007,9 @@ export async function POST(req: Request) {
               });
 
               try {
-                return await messageStream.finalMessage();
+                const fm = await messageStream.finalMessage();
+                timing("sonnet_stream_end");
+                return fm;
               } catch (err) {
                 lastErr = err;
                 // Client abort → propagate to the outer catch (no retry, no
@@ -1036,6 +1077,7 @@ export async function POST(req: Request) {
             // text but before meta landed. saveMemory still runs below
             // because the model call completed successfully.
           }
+          timing("chat_response_sent");
           controller.close();
 
           // Fire-and-forget — does NOT block the response stream.
@@ -1110,6 +1152,7 @@ export async function POST(req: Request) {
     let lastErr: unknown;
     for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
       try {
+        timing("sonnet_call_start");
         return await client.messages.create({
           model: "claude-sonnet-4-6",
           max_tokens: 3000,
@@ -1135,6 +1178,7 @@ export async function POST(req: Request) {
     throw lastErr;
   };
   const response = await createSonnetWithRetry();
+  timing("sonnet_stream_end");
 
   // Phase 2.6 cache telemetry: per-turn cache write/read + persona
   // size relative to the Sonnet 4.6 cache minimum. Watch this log
@@ -1161,6 +1205,7 @@ export async function POST(req: Request) {
   // body needs the result before NextResponse.json can serialize.
   const attestedResponseVerses = await buildResponseVerses(reply);
 
+  timing("chat_response_sent");
   return withCookie(
     NextResponse.json({
       reply,
