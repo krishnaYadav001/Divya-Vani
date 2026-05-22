@@ -710,11 +710,9 @@ export async function POST(req: Request) {
   // Why this shape: the dynamic content changes every turn (memory
   // accumulates, retrieval differs), so caching the combined block
   // wrote 1.25× cache-write tax with zero reads (verified across a
-  // 5-turn test). Caching only the persona is silent no-op today
-  // (persona < Sonnet 4.6's 2,048-token cache minimum) AND lights
-  // up automatically when Phase 3 grows the persona past it. No
-  // further code change needed at that point — Phase 3 ships the
-  // longer persona prompt and this block starts hitting cache.
+  // 5-turn test). Caching ONLY the persona is the right shape: the
+  // persona is now ~26.3k tokens — far above Sonnet 4.6's 1,024-token
+  // cache minimum — so this breakpoint IS active in production.
   // Phase 7 — language now from extractMemory (Haiku). Falls back
   // to detectLang regex on extraction failure (rate limit, JSON
   // parse error). detectLang remains in src/lib/detectLang.ts as
@@ -738,12 +736,21 @@ export async function POST(req: Request) {
   const systemBlocks: Array<{
     type: "text";
     text: string;
-    cache_control?: { type: "ephemeral" };
+    cache_control?: { type: "ephemeral"; ttl?: "1h" };
   }> = [
     {
       type: "text",
       text: persona,
-      cache_control: { type: "ephemeral" },
+      // Phase 10.13 — pin the persona cache to a 1-HOUR TTL. The structure was
+      // already correct (persona is the first block, the sole cache_control
+      // breakpoint, and byte-identical across calls), so the only remaining
+      // explanation for cache_creation=26316 / cache_read=0 EVERY turn was the
+      // default 5-minute ephemeral TTL expiring between turns: on low launch
+      // traffic nothing keeps the 26k-token persona warm, so each turn re-wrote
+      // it. (Anthropic dropped the default TTL 1h→5m on 2026-03-06.) A 1h read
+      // is 0.1× input vs a 2× write — a large net win for a static, reused
+      // prefix. "1h" is GA in SDK 0.91.1 (no beta header needed).
+      cache_control: { type: "ephemeral", ttl: "1h" },
     },
   ];
   if (dynamic.length > 0) {
