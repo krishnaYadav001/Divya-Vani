@@ -41,7 +41,10 @@ Return ONLY valid JSON, no surrounding text or markdown:
 {"flag":"safe","confidence":0.95}`,
         },
       ],
-    });
+    },
+    // Phase 10.11 — fail-fast 3s timeout, no SDK retries. On timeout the catch
+    // below silent-fails to {safe, confidence:0}, same as a 529 today.
+    { timeout: 3000, maxRetries: 0 });
     const usage: SafetyClassifyUsage = {
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,

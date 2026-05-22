@@ -36,7 +36,10 @@ Return ONLY valid JSON with no surrounding text or markdown:
 {"flag":"safe","confidence":0.95}`,
         },
       ],
-    });
+    },
+    // Phase 10.11 — fail-fast 3s timeout, no SDK retries. On timeout the catch
+    // below silent-fails to {safe, confidence:0}, same as a 529 today.
+    { timeout: 3000, maxRetries: 0 });
 
     const out = response.content.find((b) => b.type === "text")?.text ?? "";
     const candidates: string[] = [out.trim()];

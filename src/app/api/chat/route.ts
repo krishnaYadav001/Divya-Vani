@@ -262,7 +262,11 @@ Return ONLY valid JSON in this exact shape, with no surrounding text or markdown
 {"main_problem":"...","emotion":"...","context_summary":"...","detected_user_name":null,"query_themes":["tag1","tag2"],"language":"hi","growing_edge":null}`,
         },
       ],
-    });
+    },
+    // Phase 10.11 — fail-fast 3s Haiku timeout, no SDK retries (default is
+    // ~10min + 2 retries). On timeout the catch below silent-fails to null,
+    // exactly as a 529 does today — just faster.
+    { timeout: 3000, maxRetries: 0 });
     const text =
       response.content.find((b) => b.type === "text")?.text ?? "";
     // Use a LAST-valid-JSON pattern so a "Wait, X is not in taxonomy"
@@ -455,12 +459,15 @@ function withCookie(
 }
 
 export async function POST(req: Request) {
+  // Phase 10.11 — voice-mode detection gates the Path A latency cuts below.
+  // The header is present iff the request came from /voice (added Phase 10.10).
+  const voiceTurnId = req.headers.get("X-Voice-Turn-Id");
+  const isVoiceMode = !!voiceTurnId;
+
   // Voice-turn timing (diagnostic). req_id comes from the client via
   // X-Voice-Turn-Id; absent (text chat / non-browser) → a fallback id so the
   // line is still self-consistent. turnStart is the server's own clock.
-  const turnId =
-    req.headers.get("X-Voice-Turn-Id") ||
-    "chat" + Math.random().toString(16).slice(2, 8);
+  const turnId = voiceTurnId || "chat" + Math.random().toString(16).slice(2, 8);
   const turnStart = Date.now();
   let timingLast = turnStart;
   const timing = (step: string): void => {
@@ -580,7 +587,10 @@ export async function POST(req: Request) {
   const fetchK = wantWidePool ? ragFlags.candidatesK : 5;
 
   async function gatherCandidates(): Promise<VerseHit[]> {
-    if (!ragFlags.queryRewrite) {
+    // Phase 10.11 — voice mode skips the rewriteQuery Haiku call and runs RAG
+    // on the raw user message (the same fallback rewriteQuery itself takes on
+    // failure today). queryRewrite also ships off by default in prod.
+    if (!ragFlags.queryRewrite || isVoiceMode) {
       return fetchCandidates(message, fetchK);
     }
     const variants = await rewriteQuery(message, ragFlags.rewriteVariants);
@@ -739,6 +749,19 @@ export async function POST(req: Request) {
   if (dynamic.length > 0) {
     systemBlocks.push({ type: "text", text: dynamic });
   }
+  // Phase 10.11 — voice mode: make Sonnet GENERATE short. The /api/tts 60-word
+  // truncation only trims AFTER generation, saving no model time; this makes
+  // the model stop sooner. Additive instruction, NOT a persona change. MUST
+  // come after the persona block and carry NO cache_control so the persona
+  // cache breakpoint (the last cached block) stays on the persona — edge case 5.
+  // The 60-word /api/tts truncation remains as the safety net if Sonnet ignores
+  // this.
+  if (isVoiceMode) {
+    systemBlocks.push({
+      type: "text",
+      text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be ≤30 words. Krishna's voice, register, and warmth stay exactly the same — only shorter. It is fine to end cleanly mid-thought; the user can ask you to continue.",
+    });
+  }
 
   // 6. Persist memory + bump counters. While on the free pool, message_count
   //    bumps and caps at FREE_MESSAGE_LIMIT. Once the pool is spent the user
@@ -813,15 +836,23 @@ export async function POST(req: Request) {
         userId,
       );
     } else {
-      await logChatTurn({
-        userId,
-        userMessage: message,
-        replyText,
-        language: conversationLang,
-        versesReferenced: verseRefs,
-        safetyFlag: safety.flag,
-        messageCountAfter: priorCount + 1,
-      });
+      // Phase 10.11 — chat_logs is a non-blocking background write in BOTH
+      // modes: the HTTP response never waits on it. (The streaming path
+      // already runs persistTurnState inside waitUntil; this also frees the
+      // plain-JSON path.) Silent-fail discipline preserved — failures log.
+      waitUntil(
+        logChatTurn({
+          userId,
+          userMessage: message,
+          replyText,
+          language: conversationLang,
+          versesReferenced: verseRefs,
+          safetyFlag: safety.flag,
+          messageCountAfter: priorCount + 1,
+        }).catch((err) => {
+          console.warn("[chat_logs] background insert failed:", err);
+        }),
+      );
     }
   }
 
@@ -850,6 +881,10 @@ export async function POST(req: Request) {
   const VERSE_CARD_MIN_WORDS = 25;
   const VERSE_CARD_MAX = 5;
   async function buildResponseVerses(replyText: string): Promise<ApiVerse[]> {
+    // Phase 10.11 — voice mode never renders verse cards (the audio loop
+    // ignores them), so skip BOTH Path C (attestVerseReferences) and Path B
+    // (retrieveEntityVerses) Haiku/embedding calls entirely.
+    if (isVoiceMode) return [];
     const replyWordCount = replyText.trim().split(/\s+/).filter(Boolean).length;
     // 25-word floor — short replies get NO cards and we run NEITHER the
     // Path C nor the Path B Haiku call (latency + cost saver).
