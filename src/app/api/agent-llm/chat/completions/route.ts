@@ -108,7 +108,7 @@ function roleChunkLine(id: string, created: number, model: string): string {
     choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }],
   });
 }
-// One per text delta.
+// One per emitted content chunk (Phase 11.2.1: one per sentence, not per delta).
 function contentChunkLine(
   id: string,
   created: number,
@@ -793,7 +793,10 @@ export async function POST(req: Request): Promise<Response> {
   const encoder = new TextEncoder();
 
   // Outer-scope flags so the catch block can decide between a clean stop
-  // (text already emitted) and an error frame (nothing emitted yet).
+  // (a content chunk already FLUSHED) and an error frame (nothing flushed yet).
+  // Phase 11.2.1: with sentence-boundary batching, hasEmittedText means "an SSE
+  // content chunk has been sent to the client" (a flush happened), NOT merely
+  // "Anthropic emitted a delta" — deltas are buffered until a sentence completes.
   let hasEmittedText = false;
   let roleEmitted = false;
   let firstTokenLogged = false;
@@ -808,12 +811,85 @@ export async function POST(req: Request): Promise<Response> {
         }
       };
 
+      // ── Phase 11.2.1 — sentence-boundary batching for ElevenAgents prosody ──
+      // ElevenLabs treats each SSE delta.content chunk as one TTS generation
+      // unit, so forwarding per-token Anthropic deltas resets prosody mid-
+      // sentence (audible voice variation). We buffer deltas and emit ONE OpenAI
+      // chunk per sentence instead. This rebatches only — NO debounce/sleep, no
+      // added latency beyond waiting for the sentence's own punctuation to land.
+      const SENTENCE_CAP = 150; // edge 4: hard flush ceiling without a boundary
+      let sentenceBuffer = "";
+
+      // Emit one OpenAI delta.content chunk. Lazily emits the role chunk first,
+      // and marks hasEmittedText (= "a content chunk has been sent").
+      const emitContent = (text: string) => {
+        if (!text) return; // edge 13: never emit an empty content chunk
+        if (!roleEmitted) {
+          // edge 10: role marker stays metadata-first, emitted before any text.
+          roleEmitted = true;
+          send(roleChunkLine(id, created, responseModel));
+        }
+        hasEmittedText = true;
+        send(contentChunkLine(id, created, responseModel, text));
+      };
+
+      // Exclusive end index of the next complete sentence in `buf` (boundary
+      // char + trailing whitespace), or -1 if none yet.
+      const nextBoundaryEnd = (buf: string): number => {
+        for (let i = 0; i < buf.length; i++) {
+          const ch = buf[i];
+          // `।` (Devanagari danda) is unambiguous — always a boundary (edge 9).
+          // `\n\n` (paragraph break) also triggers a flush.
+          // `.` `?` `!` are boundaries ONLY when followed by whitespace, so a
+          // decimal like "3.14" never splits (edge 8); a terminator at the very
+          // end of the buffer waits for the next delta (or the final flush).
+          const isBoundary =
+            (ch === "\n" && buf[i + 1] === "\n") ||
+            ch === "।" ||
+            ((ch === "." || ch === "?" || ch === "!") &&
+              buf[i + 1] !== undefined &&
+              /\s/.test(buf[i + 1] as string));
+          if (!isBoundary) continue;
+          let end = ch === "\n" ? i + 2 : i + 1; // include the boundary char(s)
+          while (end < buf.length && /\s/.test(buf[end] as string)) end++; // edge 3
+          return end;
+        }
+        return -1;
+      };
+
+      // Flush every complete sentence in the buffer (edge 1: one Anthropic delta
+      // may contain several), then apply the 150-char safety cap.
+      const flushSentences = () => {
+        let end: number;
+        while ((end = nextBoundaryEnd(sentenceBuffer)) !== -1) {
+          emitContent(sentenceBuffer.slice(0, end)); // edge 2: a 1-char chunk is fine
+          sentenceBuffer = sentenceBuffer.slice(end);
+        }
+        // edge 4: no boundary but buffer too long — split at the last whitespace
+        // within the first SENTENCE_CAP chars, else force-split at the cap.
+        while (sentenceBuffer.length >= SENTENCE_CAP) {
+          let splitAt = -1;
+          for (let i = SENTENCE_CAP - 1; i >= 0; i--) {
+            if (/\s/.test(sentenceBuffer[i] as string)) {
+              splitAt = i + 1;
+              break;
+            }
+          }
+          if (splitAt <= 0) splitAt = SENTENCE_CAP;
+          emitContent(sentenceBuffer.slice(0, splitAt));
+          sentenceBuffer = sentenceBuffer.slice(splitAt);
+        }
+      };
+
       try {
         // Retry overload/5xx BEFORE first token only (after first token a retry
         // would prepend a second partial reply to the stream the SDK is reading).
         const runSonnetStream = async () => {
           let lastErr: unknown;
           for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
+            // edge 12: discard any partial buffer before (re)trying. Retries only
+            // happen before the first flush (hasEmittedText guard), so this is safe.
+            sentenceBuffer = "";
             const messageStream = client.messages.stream(
               {
                 model: "claude-sonnet-4-6",
@@ -826,19 +902,17 @@ export async function POST(req: Request): Promise<Response> {
             );
 
             messageStream.on("text", (delta) => {
+              if (!delta) return; // edge 6: ignore empty deltas (no buffer change)
               if (!firstTokenLogged) {
                 firstTokenLogged = true;
                 console.log(
                   `[agent-llm] first_token_ms=${Date.now() - turnStart}`,
                 );
               }
-              // Lazily emit the role chunk just before the first content chunk.
-              if (!roleEmitted) {
-                roleEmitted = true;
-                send(roleChunkLine(id, created, responseModel));
-              }
-              hasEmittedText = true;
-              send(contentChunkLine(id, created, responseModel, delta));
+              // Buffer the delta and emit only at sentence boundaries so each
+              // OpenAI chunk reaches ElevenLabs as one coherent TTS unit.
+              sentenceBuffer += delta;
+              flushSentences();
             });
 
             try {
@@ -878,6 +952,15 @@ export async function POST(req: Request): Promise<Response> {
 
         const replyText =
           finalMsg.content.find((b) => b.type === "text")?.text ?? "";
+
+        // Final flush — emit any remaining buffered text as the LAST content
+        // chunk (e.g. a closing sentence whose terminator had no trailing space,
+        // or a sub-sentence reply with no punctuation). edge 5/13: skip if the
+        // remainder is empty or whitespace-only. Never drop trailing text.
+        if (sentenceBuffer.trim().length > 0) {
+          emitContent(sentenceBuffer);
+        }
+        sentenceBuffer = "";
 
         // Edge case 8: model produced zero text — emit role + one empty content
         // chunk so the SDK sees a well-formed (empty) reply, then stop.
