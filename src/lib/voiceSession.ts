@@ -64,7 +64,8 @@ interface TranscriptTurn {
   content: string;
 }
 
-// VAD config — mirrors ChatUI's Sarvam mic exactly (Phase 8.0). The VAD runs
+// VAD config — mirrors ChatUI's Sarvam mic (Phase 8.0), EXCEPT redemptionMs,
+// which is intentionally much longer here (see below). The VAD runs
 // CONTINUOUSLY for the whole session (Phase 10.5 fix); onSpeechEnd + amplitude
 // are gated by state so utterances detected while not "listening" (e.g. the
 // mic catching Krishna's own voice) are ignored — no barge-in (edge case 8).
@@ -72,7 +73,11 @@ const VAD_OPTIONS = {
   baseAssetPath: "/vad/",
   onnxWASMBasePath: "/vad/",
   model: "v5" as const,
-  redemptionMs: 700,
+  // End-of-speech grace: 3000ms of silence before the turn is declared over.
+  // A natural mid-sentence pause to think must NOT cut the user off in a
+  // hands-free voice loop (production bug). Founder accepts the added
+  // end-of-turn latency for this; do not lower without product sign-off.
+  redemptionMs: 3000,
   minSpeechMs: 250,
   preSpeechPadMs: 200,
   submitUserSpeechOnPause: true,

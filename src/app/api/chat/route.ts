@@ -50,6 +50,38 @@ const USER_COOKIE = "god_messenger_uid";
 const RETURNING_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
 const FREE_MESSAGE_LIMIT = 10;
 
+// Anthropic server-side overload retry. The /v1/messages call can return an
+// `overloaded_error` (HTTP 529) when Anthropic is at capacity — that is NOT a
+// quota issue (rate headers showed ample tokens remaining when this hit prod
+// 2026-05-22), and Anthropic explicitly recommends retrying with exponential
+// backoff. We retry the Sonnet reply up to MAX_OVERLOAD_RETRIES times (3
+// attempts total) on overload / transient 5xx ONLY. 4xx (bad request / auth /
+// validation) and 429 rate_limit_error are NEVER retried — they won't get
+// better. On the streaming path the retry is additionally gated to BEFORE the
+// first token reaches the client (see runSonnetStream); a mid-stream failure
+// is fatal for that turn, never retried (would corrupt the NDJSON response).
+const MAX_OVERLOAD_RETRIES = 2;
+const OVERLOAD_BACKOFF_MS = [800, 2000];
+
+function isRetryableOverload(err: unknown): boolean {
+  const e = err as {
+    status?: number;
+    type?: string;
+    error?: { type?: string; error?: { type?: string } };
+  };
+  // The SDK parses the error body `{"type":"error","error":{"type":...}}`
+  // into err.error; some shapes surface the type one level up. Check all.
+  const bodyType = e?.error?.error?.type ?? e?.error?.type ?? e?.type;
+  if (bodyType === "overloaded_error") return true;
+  // Any 5xx from the SDK's APIError: covers 529 overloaded even if the body
+  // type didn't parse, plus transient 500-class api_error. 429 rate_limit
+  // (status 429) and all 4xx fall through to false — retrying won't help.
+  if (typeof e?.status === "number" && e.status >= 500 && e.status < 600) {
+    return true;
+  }
+  return false;
+}
+
 // =============================================================================
 // DUAL-MODE RESPONSE CONTRACT (Phase 3.9 — 2026-05-05)
 // =============================================================================
@@ -899,30 +931,68 @@ export async function POST(req: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const messageStream = client.messages.stream(
-            {
-              model: "claude-sonnet-4-6",
-              max_tokens: 3000,
-              system: systemBlocks,
-              messages: messagesArray,
-            },
-            { signal: req.signal },
-          );
-
-          messageStream.on("text", (delta) => {
-            try {
-              controller.enqueue(
-                encoder.encode(
-                  JSON.stringify({ type: "text", delta }) + "\n",
-                ),
+          // Stream the Sonnet reply with retry on Anthropic server-side
+          // overload. Retrying is only safe BEFORE the first token reaches
+          // the client: once any text delta has been enqueued, a failure is
+          // fatal for the turn (a retry would prepend a second partial reply
+          // to the NDJSON stream the client is already rendering). An
+          // overloaded_error typically fires at connection time — before any
+          // token — so in practice it IS retryable; `hasEmittedText` guards
+          // the rare mid-stream case.
+          let hasEmittedText = false;
+          const runSonnetStream = async () => {
+            let lastErr: unknown;
+            for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
+              const messageStream = client.messages.stream(
+                {
+                  model: "claude-sonnet-4-6",
+                  max_tokens: 3000,
+                  system: systemBlocks,
+                  messages: messagesArray,
+                },
+                { signal: req.signal },
               );
-            } catch {
-              // Controller closed (client disconnected). Swallow —
-              // the SDK will surface abort via its own error path.
-            }
-          });
 
-          const finalMsg = await messageStream.finalMessage();
+              messageStream.on("text", (delta) => {
+                hasEmittedText = true;
+                try {
+                  controller.enqueue(
+                    encoder.encode(
+                      JSON.stringify({ type: "text", delta }) + "\n",
+                    ),
+                  );
+                } catch {
+                  // Controller closed (client disconnected). Swallow —
+                  // the SDK will surface abort via its own error path.
+                }
+              });
+
+              try {
+                return await messageStream.finalMessage();
+              } catch (err) {
+                lastErr = err;
+                // Client abort → propagate to the outer catch (no retry, no
+                // persist). Already emitted tokens → fatal (can't corrupt the
+                // stream). Non-overload error → fatal. Else back off + retry.
+                if (req.signal.aborted || hasEmittedText) throw err;
+                if (!isRetryableOverload(err)) throw err;
+                if (attempt === MAX_OVERLOAD_RETRIES) {
+                  console.error(
+                    "[chat] anthropic overloaded — all retries exhausted, returning error to client",
+                  );
+                  throw err;
+                }
+                const delay = OVERLOAD_BACKOFF_MS[attempt] ?? 2000;
+                console.warn(
+                  `[chat] anthropic overloaded — retry ${attempt + 1}/${MAX_OVERLOAD_RETRIES} after ${delay}ms`,
+                );
+                await new Promise((r) => setTimeout(r, delay));
+              }
+            }
+            throw lastErr;
+          };
+
+          const finalMsg = await runSonnetStream();
 
           // Same cache telemetry as the plain-JSON path so the log
           // shape stays grep-stable across both modes. Phase 2.6
@@ -1033,12 +1103,38 @@ export async function POST(req: Request) {
   // Used by test-prompt.ts, test-chat-e2e.ts, and any non-browser
   // caller that does not request NDJSON. Synchronous: awaits the full
   // model reply and saveMemory before returning.
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 3000,
-    system: systemBlocks,
-    messages: messagesArray,
-  });
+  // Same overload-retry discipline as the streaming path. create() is atomic
+  // (it returns the full message or throws), so there is no partial-output
+  // hazard — every overload / 5xx failure is safely retryable up to the cap.
+  const createSonnetWithRetry = async () => {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
+      try {
+        return await client.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 3000,
+          system: systemBlocks,
+          messages: messagesArray,
+        });
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryableOverload(err)) throw err;
+        if (attempt === MAX_OVERLOAD_RETRIES) {
+          console.error(
+            "[chat] anthropic overloaded — all retries exhausted, returning error to client",
+          );
+          throw err;
+        }
+        const delay = OVERLOAD_BACKOFF_MS[attempt] ?? 2000;
+        console.warn(
+          `[chat] anthropic overloaded — retry ${attempt + 1}/${MAX_OVERLOAD_RETRIES} after ${delay}ms`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+    throw lastErr;
+  };
+  const response = await createSonnetWithRetry();
 
   // Phase 2.6 cache telemetry: per-turn cache write/read + persona
   // size relative to the Sonnet 4.6 cache minimum. Watch this log
