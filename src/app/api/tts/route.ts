@@ -42,14 +42,18 @@ import { hasVoiceAccess } from "@/lib/voiceAccess";
 // keys (ElevenLabs, Supabase service role) stay server-only.
 //
 // Phase 10.6 — voice mode: callers send `mode: "voice"` for the low-latency
-// path: a 60-word cap + a single static mode-default tag, SKIPPING the Haiku
-// tagger entirely. Default mode (flag omitted) keeps the full Haiku flow + the
-// 100-word cap unchanged.
+// path: a 60-word cap, SKIPPING the Haiku tagger entirely. Default mode (flag
+// omitted) keeps the full Haiku flow + the 100-word cap unchanged.
 //
 // Phase 10.7 — voice mode also switches the model to eleven_turbo_v2_5 (much
 // lower TTS inference latency than v3; voice mode already skips Haiku tags so
 // it loses nothing by dropping v3's audio-tag support). Default mode stays on
 // eleven_v3 (DEFAULT_MODEL) for quality parity with the chat-side play path.
+//
+// Phase 10.8 — voice mode sends RAW text (no audio tag). Turbo v2.5 does not
+// interpret ElevenLabs audio tags, so the old static bracketed-mode prefix
+// was being spoken aloud literally. Default mode (v3) still gets Haiku-injected
+// tags; v3 interprets them correctly.
 //
 // Node runtime: needs crypto (SHA-256), Buffer, the ElevenLabs Node SDK,
 // and the Supabase service client. maxDuration headroom for the v3 call.
@@ -78,18 +82,6 @@ const VOICE_MODE_MAX_WORDS = 60;
 // support (which voice mode already forgoes) for markedly lower inference
 // latency. Default mode keeps DEFAULT_MODEL (eleven_v3) untouched.
 const VOICE_MODE_MODEL = "eleven_turbo_v2_5";
-
-// Phase 10.6 — the single static tag voice mode wraps the reply in (skipping
-// Haiku). Mirrors voiceTagInjector's private MODE_DEFAULT_TAG; kept inline
-// here so voiceTagInjector stays untouched. Default mode is unaffected — it
-// still runs the full Haiku tagger.
-const VOICE_MODE_TAG: Record<KrishnaMode, string> = {
-  gita: "[serious]",
-  sakhya: "[warmly]",
-  bhagavata: "[gently]",
-  vrindavan: "[playfully]",
-  mahabharata: "[resolutely]",
-};
 
 const AUDIO_HEADERS: Record<string, string> = {
   "Content-Type": "audio/mpeg",
@@ -222,15 +214,19 @@ export async function POST(req: Request) {
   }
 
   // 6. Tag the reply.
-  //   - voice mode: SKIP Haiku — wrap in a single static mode-default tag.
-  //   - default mode: full Haiku tag injection (never throws), unchanged.
+  //   - voice mode: SKIP Haiku AND skip audio tags entirely. Turbo v2.5 does
+  //     not interpret ElevenLabs tags — it would speak "[gently]" aloud — so
+  //     the raw stripped + capped text is what's sent. `mode` is still resolved
+  //     for telemetry; tagCount is 0 (no tags injected).
+  //   - default mode: full Haiku tag injection (never throws), unchanged — v3
+  //     interprets the injected tags correctly.
   let taggedText: string;
   let mode: KrishnaMode;
   let tagCount: number;
   if (isVoiceMode) {
     mode = modeHint ?? "bhagavata";
-    taggedText = `${VOICE_MODE_TAG[mode]} ${spokenText}`;
-    tagCount = 1;
+    taggedText = spokenText;
+    tagCount = 0;
   } else {
     ({ taggedText, mode, tagCount } = await injectTags(spokenText, modeHint));
   }
