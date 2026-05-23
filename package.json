@@ -39,6 +39,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
     "@elevenlabs/elevenlabs-js": "^2.49.0",
+    "@elevenlabs/react": "^1.6.3",
     "@google/generative-ai": "^0.24.1",
     "@ricky0123/vad-web": "^0.0.30",
     "@sentry/nextjs": "^10.51.0",

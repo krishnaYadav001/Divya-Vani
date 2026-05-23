@@ -14,8 +14,10 @@
 // should land in ≤ ~3s under normal Anthropic load.
 //
 // This endpoint is server-to-server (called from Google Cloud on ElevenLabs'
-// behalf): NO cookies, NO paywall, NO verse cards (ElevenAgents owns the UI).
-// Auth is a Bearer token (CUSTOM_LLM_KEY) instead.
+// behalf): NO cookies, NO verse cards (ElevenAgents owns the UI). Auth is a
+// Bearer token (CUSTOM_LLM_KEY). Phase 11.4: the PAYWALL is now enforced here
+// (hasVoiceAccess on the real per-user id) as defense-in-depth behind the
+// widget's own pre-check.
 //
 // ── Relationship to /api/chat ────────────────────────────────────────────────
 // /api/chat is byte-locked for this phase, and its `extractMemory` /
@@ -25,16 +27,18 @@
 // (clearly marked). A future phase that can touch /api/chat should hoist these
 // into a shared lib (e.g. src/lib/personaTurn.ts) and import them in both.
 //
-// ── User identity (test-agent strategy) ──────────────────────────────────────
-// ElevenAgents does not pass a per-user id today, so all test calls share a
-// single fixed identity. This means users_memory + chat_logs for this id are a
-// shared blob across test sessions — accepted for the test phase.
-//   TODO(Phase 11.3): per-user identity via ElevenAgents dynamic_variables.
-// Consequence: we deliberately do NOT read chat_logs back for conversation
-// history (fetchRecentChatHistory / fetchLastChatLanguage) — for a shared id
-// they would inject unrelated turns into the live conversation. ElevenAgents
-// supplies the authoritative current-conversation history in the request body,
-// so we use that (the spec itself says "prefer the live ElevenAgents history").
+// ── User identity (Phase 11.4 — per-user via dynamic variables) ───────────────
+// The widget passes the cookie UUID to ElevenAgents at conversation start via
+// BOTH `customLlmExtraBody` (which ElevenLabs merges into the OpenAI request
+// body — landing at body.user_id) AND `dynamicVariables`. ElevenLabs versions
+// surface it at slightly different paths, so resolveUserId() reads a cascade
+// (see its comment). When NO id is present (legacy dashboard test calls /
+// misconfigured widget) we fall back to a fixed shared id and warn loudly.
+//
+// Note we still do NOT read chat_logs back for conversation history
+// (fetchRecentChatHistory / fetchLastChatLanguage): ElevenAgents supplies the
+// authoritative current-conversation history in the request body, so we use
+// that and avoid an extra serial DB hit on the latency-critical path.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { createHash, randomUUID, timingSafeEqual } from "crypto";
@@ -63,10 +67,13 @@ import {
   MODERATION_THRESHOLD,
   type ModerationFlag,
 } from "@/lib/moderation";
+import { hasVoiceAccess } from "@/lib/voiceAccess";
 
 const client = new Anthropic();
 
-// Fixed shared identity for the ElevenAgents test agent. See header note.
+// Fallback shared identity — used ONLY when the request carries no user_id
+// (legacy dashboard test calls, or a misconfigured widget). See header note +
+// resolveUserId(). Production widget calls always carry a real cookie UUID.
 const AGENT_USER_ID = "elevenagents-test-user";
 // Model id echoed back in every OpenAI chunk. ElevenAgents sends
 // model:"krishna-sonnet-4-6"; we echo whatever it sends, defaulting to this.
@@ -125,6 +132,44 @@ function stopChunkLine(id: string, created: number, model: string): string {
   return dataLine({
     ...chunkBase(id, created, model),
     choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+  });
+}
+// Phase 11.5 — OpenAI-format tool_call delta chunk. We emit this DETERMINISTIC-
+// ALLY from OUR safety classifier (not the model) when a turn is flagged
+// self_harm / harm_others, so ElevenAgents routes a client-tool call to the
+// widget which renders the non-Krishna helpline overlay (Locked Decision #7).
+// `show_helpline_card` is registered on the agent as a fire-and-forget client
+// tool; Krishna's compassionate Bhagavata reply still streams as normal content
+// AFTER this chunk. NOTE: interleaving a tool_call with content in a single
+// completion (finish_reason "stop") is non-standard — ElevenLabs' parser MUST
+// tolerate it for both the overlay and the spoken reply to land. This is the
+// one piece a live smoke test must confirm (see CC report).
+function toolCallChunkLine(
+  id: string,
+  created: number,
+  model: string,
+  toolCallId: string,
+  name: string,
+  args: string,
+): string {
+  return dataLine({
+    ...chunkBase(id, created, model),
+    choices: [
+      {
+        index: 0,
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              id: toolCallId,
+              type: "function",
+              function: { name, arguments: args },
+            },
+          ],
+        },
+        finish_reason: null,
+      },
+    ],
   });
 }
 // Usage chunk — choices:[] per OpenAI spec. Emitted only when the request set
@@ -473,6 +518,53 @@ function jsonError(message: string, status: number): Response {
   );
 }
 
+// Phase 11.4 — 402 Payment Required. The widget pre-checks voice access before
+// starting, so this is defense-in-depth: it fires if a non-paying user reaches
+// the agent anyway. ElevenAgents surfaces the failed turn to the widget, which
+// (independently) shows the seva paywall.
+function paywallError(): Response {
+  return new Response(
+    JSON.stringify({ error: { code: "payment_required", message: "voice_paywall" } }),
+    { status: 402, headers: { "Content-Type": "application/json" } },
+  );
+}
+
+// Phase 11.4 — resolve the per-user identity ElevenAgents forwards. The widget
+// passes user_id via customLlmExtraBody (merged by the OpenAI SDK into the
+// top-level request body → body.user_id) AND dynamicVariables. Different
+// ElevenLabs versions surface it at different paths, so read a cascade. Returns
+// the resolved id + whether the shared-test-user fallback fired, or a malformed
+// signal (a present-but-non-string user_id) so the caller can 400.
+type UserIdResult =
+  | { ok: true; userId: string; usedFallback: boolean }
+  | { ok: false };
+
+function resolveUserId(body: Record<string, unknown>): UserIdResult {
+  const asObj = (v: unknown): Record<string, unknown> | undefined =>
+    v && typeof v === "object" ? (v as Record<string, unknown>) : undefined;
+  const clb = asObj(body.custom_llm_extra_body);
+  const eeb = asObj(body.elevenlabs_extra_body);
+  const dyn = asObj(body.dynamic_variables);
+  // Most → least likely path given the verified live request shape.
+  const candidates: unknown[] = [
+    body.user_id, // customLlmExtraBody merged to top level (most likely)
+    clb?.user_id, // custom_llm_extra_body passed through verbatim
+    dyn?.user_id, // top-level dynamic_variables object
+    asObj(eeb?.dynamic_variables)?.user_id, // the original spec's guess
+    asObj(clb?.dynamic_variables)?.user_id, // dynamic_variables nested in extra body
+  ];
+  let sawMalformed = false; // edge A5.3: present but non-string somewhere
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) {
+      return { ok: true, userId: c.trim(), usedFallback: false };
+    }
+    if (c !== undefined && c !== null) sawMalformed = true;
+  }
+  if (sawMalformed) return { ok: false }; // edge A5.3 → 400
+  // Edges A5.1 + A5.2: no user_id anywhere → shared-test-user fallback + warn.
+  return { ok: true, userId: AGENT_USER_ID, usedFallback: true };
+}
+
 // =============================================================================
 // POST handler
 // =============================================================================
@@ -563,8 +655,36 @@ export async function POST(req: Request): Promise<Response> {
   }
   const latestUserMessage = lastMsg.content;
 
-  // ── Step 5: user identity (fixed shared id for the test agent). ──
-  const userId = AGENT_USER_ID;
+  // ── Step 5: user identity (Phase 11.4 — from dynamic variables). ──
+  const idResult = resolveUserId(body as Record<string, unknown>);
+  if (!idResult.ok) {
+    return jsonError("`user_id` must be a string", 400); // edge A5.3
+  }
+  const userId = idResult.userId;
+  if (idResult.usedFallback) {
+    console.warn(
+      "[agent-llm] no user_id in request — using shared fallback id. " +
+        "Production widget calls must pass user_id via customLlmExtraBody/dynamicVariables.",
+    );
+  }
+  console.log(`[agent-llm] user_id=${userId}`);
+
+  // ── Step 5b: paywall (Phase 11.4 — defense-in-depth behind the widget's
+  // own pre-check). hasVoiceAccess fails closed internally; wrap anyway so a
+  // throw can never grant free voice (edge A5.5). ──
+  let access: { allowed: boolean; reason: string };
+  try {
+    access = await hasVoiceAccess(userId);
+  } catch (e) {
+    console.error("[agent-llm] hasVoiceAccess threw — failing closed:", e);
+    access = { allowed: false, reason: "threw" };
+  }
+  if (!access.allowed) {
+    console.warn(
+      `[agent-llm] voice paywall blocked user_id=${userId} reason=${access.reason}`,
+    );
+    return paywallError();
+  }
 
   // ── Step 6a: banned-word gate (defense in depth + latency saver). ──
   // Mirrors /api/chat: short-circuit BEFORE any Haiku/Anthropic cost, log to
@@ -857,6 +977,25 @@ export async function POST(req: Request): Promise<Response> {
         return -1;
       };
 
+      // ── Phase 11.5 — emit the helpline tool call up front when flagged ──
+      // BEFORE Krishna's first words, so the widget renders the overlay
+      // immediately, in parallel with the spoken reply (edge A5.6). Role chunk
+      // first; roleEmitted=true stops emitContent re-emitting it.
+      if (safetyFlag) {
+        send(roleChunkLine(id, created, responseModel));
+        roleEmitted = true;
+        send(
+          toolCallChunkLine(
+            id,
+            created,
+            responseModel,
+            "call_" + randomUUID(),
+            "show_helpline_card",
+            JSON.stringify({ flag: safetyFlag, user_lang: conversationLang }),
+          ),
+        );
+      }
+
       // Flush every complete sentence in the buffer (edge 1: one Anthropic delta
       // may contain several), then apply the 150-char safety cap.
       const flushSentences = () => {
@@ -962,10 +1101,14 @@ export async function POST(req: Request): Promise<Response> {
         }
         sentenceBuffer = "";
 
-        // Edge case 8: model produced zero text — emit role + one empty content
-        // chunk so the SDK sees a well-formed (empty) reply, then stop.
+        // Edge case 8: model produced zero text — emit role (unless a safety
+        // turn already did) + one empty content chunk so the SDK sees a
+        // well-formed (empty) reply, then stop.
         if (!hasEmittedText) {
-          send(roleChunkLine(id, created, responseModel));
+          if (!roleEmitted) {
+            roleEmitted = true;
+            send(roleChunkLine(id, created, responseModel));
+          }
           send(contentChunkLine(id, created, responseModel, ""));
         }
 
@@ -994,11 +1137,13 @@ export async function POST(req: Request): Promise<Response> {
           return;
         }
 
-        if (hasEmittedText) {
-          // Edge case 9: error AFTER first token. Never emit an error frame mid-
-          // stream (breaks the SDK parser) — close gracefully with a stop for
-          // whatever landed. No usage available; emit a 0/0 usage chunk if asked.
-          console.error("[agent-llm] anthropic errored mid-stream:", e);
+        if (hasEmittedText || roleEmitted) {
+          // Edge case 9: error AFTER a content chunk flushed, OR (edge A5.9) a
+          // role + helpline tool_call were already emitted for a safety turn.
+          // Either way an error frame now would be malformed — close gracefully
+          // with a stop for whatever landed (the overlay still shows; Krishna's
+          // reply may be empty). Emit a 0/0 usage chunk if asked.
+          console.error("[agent-llm] anthropic errored after first chunk:", e);
           send(stopChunkLine(id, created, responseModel));
           if (includeUsage) {
             send(usageChunkLine(id, created, responseModel, 0, 0));

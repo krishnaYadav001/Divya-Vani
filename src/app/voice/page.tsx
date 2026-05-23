@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import Atmosphere from "../components/Atmosphere";
-import VoiceClient from "./VoiceClient";
+import AgentVoiceClient from "./AgentVoiceClient";
 
-// Phase 10.5 — /voice route. A voice-only, orb-centred conversation with
-// Krishna (Sarvam STT → Sonnet → ElevenLabs TTS, all existing endpoints).
-// This server shell only lays the z-0 Atmosphere ground (mode="deep" — denser,
-// immersive) and mounts the client orchestrator; everything interactive
-// (orb, session lifecycle, paywall, helpline, transcript) lives in
-// VoiceClient. The always-visible bilingual identity disclaimer (Locked
-// Decision #1) is rendered by VoiceClient's top identity strip — never
-// conditionally hidden.
+// Phase 11.3 — /voice route, now on the ElevenAgents React SDK (replaces the
+// Phase-10.5 Sarvam→Sonnet→TTS loop; the old VoiceClient + voiceSession.ts are
+// retired in Phase 11.6). This server shell only lays the z-0 Atmosphere ground
+// (mode="chat" — light petals + sparkles) and mounts the client. Everything
+// interactive (orb, SDK session lifecycle, identity bootstrap, paywall,
+// helpline overlay, transcript) lives in AgentVoiceClient. The always-visible
+// bilingual identity disclaimer (Locked Decision #1) is rendered by its Zone-2
+// identity strip — never conditionally hidden.
+//
+// Identity/cookie: minted + persisted by /api/voice/bootstrap (a Route Handler),
+// not here — Next 16 server components cannot set cookies.
 
 export const metadata: Metadata = {
   title: "Voice · Divya Vani",
@@ -22,9 +25,9 @@ export default function VoicePage() {
   return (
     <main className="relative flex h-full flex-1 flex-col overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <Atmosphere mode="deep" intensity={1} vignette={0.7} />
+        <Atmosphere mode="chat" intensity={1} vignette={0.7} />
       </div>
-      <VoiceClient />
+      <AgentVoiceClient />
     </main>
   );
 }
