@@ -670,20 +670,35 @@ export async function POST(req: Request): Promise<Response> {
   console.log(`[agent-llm] user_id=${userId}`);
 
   // ── Step 5b: paywall (Phase 11.4 — defense-in-depth behind the widget's
-  // own pre-check). hasVoiceAccess fails closed internally; wrap anyway so a
-  // throw can never grant free voice (edge A5.5). ──
-  let access: { allowed: boolean; reason: string };
-  try {
-    access = await hasVoiceAccess(userId);
-  } catch (e) {
-    console.error("[agent-llm] hasVoiceAccess threw — failing closed:", e);
-    access = { allowed: false, reason: "threw" };
-  }
-  if (!access.allowed) {
+  // bootstrap gate, which is the AUTHORITATIVE check). ──
+  // A 402 here makes ElevenAgents tear down the live conversation (it ends the
+  // call on a non-200 from the custom LLM). So we FAIL OPEN on anything we can't
+  // be certain about, and only block a RESOLVED real user whose access is
+  // definitively denied:
+  //   • user_id fell back (couldn't resolve) → skip — the widget gated entry,
+  //     and a 402 would break voice for a paid user whose id didn't forward.
+  //   • hasVoiceAccess errors → allow — never break voice on a DB blip.
+  //   • resolved real user, definitively no payment → 402 (shouldn't happen,
+  //     since the widget wouldn't have let them Begin; pure backstop).
+  if (idResult.usedFallback) {
     console.warn(
-      `[agent-llm] voice paywall blocked user_id=${userId} reason=${access.reason}`,
+      "[agent-llm] user_id fallback — skipping backend paywall (widget gated entry)",
     );
-    return paywallError();
+  } else {
+    let allowed = true;
+    try {
+      allowed = (await hasVoiceAccess(userId)).allowed;
+    } catch (e) {
+      console.error(
+        "[agent-llm] hasVoiceAccess threw — failing open (widget gates entry):",
+        e,
+      );
+      allowed = true;
+    }
+    if (!allowed) {
+      console.warn(`[agent-llm] voice paywall blocked resolved user_id=${userId}`);
+      return paywallError();
+    }
   }
 
   // ── Step 6a: banned-word gate (defense in depth + latency saver). ──

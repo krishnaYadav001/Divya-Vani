@@ -12,10 +12,11 @@
 //     amplitude analysers, and registers our event callbacks.
 //   • useConversationClientTool("show_helpline_card", …) renders the helpline
 //     overlay when the backend emits that tool_call (Locked Decision #7).
-//   • Identity: user_id from /api/voice/bootstrap → ElevenAgents customLlmExtraBody
-//     (→ body.user_id in the custom LLM; no agent dynamic-variable declaration
-//     needed). dynamicVariables is intentionally NOT sent — an undeclared one
-//     aborts the conversation, and extra_body already carries user_id.
+//   • Identity: user_id from /api/voice/bootstrap → ElevenAgents via BOTH
+//     dynamicVariables.user_id (the agent declares user_id, so it's required at
+//     init AND forwards to the LLM) and customLlmExtraBody.user_id (→ body.user_id).
+//     resolveUserId() on the backend reads both. NB: the agent MUST have user_id
+//     declared (run scripts/setup-elevenlabs-agent.ts) or the call aborts.
 //   • Paywall: bootstrap's hasAccess gates Begin; the backend 402 is a backstop.
 //
 // The always-visible bilingual identity disclaimer (Locked Decision #1) lives in
@@ -269,13 +270,18 @@ function VoiceInner() {
     setError(null);
     setStarted(true);
     const userId = userIdRef.current ?? undefined;
-    // Identity → ElevenAgents via customLlmExtraBody ONLY. ElevenLabs merges it
-    // into the custom-LLM request body (→ body.user_id), and it needs NO agent
-    // declaration. We deliberately do NOT send dynamicVariables: ElevenLabs
-    // terminates any conversation that receives a dynamic variable the agent
-    // hasn't declared, and user_id already reaches the LLM via extra_body.
+    // Identity → ElevenAgents on two channels:
+    //   • dynamicVariables.user_id — the agent DECLARES user_id (setup script),
+    //     and ElevenLabs treats a declared dynamic variable as REQUIRED at
+    //     conversation start, so it must be sent or the call aborts at init.
+    //     It also forwards to the custom LLM (body.dynamic_variables.user_id).
+    //   • customLlmExtraBody.user_id — second path (→ body.user_id).
+    // resolveUserId() on the backend reads both. (Earlier this was sent the
+    // other way — omitted — back when the agent had NOT yet declared user_id;
+    // an undeclared dynamic variable aborts too. Declared ⇒ required ⇒ send it.)
     // startSession requests the mic; a denial surfaces via onError.
     startSession({
+      dynamicVariables: userId ? { user_id: userId } : undefined,
       customLlmExtraBody: userId ? { user_id: userId } : undefined,
     });
   }, [bootstrapped, hasAccess, startSession]);
