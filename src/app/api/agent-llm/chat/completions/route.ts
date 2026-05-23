@@ -854,7 +854,7 @@ export async function POST(req: Request): Promise<Response> {
   // /api/chat's voice-mode constraint.)
   systemBlocks.push({
     type: "text",
-    text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be ≤30 words. Krishna's voice, register, and warmth stay exactly the same — only shorter. It is fine to end cleanly mid-thought; the user can ask you to continue.",
+    text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be ≤55 words (roughly two to four short sentences). Krishna's voice, register, and warmth stay exactly the same — only shorter than a text reply. It is fine to end cleanly mid-thought; the user can ask you to continue.",
   });
 
   // ── Step 11 prep: turn-state persistence (runs post-stream, in waitUntil). ──
