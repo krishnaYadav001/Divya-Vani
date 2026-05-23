@@ -1,23 +1,28 @@
 "use client";
 
-// Phase 11.3 — /voice top-level client, rebuilt on the ElevenAgents React SDK
-// (@elevenlabs/react). Replaces the Phase-10.5 VoiceClient + voiceSession.ts
-// loop (Sarvam STT → Sonnet → ElevenLabs TTS) with the SDK's managed real-time
-// conversation. The SDK owns mic capture + audio playback; we own the Dawn
-// Aarti view, identity/paywall, transcript, and the helpline overlay.
+// Phase 11.3 — /voice top-level client on the ElevenAgents React SDK
+// (@elevenlabs/react). The SDK owns mic capture + audio playback; we own the
+// Dawn Aarti view, identity/paywall, the helpline overlay, and the transcript.
+//
+// UX model (Gemini-assistant style, founder-chosen 2026-05-23):
+//   • During the call → orb ONLY (no transcript). Immersive; nothing grows to
+//     push the controls off-screen.
+//   • After the call ends → show the full conversation transcript with
+//     Start-again / Back-to-chat actions.
+//
+// Orb states map from the SDK: connecting / listening (recording you) /
+// thinking (your turn ended, Krishna processing) / speaking. A soft tone plays
+// when listening (re)starts so the user knows it's their turn. The orb's
+// recording pulse + REC dot make "I'm listening" vs "I've stopped" legible.
 //
 // Engine wiring:
 //   • ConversationProvider holds the (public) agent id.
-//   • useConversation gives startSession/endSession + status/isSpeaking +
-//     amplitude analysers, and registers our event callbacks.
-//   • useConversationClientTool("show_helpline_card", …) renders the helpline
-//     overlay when the backend emits that tool_call (Locked Decision #7).
-//   • Identity: user_id from /api/voice/bootstrap → ElevenAgents via BOTH
-//     dynamicVariables.user_id (the agent declares user_id, so it's required at
-//     init AND forwards to the LLM) and customLlmExtraBody.user_id (→ body.user_id).
-//     resolveUserId() on the backend reads both. NB: the agent MUST have user_id
-//     declared (run scripts/setup-elevenlabs-agent.ts) or the call aborts.
-//   • Paywall: bootstrap's hasAccess gates Begin; the backend 402 is a backstop.
+//   • useConversation → startSession/endSession + status/isSpeaking + amplitude
+//     analysers + event callbacks.
+//   • useConversationClientTool("show_helpline_card") → helpline overlay.
+//   • Identity: user_id from /api/voice/bootstrap → dynamicVariables (the agent
+//     declares user_id; customLlmExtraBody is rejected by this agent).
+//   • Transport: connectionType "websocket" (WebRTC data channels failed).
 //
 // The always-visible bilingual identity disclaimer (Locked Decision #1) lives in
 // the Zone-2 strip and is never conditionally hidden.
@@ -29,6 +34,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ConversationProvider,
@@ -53,8 +59,6 @@ type HelplineState = { flag: "self_harm" | "harm_others"; userLang: "hi" | "en" 
 type TranscriptTurn = { role: "user" | "agent"; text: string };
 
 // ── error mapping ────────────────────────────────────────────────────────────
-// The SDK surfaces errors as free-text strings; match defensively against the
-// failure modes we have copy for, else fall back to the generic line.
 function mapError(message: string): { code: string; copy: Bilingual } {
   const m = (message ?? "").toLowerCase();
   if (/(payment|paywall|402)/.test(m)) {
@@ -93,6 +97,7 @@ export default function AgentVoiceClient() {
 }
 
 function VoiceInner() {
+  const router = useRouter();
   const orbRef = useRef<HTMLDivElement>(null);
   const beginRef = useRef<HTMLButtonElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -105,16 +110,39 @@ function VoiceInner() {
 
   // view state
   const [started, setStarted] = useState(false); // user pressed Begin this session
+  const [ended, setEnded] = useState(false); // conversation finished → show transcript
+  const [userTurnEnded, setUserTurnEnded] = useState(false); // user spoke; Krishna processing
   const [error, setError] = useState<{ code: string; copy: Bilingual } | null>(null);
   const [helpline, setHelpline] = useState<HelplineState>(null);
   const [transcript, setTranscript] = useState<TranscriptTurn[]>([]);
   const [isSevaOpen, setIsSevaOpen] = useState(false);
-  // Whether we've connected at least once this session — distinguishes a first
-  // "connecting" from a "reconnecting". State (not a ref) since it drives render.
   const [hasConnected, setHasConnected] = useState(false);
 
+  // Soft "your turn" tone. The AudioContext is created/resumed inside the Begin
+  // click (a user gesture) to satisfy autoplay policy.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const playListeningTone = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(659.25, now); // E5
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // → A5 (gentle rise)
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.085, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    } catch {
+      /* tone is best-effort — never let it break the session */
+    }
+  }, []);
+
   // Parse + apply the helpline tool parameters defensively (edge B6.12).
-  // Declared before useConversation so the callbacks below can reference it.
   const applyHelplineParams = useCallback((rawParams: unknown) => {
     let params: Record<string, unknown> = {};
     try {
@@ -137,23 +165,26 @@ function VoiceInner() {
     onConnect: () => {
       setHasConnected(true);
       setError(null);
+      setUserTurnEnded(false);
     },
     onDisconnect: (details) => {
-      // Log the full reason / close code so connection drops are diagnosable.
       console.warn("[voice] disconnected:", details);
-      // reason "error" → surface it; "user"/"agent" → clean end (orb idles).
       if (details?.reason === "error") {
         setError(mapError(details.message ?? ""));
+      } else {
+        // Normal end → show the transcript afterwards (Gemini-style). The render
+        // only shows the ended view if there are turns to show.
+        setEnded(true);
       }
       setStarted(false);
       setHasConnected(false);
+      setUserTurnEnded(false);
     },
     onError: (message, context) => {
       console.error("[voice] error:", message, context);
       const mapped = mapError(message);
       setError(mapped);
-      // edge B6.2: a payment failure routes to the seva paywall.
-      if (mapped.code === "paywall") setIsSevaOpen(true);
+      if (mapped.code === "paywall") setIsSevaOpen(true); // edge B6.2
     },
     onMessage: ({ message, role }) => {
       if (!message) return;
@@ -166,10 +197,14 @@ function VoiceInner() {
         }
         return [...prev, { role, text: message }];
       });
+      // A user message = the user's turn ended → Krishna is now processing
+      // (thinking). An agent message clears it. This drives the orb's
+      // listening → thinking → speaking progression so the user sees when
+      // listening has STOPPED.
+      if (role === "user") setUserTurnEnded(true);
+      else setUserTurnEnded(false);
     },
-    // edge B6.13: a tool we don't recognise — log + ignore. The helpline tool is
-    // handled by useConversationClientTool below; this is the safety net for a
-    // mismatched name or an un-registered handler.
+    // edge B6.13: safety net for an unregistered/mismatched client tool.
     onUnhandledClientToolCall: (call) => {
       if (call?.tool_name === "show_helpline_card") {
         applyHelplineParams(call?.parameters);
@@ -181,18 +216,14 @@ function VoiceInner() {
 
   const { status, isSpeaking, startSession, endSession } = conversation;
 
-  // Keep a fresh ref to the conversation so the amplitude RAF loop can call the
-  // latest analyser getters without re-subscribing every render. Updated in an
-  // effect (not during render) so the SDK object identity churn doesn't restart
-  // the loop and we don't touch a ref mid-render.
+  // Fresh ref to the conversation so the amplitude loop calls the latest
+  // analyser getters without re-subscribing every render.
   const conversationRef = useRef(conversation);
   useEffect(() => {
     conversationRef.current = conversation;
   });
 
-  // Register the helpline client tool (name MUST match the agent config). The
-  // SDK keeps this handler fresh via a ref, so referencing applyHelplineParams
-  // is safe. Returning void = fire-and-forget (does not block the conversation).
+  // Register the helpline client tool (name MUST match the agent config).
   useConversationClientTool("show_helpline_card", (params: Record<string, unknown>) => {
     applyHelplineParams(params);
   });
@@ -226,6 +257,7 @@ function VoiceInner() {
   useEffect(() => {
     return () => {
       void endSession();
+      void audioCtxRef.current?.close().catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -233,7 +265,7 @@ function VoiceInner() {
   // ── amplitude → --orb-amp (imperative, no re-render per frame) ────────────
   useEffect(() => {
     if (status !== "connected") return;
-    const el = orbRef.current; // capture the node for the cleanup reset
+    const el = orbRef.current;
     let raf = 0;
     const tick = () => {
       try {
@@ -256,52 +288,124 @@ function VoiceInner() {
 
   // Focus the primary action once bootstrap resolves (a11y entry point).
   useEffect(() => {
-    if (bootstrapped && status === "disconnected" && !started) {
+    if (bootstrapped && status === "disconnected" && !started && !ended) {
       beginRef.current?.focus();
     }
-  }, [bootstrapped, status, started]);
+  }, [bootstrapped, status, started, ended]);
 
-  // Keep the transcript scrolled to the latest turn as the conversation grows.
+  // Keep the (post-call) transcript scrolled to the latest turn.
   useEffect(() => {
     const el = transcriptRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [transcript]);
+  }, [transcript, ended]);
+
+  // ── derived view state ────────────────────────────────────────────────────
+  // SDK ConversationStatus: "disconnected" | "connecting" | "connected" | "error".
+  const orbState: AgentOrbState = useMemo(() => {
+    if (status === "error" || (error && status === "disconnected")) return "error";
+    if (status === "connected") {
+      if (isSpeaking) return "speaking";
+      if (userTurnEnded) return "thinking"; // user turn ended, Krishna processing
+      return "listening";
+    }
+    if (status === "connecting") return "connecting";
+    return "disconnected";
+  }, [status, isSpeaking, error, userTurnEnded]);
+
+  const isReconnecting = status === "connecting" && hasConnected;
+  const isActive = started && (status === "connecting" || status === "connected");
+  const showEndedView = ended && transcript.length > 0;
+
+  // Play the "your turn" tone on the rising edge into listening (first connect
+  // and after each Krishna reply).
+  const prevOrbRef = useRef<AgentOrbState>("disconnected");
+  useEffect(() => {
+    if (orbState === "listening" && prevOrbRef.current !== "listening") {
+      playListeningTone();
+    }
+    prevOrbRef.current = orbState;
+  }, [orbState, playListeningTone]);
+
+  const strip: Bilingual = useMemo(() => {
+    if (error) return error.copy;
+    if (showEndedView) return C.states.ended;
+    if (status === "error") return C.errors.generic;
+    if (status === "connected") {
+      if (isSpeaking) return C.states.speaking;
+      if (userTurnEnded) return C.states.thinking;
+      return C.states.listening;
+    }
+    if (status === "connecting") {
+      return isReconnecting
+        ? { hi: "फिर से जुड़ रहा हूँ…", en: "Reconnecting…" }
+        : C.states.starting;
+    }
+    return C.states.idle;
+  }, [status, isSpeaking, error, isReconnecting, userTurnEnded, showEndedView]);
+
+  const showPaywallOverlay = bootstrapped && !hasAccess && !isActive && !showEndedView;
+  const beginLabel = bootstrapped && !hasAccess ? C.paywall.openSeva : C.begin;
+  const showBegin = !isActive && !showEndedView;
 
   // ── gesture handlers ──────────────────────────────────────────────────────
-  const handleBegin = useCallback(() => {
-    if (!bootstrapped) return;
-    if (!hasAccess) {
-      setIsSevaOpen(true); // edge B6.2: gate before any SDK / mic / credit cost
-      return;
+  const ensureAudioCtx = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) {
+        const Ctor =
+          window.AudioContext ??
+          (window as unknown as { webkitAudioContext?: typeof AudioContext })
+            .webkitAudioContext;
+        if (Ctor) audioCtxRef.current = new Ctor();
+      }
+      void audioCtxRef.current?.resume();
+    } catch {
+      /* tone is optional */
     }
+  }, []);
+
+  const startConversation = useCallback(() => {
     setError(null);
+    setHelpline(null);
+    setUserTurnEnded(false);
     setStarted(true);
+    ensureAudioCtx();
     const userId = userIdRef.current ?? undefined;
-    // connectionType "websocket": the SDK defaults to WebRTC (LiveKit), whose
-    // data channels were failing on the deployed site ("Unknown DataChannel
-    // error … User-Initiated Abort") — the connection died at the transport
-    // layer before a conversation ever registered (nothing showed in the
-    // ElevenLabs dashboard). WebSocket avoids WebRTC data channels entirely and
-    // is the robust public-agent transport (audio + tool calls ride the WS).
-    //
-    // Identity → ElevenAgents via dynamicVariables.user_id ONLY. The agent
-    // DECLARES user_id, so ElevenLabs requires it at start, accepts it, and
-    // makes it available to the turn. We do NOT send customLlmExtraBody:
-    // ElevenLabs rejects it with close code 1008 ("Custom LLM extra body
-    // override is not allowed for this AI agent") unless the agent explicitly
-    // enables that override in its security settings — and dynamicVariables
-    // already carries user_id. startSession requests the mic; a denial surfaces
-    // via onError.
+    // Identity via dynamicVariables only (the agent declares user_id; it rejects
+    // customLlmExtraBody). WebSocket transport (WebRTC data channels failed).
     startSession({
       connectionType: "websocket",
       dynamicVariables: userId ? { user_id: userId } : undefined,
     });
-  }, [bootstrapped, hasAccess, startSession]);
+  }, [ensureAudioCtx, startSession]);
+
+  const handleBegin = useCallback(() => {
+    if (!bootstrapped) return;
+    if (!hasAccess) {
+      setIsSevaOpen(true); // gate before any SDK / mic / credit cost
+      return;
+    }
+    startConversation();
+  }, [bootstrapped, hasAccess, startConversation]);
 
   const handleEnd = useCallback(() => {
-    void endSession();
+    void endSession(); // → onDisconnect sets ended (shows transcript)
     setStarted(false);
   }, [endSession]);
+
+  const handleStartAgain = useCallback(() => {
+    setEnded(false);
+    setTranscript([]);
+    if (!hasAccess) {
+      setIsSevaOpen(true);
+      return;
+    }
+    startConversation();
+  }, [hasAccess, startConversation]);
+
+  const handleBackToChat = useCallback(() => {
+    void endSession();
+    router.push("/chat");
+  }, [endSession, router]);
 
   const onPurchaseSuccess = useCallback((newBalance: number) => {
     setCounter((p) => ({ ...p, sevaBalance: newBalance }));
@@ -311,34 +415,23 @@ function VoiceInner() {
     }
   }, []);
 
-  // ── derived view state ────────────────────────────────────────────────────
-  // SDK ConversationStatus: "disconnected" | "connecting" | "connected" | "error".
-  const orbState: AgentOrbState = useMemo(() => {
-    if (status === "error" || (error && status === "disconnected")) return "error";
-    if (status === "connected") return isSpeaking ? "speaking" : "listening";
-    if (status === "connecting") return "connecting";
-    return "disconnected";
-  }, [status, isSpeaking, error]);
-
-  const isReconnecting = status === "connecting" && hasConnected;
-  const isActive = started && (status === "connecting" || status === "connected");
-
-  const strip: Bilingual = useMemo(() => {
-    if (error) return error.copy;
-    if (status === "error") return C.errors.generic;
-    if (status === "connected") {
-      return isSpeaking ? C.states.speaking : C.states.listening;
-    }
-    if (status === "connecting") {
-      return isReconnecting
-        ? { hi: "फिर से जुड़ रहा हूँ…", en: "Reconnecting…" }
-        : C.states.starting;
-    }
-    return C.states.idle;
-  }, [status, isSpeaking, error, isReconnecting]);
-
-  const showPaywallOverlay = bootstrapped && !hasAccess && !isActive;
-  const beginLabel = bootstrapped && !hasAccess ? C.paywall.openSeva : C.begin;
+  // Bilingual transcript row.
+  const renderTurn = (t: TranscriptTurn, i: number) => (
+    <p
+      key={`${i}-${t.role}`}
+      className={
+        "text-sm leading-snug " +
+        (t.role === "user"
+          ? "text-right text-ink-soft"
+          : "text-left font-devanagari text-ink")
+      }
+    >
+      <span className="mr-1 text-[10px] uppercase tracking-wide text-ink-faint">
+        {t.role === "user" ? C.youLabel.hi : C.krishnaLabel.hi}
+      </span>
+      {t.text}
+    </p>
+  );
 
   return (
     <>
@@ -390,58 +483,46 @@ function VoiceInner() {
         <span className="font-serif italic">{C.disclaimer.en}</span>
       </p>
 
-      {/* ── Zone 3: orb hero ─────────────────────────────────────────── */}
-      {/* min-h-0 lets this region shrink so the Zone 4/5 strip + Exit button
-          below it stay on-screen no matter how long the transcript grows. */}
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-5">
-        {/* Orb + title — centered in the available space; this inner region
-            absorbs the slack so the transcript + Exit row never get pushed off. */}
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-          <p
-            className={
-              "mb-6 text-center transition-opacity duration-500 " +
-              (isActive ? "opacity-60" : "opacity-100")
-            }
-          >
-            <span className="block font-[family-name:var(--font-display)] text-2xl text-ink sm:text-3xl">
-              {C.title.hi}
-            </span>
-            <span className="mt-1 block font-serif text-sm italic text-ink-soft">
-              {C.title.en}
-            </span>
-          </p>
-
-          <AgentOrb ref={orbRef} state={orbState} amplitude={0} />
-        </div>
-
-        {/* Transcript — the full conversation, bounded + scrollable. It scrolls
-            WITHIN this region (auto-stuck to the latest turn; scroll up to read
-            earlier turns) instead of growing the page and hiding the Exit
-            button behind the browser bar. */}
-        {transcript.length > 0 && isActive && (
-          <div
-            ref={transcriptRef}
-            className="w-full max-w-[420px] shrink-0 overflow-y-auto pb-1"
-            style={{ maxHeight: "26vh" }}
-          >
-            <div className="flex flex-col gap-1.5">
-              {transcript.map((t, i) => (
-                <p
-                  key={`${i}-${t.role}`}
-                  className={
-                    "text-sm leading-snug " +
-                    (t.role === "user"
-                      ? "text-right text-ink-soft"
-                      : "text-left font-devanagari text-ink")
-                  }
-                >
-                  <span className="mr-1 text-[10px] uppercase tracking-wide text-ink-faint">
-                    {t.role === "user" ? C.youLabel.hi : C.krishnaLabel.hi}
-                  </span>
-                  {t.text}
-                </p>
-              ))}
+      {/* ── Zone 3: hero — orb DURING the call, transcript AFTER it ──── */}
+      {/* overflow-hidden + min-h-0 guarantee the Zone 4/5 controls below never
+          get covered or pushed off, regardless of viewport height. */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-hidden px-5">
+        {showEndedView ? (
+          /* Post-call transcript (Gemini-style) — the full conversation. */
+          <div className="flex min-h-0 w-full max-w-[480px] flex-1 flex-col py-4">
+            <p className="shrink-0 pb-3 text-center">
+              <span className="block font-[family-name:var(--font-display)] text-xl text-ink">
+                {C.states.ended.hi}
+              </span>
+              <span className="mt-0.5 block font-serif text-sm italic text-ink-soft">
+                {C.states.ended.en}
+              </span>
+            </p>
+            <div
+              ref={transcriptRef}
+              className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto rounded-2xl border border-gold-leaf/20 bg-mist/50 px-4 py-3"
+            >
+              {transcript.map(renderTurn)}
             </div>
+          </div>
+        ) : (
+          /* During the call (or idle): orb + title only — no transcript. */
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+            <p
+              className={
+                "mb-6 text-center transition-opacity duration-500 " +
+                (isActive ? "opacity-60" : "opacity-100")
+              }
+            >
+              <span className="block font-[family-name:var(--font-display)] text-2xl text-ink sm:text-3xl">
+                {C.title.hi}
+              </span>
+              <span className="mt-1 block font-serif text-sm italic text-ink-soft">
+                {C.title.en}
+              </span>
+            </p>
+
+            <AgentOrb ref={orbRef} state={orbState} amplitude={0} />
           </div>
         )}
 
@@ -472,8 +553,7 @@ function VoiceInner() {
           </div>
         )}
 
-        {/* Helpline overlay (Locked Decision #7) — informational, non-blocking;
-            the orb keeps running underneath while it is open. */}
+        {/* Helpline overlay (Locked Decision #7) — informational, non-blocking. */}
         {helpline && (
           <HelplineOverlay
             flag={helpline.flag}
@@ -495,8 +575,8 @@ function VoiceInner() {
       </p>
 
       {/* ── Zone 5: bottom action row ───────────────────────────────── */}
-      <div className="relative z-20 flex shrink-0 items-center justify-center gap-3 px-5 pb-6 pt-1">
-        {!isActive && (
+      <div className="relative z-20 flex shrink-0 flex-wrap items-center justify-center gap-3 px-5 pb-6 pt-1">
+        {showBegin && (
           <button
             ref={beginRef}
             type="button"
@@ -524,6 +604,31 @@ function VoiceInner() {
               · {C.exit.en}
             </span>
           </button>
+        )}
+
+        {showEndedView && (
+          <>
+            <button
+              type="button"
+              onClick={handleStartAgain}
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf bg-linear-to-b from-buttermilk to-peach px-8 py-3 font-[family-name:var(--font-devanagari)] text-base text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf"
+            >
+              {C.startNew.hi}
+              <span className="ml-2 font-serif text-sm italic text-ink-soft">
+                · {C.startNew.en}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBackToChat}
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-ink-line bg-white/40 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-line"
+            >
+              {C.backToChat.hi}
+              <span className="ml-2 font-serif text-sm italic text-ink-faint">
+                · {C.backToChat.en}
+              </span>
+            </button>
+          </>
         )}
       </div>
     </>
