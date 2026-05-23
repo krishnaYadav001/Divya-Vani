@@ -46,7 +46,6 @@ import { waitUntil } from "@vercel/functions";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
 import {
   fetchCandidates,
-  rerankByTheme,
   applyDiversityBoost,
   getRagFlags,
   type VerseHit,
@@ -669,37 +668,23 @@ export async function POST(req: Request): Promise<Response> {
   }
   console.log(`[agent-llm] user_id=${userId}`);
 
-  // ── Step 5b: paywall (Phase 11.4 — defense-in-depth behind the widget's
-  // bootstrap gate, which is the AUTHORITATIVE check). ──
-  // A 402 here makes ElevenAgents tear down the live conversation (it ends the
-  // call on a non-200 from the custom LLM). So we FAIL OPEN on anything we can't
-  // be certain about, and only block a RESOLVED real user whose access is
-  // definitively denied:
-  //   • user_id fell back (couldn't resolve) → skip — the widget gated entry,
-  //     and a 402 would break voice for a paid user whose id didn't forward.
-  //   • hasVoiceAccess errors → allow — never break voice on a DB blip.
-  //   • resolved real user, definitively no payment → 402 (shouldn't happen,
-  //     since the widget wouldn't have let them Begin; pure backstop).
-  if (idResult.usedFallback) {
-    console.warn(
-      "[agent-llm] user_id fallback — skipping backend paywall (widget gated entry)",
-    );
-  } else {
-    let allowed = true;
-    try {
-      allowed = (await hasVoiceAccess(userId)).allowed;
-    } catch (e) {
-      console.error(
-        "[agent-llm] hasVoiceAccess threw — failing open (widget gates entry):",
-        e,
-      );
-      allowed = true;
-    }
-    if (!allowed) {
-      console.warn(`[agent-llm] voice paywall blocked resolved user_id=${userId}`);
-      return paywallError();
-    }
-  }
+  // ── Step 5b: paywall (Phase 11.4) — kicked off CONCURRENTLY here and checked
+  // after the parallel pre-AI block, so its Supabase round-trip OVERLAPS the
+  // rest of the pre-Sonnet work instead of adding a serial hop (latency). The
+  // widget's bootstrap gate is AUTHORITATIVE; this is defense-in-depth that
+  // FAILS OPEN — skipped on the fallback id, and allow-on-error — so a 402 can
+  // never tear down a live conversation (ElevenAgents ends the call on a non-200
+  // from the custom LLM). Only a RESOLVED real user definitively denied is
+  // blocked (shouldn't happen — the widget wouldn't have let them Begin).
+  const accessPromise = idResult.usedFallback
+    ? null
+    : hasVoiceAccess(userId).catch((e) => {
+        console.error(
+          "[agent-llm] hasVoiceAccess threw — failing open (widget gates entry):",
+          e,
+        );
+        return { allowed: true, reason: "threw" };
+      });
 
   // ── Step 6a: banned-word gate (defense in depth + latency saver). ──
   // Mirrors /api/chat: short-circuit BEFORE any Haiku/Anthropic cost, log to
@@ -746,38 +731,49 @@ export async function POST(req: Request): Promise<Response> {
       : undefined;
 
   // ── Step 6c: pre-AI pipeline in parallel (mirror /api/chat). ──
-  // RAG candidates + memory extraction + safety + moderation. Each silent-fails
-  // to a safe default. Voice mode skips query rewrite (RAG runs on the raw
-  // message — same fallback rewriteQuery itself takes, and it ships off in prod).
+  // RAG candidates + safety + moderation, each silent-failing to a safe default.
+  // Voice mode skips query rewrite (RAG runs on the raw message). Memory
+  // extraction is DELIBERATELY excluded from this await (latency): it's the
+  // heaviest Haiku call and only updates memory for the NEXT turn, so Sonnet
+  // shouldn't block on it — it's kicked off after the gates + awaited post-stream.
   const ragFlags = getRagFlags();
   const wantWidePool =
     ragFlags.themeRerank || ragFlags.sourceDiversity || ragFlags.queryRewrite;
   const fetchK = wantWidePool ? ragFlags.candidatesK : 5;
 
-  const [candidates, extracted, safety, moderation] = await Promise.all([
+  const [candidates, safety, moderation] = await Promise.all([
     fetchCandidates(latestUserMessage, fetchK).catch((e) => {
       console.error("[agent-llm] fetchCandidates threw:", e);
       return [] as VerseHit[];
     }),
-    extractMemory(latestUserMessage, priorSummary, nameAwaited, priorLang, priorMemory?.growing_edge ?? null),
     safetyClassify(latestUserMessage),
     moderateInput(latestUserMessage),
   ]);
 
-  // ── Step 6d: RAG layers. ──
-  const queryThemes = extracted?.query_themes ?? [];
-  let reranked = candidates;
-  if (ragFlags.themeRerank && queryThemes.length > 0) {
-    reranked = rerankByTheme(candidates, queryThemes, ragFlags.themeWeight);
+  // Paywall — checked now; its Supabase round-trip overlapped the work above
+  // (Step 5b). Only block a RESOLVED real user definitively denied; the fallback
+  // id and any access-check error already failed open.
+  if (accessPromise) {
+    const access = await accessPromise;
+    if (!access.allowed) {
+      console.warn(`[agent-llm] voice paywall blocked resolved user_id=${userId}`);
+      return paywallError();
+    }
   }
+
+  // ── Step 6d: RAG layers — cosine + source-diversity. ──
+  // Theme reranking is skipped on the voice path: its query themes come from the
+  // memory-extraction Haiku call, which we no longer await before Sonnet. The
+  // spoken reply still grounds on relevant verses (cosine top + source mix);
+  // only the rerank refinement is deferred (no verse cards are shown in voice).
   const verses = ragFlags.sourceDiversity
     ? applyDiversityBoost(
-        reranked,
+        candidates,
         5,
         ragFlags.diversityCosineThreshold,
         ragFlags.diversityScopeK,
       )
-    : reranked.slice(0, 5);
+    : candidates.slice(0, 5);
 
   // ── Step 7: safety + moderation gates. ──
   // Edge case 13: NO safety_card is returned — ElevenAgents owns the UI. Safety
@@ -814,14 +810,24 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // ── Step 8 prep: merged memory + conversation language. ──
-  const effectiveMemory: UserMemory | null = extracted
-    ? { ...priorMemory, ...extracted }
-    : priorMemory;
-  const conversationLang: "hi" | "en" =
-    extracted?.language === "hi" || extracted?.language === "en"
-      ? extracted.language
-      : detectLang(latestUserMessage, priorLang);
+  // ── Latency: kick off memory extraction NOW (off the critical path). It runs
+  // concurrently with Sonnet's stream and is awaited in persistTurnState. Placed
+  // after the gates so a moderation/paywall short-circuit never spends it. ──
+  const extractedPromise = extractMemory(
+    latestUserMessage,
+    priorSummary,
+    nameAwaited,
+    priorLang,
+    priorMemory?.growing_edge ?? null,
+  );
+
+  // ── Step 8 prep: memory + conversation language for THIS turn. ──
+  // Prior memory carries the running context (the user's live message is in the
+  // messages array regardless); language from the detectLang heuristic (the
+  // persona's §3 LANGUAGE rule governs the actual reply language). The fresh
+  // extraction updates memory for the NEXT turn via persistTurnState.
+  const effectiveMemory: UserMemory | null = priorMemory;
+  const conversationLang: "hi" | "en" = detectLang(latestUserMessage, priorLang);
 
   // ── Step 7 (build): system prompt — persona (cached) + dynamic + voice cap. ──
   const { persona, dynamic } = buildSystemPrompt(
@@ -859,6 +865,10 @@ export async function POST(req: Request): Promise<Response> {
 
   // ── Step 11 prep: turn-state persistence (runs post-stream, in waitUntil). ──
   async function persistTurnState(replyText: string): Promise<void> {
+    // Memory extraction was kicked off before the stream (off the critical
+    // path); await its result now for the memory write. extractMemory catches
+    // internally, so this resolves to its value or null — it never throws.
+    const extracted = await extractedPromise;
     const verseRefs = verses.map((v) => v.reference);
     const newUserName =
       !priorMemory?.user_name && extracted?.user_name
@@ -954,6 +964,10 @@ export async function POST(req: Request): Promise<Response> {
       // added latency beyond waiting for the sentence's own punctuation to land.
       const SENTENCE_CAP = 150; // edge 4: hard flush ceiling without a boundary
       let sentenceBuffer = "";
+      // Latency: the FIRST emitted chunk may flush at a clause boundary
+      // (comma/semicolon/dash) so the first audio starts a clause sooner; after
+      // that we revert to sentence-only boundaries for best TTS prosody.
+      let firstFlushDone = false;
 
       // Emit one OpenAI delta.content chunk. Lazily emits the role chunk first,
       // and marks hasEmittedText (= "a content chunk has been sent").
@@ -968,23 +982,36 @@ export async function POST(req: Request): Promise<Response> {
         send(contentChunkLine(id, created, responseModel, text));
       };
 
-      // Exclusive end index of the next complete sentence in `buf` (boundary
-      // char + trailing whitespace), or -1 if none yet.
-      const nextBoundaryEnd = (buf: string): number => {
+      // Exclusive end index of the next boundary in `buf` (boundary char +
+      // trailing whitespace), or -1 if none yet. When allowClause is true (only
+      // for the very first chunk), a clause comma/semicolon/dash already
+      // FIRST_CLAUSE_MIN chars in also counts — so the first audio starts a
+      // clause sooner instead of waiting for the whole opening sentence.
+      const FIRST_CLAUSE_MIN = 14;
+      const nextBoundaryEnd = (buf: string, allowClause: boolean): number => {
         for (let i = 0; i < buf.length; i++) {
           const ch = buf[i];
+          const next = buf[i + 1];
           // `।` (Devanagari danda) is unambiguous — always a boundary (edge 9).
           // `\n\n` (paragraph break) also triggers a flush.
           // `.` `?` `!` are boundaries ONLY when followed by whitespace, so a
           // decimal like "3.14" never splits (edge 8); a terminator at the very
           // end of the buffer waits for the next delta (or the final flush).
-          const isBoundary =
-            (ch === "\n" && buf[i + 1] === "\n") ||
+          const isSentence =
+            (ch === "\n" && next === "\n") ||
             ch === "।" ||
             ((ch === "." || ch === "?" || ch === "!") &&
-              buf[i + 1] !== undefined &&
-              /\s/.test(buf[i + 1] as string));
-          if (!isBoundary) continue;
+              next !== undefined &&
+              /\s/.test(next as string));
+          // First-chunk clause break (comma/semicolon/dash + whitespace), once
+          // we already have a speakable opening of ≥ FIRST_CLAUSE_MIN chars.
+          const isClause =
+            allowClause &&
+            i + 1 >= FIRST_CLAUSE_MIN &&
+            (ch === "," || ch === ";" || ch === "—" || ch === "–") &&
+            next !== undefined &&
+            /\s/.test(next as string);
+          if (!isSentence && !isClause) continue;
           let end = ch === "\n" ? i + 2 : i + 1; // include the boundary char(s)
           while (end < buf.length && /\s/.test(buf[end] as string)) end++; // edge 3
           return end;
@@ -1015,9 +1042,11 @@ export async function POST(req: Request): Promise<Response> {
       // may contain several), then apply the 150-char safety cap.
       const flushSentences = () => {
         let end: number;
-        while ((end = nextBoundaryEnd(sentenceBuffer)) !== -1) {
+        // allowClause only until the first chunk has gone out (fast first audio).
+        while ((end = nextBoundaryEnd(sentenceBuffer, !firstFlushDone)) !== -1) {
           emitContent(sentenceBuffer.slice(0, end)); // edge 2: a 1-char chunk is fine
           sentenceBuffer = sentenceBuffer.slice(end);
+          firstFlushDone = true;
         }
         // edge 4: no boundary but buffer too long — split at the last whitespace
         // within the first SENTENCE_CAP chars, else force-split at the cap.
@@ -1032,6 +1061,7 @@ export async function POST(req: Request): Promise<Response> {
           if (splitAt <= 0) splitAt = SENTENCE_CAP;
           emitContent(sentenceBuffer.slice(0, splitAt));
           sentenceBuffer = sentenceBuffer.slice(splitAt);
+          firstFlushDone = true;
         }
       };
 
