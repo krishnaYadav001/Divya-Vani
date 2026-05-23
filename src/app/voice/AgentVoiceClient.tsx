@@ -95,6 +95,7 @@ export default function AgentVoiceClient() {
 function VoiceInner() {
   const orbRef = useRef<HTMLDivElement>(null);
   const beginRef = useRef<HTMLButtonElement>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   // identity / access (from /api/voice/bootstrap)
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -260,6 +261,12 @@ function VoiceInner() {
     }
   }, [bootstrapped, status, started]);
 
+  // Keep the transcript scrolled to the latest turn as the conversation grows.
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [transcript]);
+
   // ── gesture handlers ──────────────────────────────────────────────────────
   const handleBegin = useCallback(() => {
     if (!bootstrapped) return;
@@ -384,42 +391,57 @@ function VoiceInner() {
       </p>
 
       {/* ── Zone 3: orb hero ─────────────────────────────────────────── */}
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5">
-        <p
-          className={
-            "mb-8 text-center transition-opacity duration-500 " +
-            (isActive ? "opacity-60" : "opacity-100")
-          }
-        >
-          <span className="block font-[family-name:var(--font-display)] text-2xl text-ink sm:text-3xl">
-            {C.title.hi}
-          </span>
-          <span className="mt-1 block font-serif text-sm italic text-ink-soft">
-            {C.title.en}
-          </span>
-        </p>
+      {/* min-h-0 lets this region shrink so the Zone 4/5 strip + Exit button
+          below it stay on-screen no matter how long the transcript grows. */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-5">
+        {/* Orb + title — centered in the available space; this inner region
+            absorbs the slack so the transcript + Exit row never get pushed off. */}
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+          <p
+            className={
+              "mb-6 text-center transition-opacity duration-500 " +
+              (isActive ? "opacity-60" : "opacity-100")
+            }
+          >
+            <span className="block font-[family-name:var(--font-display)] text-2xl text-ink sm:text-3xl">
+              {C.title.hi}
+            </span>
+            <span className="mt-1 block font-serif text-sm italic text-ink-soft">
+              {C.title.en}
+            </span>
+          </p>
 
-        <AgentOrb ref={orbRef} state={orbState} amplitude={0} />
+          <AgentOrb ref={orbRef} state={orbState} amplitude={0} />
+        </div>
 
-        {/* Rolling transcript — last 3 exchanges below the orb. */}
+        {/* Transcript — the full conversation, bounded + scrollable. It scrolls
+            WITHIN this region (auto-stuck to the latest turn; scroll up to read
+            earlier turns) instead of growing the page and hiding the Exit
+            button behind the browser bar. */}
         {transcript.length > 0 && isActive && (
-          <div className="mt-8 flex w-full max-w-[420px] flex-col gap-1.5">
-            {transcript.slice(-3).map((t, i) => (
-              <p
-                key={`${i}-${t.role}`}
-                className={
-                  "text-sm leading-snug " +
-                  (t.role === "user"
-                    ? "text-right text-ink-soft"
-                    : "text-left font-devanagari text-ink")
-                }
-              >
-                <span className="mr-1 text-[10px] uppercase tracking-wide text-ink-faint">
-                  {t.role === "user" ? C.youLabel.hi : C.krishnaLabel.hi}
-                </span>
-                {t.text}
-              </p>
-            ))}
+          <div
+            ref={transcriptRef}
+            className="w-full max-w-[420px] shrink-0 overflow-y-auto pb-1"
+            style={{ maxHeight: "26vh" }}
+          >
+            <div className="flex flex-col gap-1.5">
+              {transcript.map((t, i) => (
+                <p
+                  key={`${i}-${t.role}`}
+                  className={
+                    "text-sm leading-snug " +
+                    (t.role === "user"
+                      ? "text-right text-ink-soft"
+                      : "text-left font-devanagari text-ink")
+                  }
+                >
+                  <span className="mr-1 text-[10px] uppercase tracking-wide text-ink-faint">
+                    {t.role === "user" ? C.youLabel.hi : C.krishnaLabel.hi}
+                  </span>
+                  {t.text}
+                </p>
+              ))}
+            </div>
           </div>
         )}
 
