@@ -746,6 +746,11 @@ export async function insertFeedback(params: {
   userId: string | null;
   message: string;
   userName: string | null;
+  // Phase 11.x — optional 1–5 star rating (the /demo feedback card sends
+  // it; the Settings "Share feedback" form leaves it null). Column is a
+  // nullable smallint with a 1..5 CHECK; null is the legitimate
+  // text-only-feedback case.
+  rating: number | null;
 }): Promise<{ ok: boolean }> {
   try {
     const client = getClient();
@@ -775,6 +780,7 @@ export async function insertFeedback(params: {
       user_id: userId,
       message: params.message,
       user_name: params.userName,
+      rating: params.rating,
     });
     if (error) {
       console.error("[supabase] insertFeedback error:", error);

@@ -6,6 +6,7 @@ import Wordmark from "../components/motifs/Wordmark";
 import demoContent from "../../../data/demo-content.json";
 import YouTubeFacade from "./YouTubeFacade";
 import { ScreenshotTile } from "./DemoSections";
+import DemoFeedback from "./DemoFeedback";
 
 // /demo — lightweight content-only marketing surface for X / Reddit /
 // WhatsApp shares. Content is driven by data/demo-content.json + the
@@ -103,6 +104,9 @@ export default function DemoPage() {
             </span>
           </div>
         </section>
+
+        {/* ── Feedback (star rating, near top per founder) ────────── */}
+        <DemoFeedback />
 
         {/* ── Demo videos ─────────────────────────────────────────── */}
         <section className="mt-16 sm:mt-20">

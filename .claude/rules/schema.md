@@ -52,9 +52,18 @@ Index: `ivfflat` on `embedding` using `vector_cosine_ops`.
 
 **Current row counts (2026-05-02):** 701 gita + 1,704 mahabharata + 727 bhagavata (568 Canto 10 + 159 Canto 11.6–29 Uddhava-Gita) = **3,132 total scriptural rows**. Mahabharata + Bhagavata rows have `sanskrit = ''` and `sanskrit_source = NULL` per Phase 1.5 / 1.6 / 1.7 Sanskrit deferrals.
 
-## `feedback` (Phase 6+)
+## `user_feedback` (Phase 8.x+)
 
-`message_id`, `user_id`, `rating` (up/down), `text`, `created_at`.
+User-submitted feedback. Written by `insertFeedback` from `/api/feedback` (Settings "Share feedback" form + the `/demo` star-rating card). `user_id` is `ON DELETE SET NULL` against `users_memory(user_id)` so DPDP erasure (`/api/delete-account`) is never blocked by feedback rows; a dangling cookie with no `users_memory` row is stored unattributed (null `user_id`) rather than erroring.
+
+| column | type | default | purpose |
+|---|---|---|---|
+| `id` | uuid | `gen_random_uuid()` | PK |
+| `user_id` | text | null | Cookie UUID; `ON DELETE SET NULL`. Null when anonymous / dangling cookie |
+| `message` | text | — | Feedback text. Required (≥10 chars) for the Settings form; may be empty for a rating-only `/demo` submission |
+| `user_name` | text | null | Optional name |
+| `rating` | smallint | null | Phase 11.x — 1–5 star rating from `/demo`; null for text-only Settings feedback. `CHECK (rating IS NULL OR rating BETWEEN 1 AND 5)` |
+| `created_at` | timestamptz | `now()` | Submission timestamp |
 
 ## `payments` (Phase 5+)
 

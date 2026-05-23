@@ -15,6 +15,8 @@ const USER_COOKIE = "god_messenger_uid";
 const MESSAGE_MIN = 10;
 const MESSAGE_MAX = 5000;
 const NAME_MAX = 100;
+const RATING_MIN = 1;
+const RATING_MAX = 5;
 
 // Honeypot: a direct POST that carries any of these fields with a
 // non-empty value is a bot. We pretend success (200) so it does not
@@ -101,7 +103,37 @@ export async function POST(req: Request) {
       typeof raw.user_name === "string" ? raw.user_name.trim() : "";
     const userName = rawName.length > 0 ? rawName : null;
 
-    if (message.length < MESSAGE_MIN) {
+    // Optional 1–5 star rating (the /demo feedback card). Absent =>
+    // null (the Settings "Share feedback" path, which carries no
+    // rating). A present-but-malformed rating is rejected rather than
+    // silently coerced, so bad data never reaches the DB.
+    let rating: number | null = null;
+    if (raw.rating !== undefined && raw.rating !== null) {
+      const r = raw.rating;
+      if (
+        typeof r === "number" &&
+        Number.isInteger(r) &&
+        r >= RATING_MIN &&
+        r <= RATING_MAX
+      ) {
+        rating = r;
+      } else {
+        return NextResponse.json(
+          {
+            error: "invalid_rating",
+            message: `Rating must be a whole number from ${RATING_MIN} to ${RATING_MAX}.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // The written message is REQUIRED only when there is no star rating
+    // (text-only feedback, e.g. the Settings form). When a rating is
+    // present the comment is optional — a rating-only submission is
+    // valid, so an empty/short message is allowed and the min-length
+    // gate is skipped.
+    if (rating === null && message.length < MESSAGE_MIN) {
       return NextResponse.json(
         {
           error: "message_too_short",
@@ -150,7 +182,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await insertFeedback({ userId, message, userName });
+    const result = await insertFeedback({ userId, message, userName, rating });
     if (!result.ok) {
       // Intentional departure from the chat-path "silent-fail": a
       // feedback form must confirm receipt honestly, so a failed write
