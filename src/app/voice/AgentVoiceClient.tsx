@@ -277,15 +277,17 @@ function VoiceInner() {
     // ElevenLabs dashboard). WebSocket avoids WebRTC data channels entirely and
     // is the robust public-agent transport (audio + tool calls ride the WS).
     //
-    // Identity → ElevenAgents on two channels (resolveUserId reads both):
-    //   • dynamicVariables.user_id — the agent declares user_id, so ElevenLabs
-    //     requires it at start; also forwards to the LLM (body.dynamic_variables).
-    //   • customLlmExtraBody.user_id — second path (→ body.user_id).
-    // startSession requests the mic; a denial surfaces via onError.
+    // Identity → ElevenAgents via dynamicVariables.user_id ONLY. The agent
+    // DECLARES user_id, so ElevenLabs requires it at start, accepts it, and
+    // makes it available to the turn. We do NOT send customLlmExtraBody:
+    // ElevenLabs rejects it with close code 1008 ("Custom LLM extra body
+    // override is not allowed for this AI agent") unless the agent explicitly
+    // enables that override in its security settings — and dynamicVariables
+    // already carries user_id. startSession requests the mic; a denial surfaces
+    // via onError.
     startSession({
       connectionType: "websocket",
       dynamicVariables: userId ? { user_id: userId } : undefined,
-      customLlmExtraBody: userId ? { user_id: userId } : undefined,
     });
   }, [bootstrapped, hasAccess, startSession]);
 
