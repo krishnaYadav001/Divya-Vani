@@ -270,17 +270,20 @@ function VoiceInner() {
     setError(null);
     setStarted(true);
     const userId = userIdRef.current ?? undefined;
-    // Identity → ElevenAgents on two channels:
-    //   • dynamicVariables.user_id — the agent DECLARES user_id (setup script),
-    //     and ElevenLabs treats a declared dynamic variable as REQUIRED at
-    //     conversation start, so it must be sent or the call aborts at init.
-    //     It also forwards to the custom LLM (body.dynamic_variables.user_id).
+    // connectionType "websocket": the SDK defaults to WebRTC (LiveKit), whose
+    // data channels were failing on the deployed site ("Unknown DataChannel
+    // error … User-Initiated Abort") — the connection died at the transport
+    // layer before a conversation ever registered (nothing showed in the
+    // ElevenLabs dashboard). WebSocket avoids WebRTC data channels entirely and
+    // is the robust public-agent transport (audio + tool calls ride the WS).
+    //
+    // Identity → ElevenAgents on two channels (resolveUserId reads both):
+    //   • dynamicVariables.user_id — the agent declares user_id, so ElevenLabs
+    //     requires it at start; also forwards to the LLM (body.dynamic_variables).
     //   • customLlmExtraBody.user_id — second path (→ body.user_id).
-    // resolveUserId() on the backend reads both. (Earlier this was sent the
-    // other way — omitted — back when the agent had NOT yet declared user_id;
-    // an undeclared dynamic variable aborts too. Declared ⇒ required ⇒ send it.)
     // startSession requests the mic; a denial surfaces via onError.
     startSession({
+      connectionType: "websocket",
       dynamicVariables: userId ? { user_id: userId } : undefined,
       customLlmExtraBody: userId ? { user_id: userId } : undefined,
     });
