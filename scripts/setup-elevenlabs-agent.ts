@@ -52,7 +52,10 @@ const CONFIG = {
   additionalLanguages: ["en"],
   hinglishMode: true,
   interruptible: true, // barge-in
-  firstMessage: "नमस्ते। बताओ, क्या मन में है?",
+  // Empty = silent start: ElevenLabs waits for the user to speak first (no
+  // auto-greeting). The orb's "listening" state + "सुन रहा हूँ…" strip are the
+  // cue that the call is live. (Founder-chosen 2026-05-23.)
+  firstMessage: "",
   systemPromptPlaceholder:
     "You are Krishna. Reply briefly in Hindi. The real persona prompt comes via the custom LLM endpoint.",
   customLlm: {
