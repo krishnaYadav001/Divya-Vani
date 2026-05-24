@@ -862,6 +862,16 @@ export async function POST(req: Request): Promise<Response> {
     type: "text",
     text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be ≤55 words (roughly two to four short sentences). Krishna's voice, register, and warmth stay exactly the same — only shorter than a text reply. It is fine to end cleanly mid-thought; the user can ask you to continue.",
   });
+  // Voice-mode greeting suppression (founder 2026-05-24). The call is already
+  // live when this fires (the agent's first_message is empty — silent start),
+  // so an opening salutation makes Krishna sound like he's answering a phone
+  // each turn. Additive, voice-only; overrides the welcome / welcome-back
+  // openers the USER CONTEXT block may suggest. Does NOT touch the cached
+  // persona block (no cache_control).
+  systemBlocks.push({
+    type: "text",
+    text: "VOICE-MODE — NO OPENING GREETING (additive; overrides any welcome or welcome-back cue in USER CONTEXT): begin your spoken reply with substance, never a salutation. Do NOT open with 'नमस्ते' / 'राधे राधे' / 'हे' / 'प्रिय' / 'सुनो' / 'welcome' / 'स्वागत', no self-introduction, and — even for a returning user — no spoken recognition opener like 'फिर आए हो' / 'तुम लौट आए' / 'you're back'. The conversation is already live and the user has just spoken; respond as if mid-conversation. If you still need their name (first turn), weave the ask into the body of your reply instead of leading with a hello. Recognition and warmth show in HOW Krishna attends to what was just said, never in a spoken hello.",
+  });
 
   // ── Step 11 prep: turn-state persistence (runs post-stream, in waitUntil). ──
   async function persistTurnState(replyText: string): Promise<void> {

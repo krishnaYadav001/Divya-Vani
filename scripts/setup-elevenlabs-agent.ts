@@ -56,6 +56,17 @@ const CONFIG = {
   // auto-greeting). The orb's "listening" state + "सुन रहा हूँ…" strip are the
   // cue that the call is live. (Founder-chosen 2026-05-23.)
   firstMessage: "",
+  // Voice consistency (founder 2026-05-24): pin stability + similarity_boost so
+  // Viraj's timbre does NOT drift between sentence chunks / turns (the
+  // intermittent "voice keeps changing" report). These are FLAT fields on the
+  // tts object per TtsConversationalConfigInput (stability / similarityBoost /
+  // speed) — NOT a nested voice_settings object. Favour consistency over
+  // expressiveness: a higher stability keeps the character locked, a high
+  // similarity_boost anchors hard to the reference voice. style is not exposed
+  // on the agent tts config (and high style is what causes instability anyway).
+  voiceStability: 0.6,
+  voiceSimilarityBoost: 0.85,
+  voiceSpeed: 1.0,
   systemPromptPlaceholder:
     "You are Krishna. Reply briefly in Hindi. The real persona prompt comes via the custom LLM endpoint.",
   customLlm: {
@@ -329,6 +340,13 @@ function buildConversationConfig(secretId: string, llmUrl: string) {
     tts: {
       voice_id: CONFIG.voiceId,
       model_id: "eleven_turbo_v2_5",
+      // Pinned so the timbre stays consistent across sentence chunks + turns
+      // (founder 2026-05-24). Wire names are snake_case. Empty language_presets
+      // overrides inherit these base settings, so Hindi↔English switches keep
+      // the same voice character too.
+      stability: CONFIG.voiceStability,
+      similarity_boost: CONFIG.voiceSimilarityBoost,
+      speed: CONFIG.voiceSpeed,
     },
     language_presets: languagePresets,
   };
