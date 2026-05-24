@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BRAND } from "@/lib/brand";
+import { useLanguage } from "../providers/LanguageProvider";
 
 // Global site footer (extracted from layout.tsx). Hidden on /voice — that
 // route is an immersive full-bleed night scene (Dawn Aarti voice design)
@@ -12,58 +13,70 @@ import { BRAND } from "@/lib/brand";
 //
 // Phase 6.6 Stage C-1 — text-sm + py-3, each link inline-flex min-h-11
 // (44px) so the tap target meets Apple HIG + Google MWG. Static © inline.
+//
+// Phase 12 (i18n) — link labels now come from the UI dictionary and the
+// footer hosts the EN/हिन्दी language toggle (the only site-wide switcher).
+// The toggle shows the OTHER language as its label.
+const DOT = (
+  <span aria-hidden className="text-brass">
+    ·
+  </span>
+);
+
+const LINK_CLASS =
+  "inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2";
+
 export default function SiteFooter() {
   const pathname = usePathname();
+  const { lang, toggle, t } = useLanguage();
   if (pathname === "/voice") return null;
 
   return (
     <footer className="shrink-0 py-3 text-center text-sm text-brass-dark">
-      <Link
-        href="/demo"
-        className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-      >
-        Examples
+      <Link href="/demo" className={LINK_CLASS}>
+        {t.footer.examples}
       </Link>
-      <span aria-hidden className="text-brass">
-        ·
-      </span>
-      <Link
-        href="/voice"
-        className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-      >
-        Voice
+      {DOT}
+      <Link href="/voice" className={LINK_CLASS}>
+        {t.footer.voice}
       </Link>
-      <span aria-hidden className="text-brass">
-        ·
-      </span>
-      <Link
-        href="/privacy"
-        className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-      >
-        Privacy
+      {DOT}
+      <Link href="/pricing" className={LINK_CLASS}>
+        {t.footer.pricing}
       </Link>
-      <span aria-hidden className="text-brass">
-        ·
-      </span>
-      <Link
-        href="/terms"
-        className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-      >
-        Terms
+      {DOT}
+      <Link href="/privacy" className={LINK_CLASS}>
+        {t.footer.privacy}
       </Link>
-      <span aria-hidden className="text-brass">
-        ·
-      </span>
-      <Link
-        href="/settings"
-        className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-      >
-        Settings
+      {DOT}
+      <Link href="/terms" className={LINK_CLASS}>
+        {t.footer.terms}
+      </Link>
+      {DOT}
+      <Link href="/settings" className={LINK_CLASS}>
+        {t.footer.settings}
+      </Link>
+      {DOT}
+      <Link href="/contact" className={LINK_CLASS}>
+        {t.footer.contact}
       </Link>
       <span aria-hidden className="mx-2 text-brass">
         ·
       </span>
       <span>{BRAND.copyright.text}</span>
+      <span aria-hidden className="mx-2 text-brass">
+        ·
+      </span>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={
+          lang === "en" ? "हिन्दी में बदलें · Switch to Hindi" : "Switch to English"
+        }
+        className={`${LINK_CLASS} font-[family-name:var(--font-tiro-devanagari)]`}
+      >
+        {lang === "en" ? "हिन्दी" : "English"}
+      </button>
     </footer>
   );
 }

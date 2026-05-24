@@ -77,8 +77,11 @@ const AGENT_USER_ID = "elevenagents-test-user";
 // Model id echoed back in every OpenAI chunk. ElevenAgents sends
 // model:"krishna-sonnet-4-6"; we echo whatever it sends, defaulting to this.
 const DEFAULT_MODEL_ID = "krishna-sonnet-4-6";
-// Voice replies are short: override the request's max_tokens (5000) and
-// temperature (0.0). 1000 is a generous ceiling above the ≤30-word target.
+// Voice replies stay conversational, not essays: override the request's
+// max_tokens (5000) and temperature (0.0). 1000 tokens is a generous ceiling
+// above the soft ~150-word target (see VOICE-MODE OUTPUT CONSTRAINT below) and
+// the hard upper bound that guards against a runaway turn now that the old
+// ≤55-word cap is gone.
 const VOICE_MAX_TOKENS = 1000;
 const VOICE_TEMPERATURE = 0.6;
 const RETURNING_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours (mirror /api/chat)
@@ -855,12 +858,15 @@ export async function POST(req: Request): Promise<Response> {
   if (dynamic.length > 0) {
     systemBlocks.push({ type: "text", text: dynamic });
   }
-  // Voice-mode word cap — additive, AFTER the persona block, NO cache_control so
-  // the persona cache breakpoint stays on the persona block. (Same text as
-  // /api/chat's voice-mode constraint.)
+  // Voice-mode length guidance — additive, AFTER the persona block, NO
+  // cache_control so the persona cache breakpoint stays on the persona block.
+  // The hard ≤55-word cap was removed (founder 2026-05-25): a SOFT ~150-word
+  // guide keeps replies conversational without clipping Krishna mid-teaching.
+  // Voice is metered per minute, so the soft ceiling + "never pad" also protect
+  // cost/latency; VOICE_MAX_TOKENS is the hard upper bound against a runaway turn.
   systemBlocks.push({
     type: "text",
-    text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be ≤55 words (roughly two to four short sentences). Krishna's voice, register, and warmth stay exactly the same — only shorter than a text reply. It is fine to end cleanly mid-thought; the user can ask you to continue.",
+    text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): you are speaking aloud in a live voice call, not typing. Speak as long as the moment genuinely needs — usually two to five sentences, and as a soft guide stay under about 150 words unless real depth truly calls for more. Never pad, never repeat yourself to fill time, and stop the instant the thought is complete. Krishna's voice, register, and warmth stay exactly the same. It is fine to end cleanly mid-thought; the user can ask you to continue.",
   });
   // Voice-mode greeting suppression (founder 2026-05-24). The call is already
   // live when this fires (the agent's first_message is empty — silent start),

@@ -10,6 +10,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import { BRAND } from "@/lib/brand";
 import SiteFooter from "./components/SiteFooter";
+import { LanguageProvider } from "./providers/LanguageProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -133,8 +134,10 @@ export default function RootLayout({
         className="h-dvh flex flex-col overflow-hidden"
         suppressHydrationWarning
       >
-        {children}
-        <SiteFooter />
+        <LanguageProvider>
+          {children}
+          <SiteFooter />
+        </LanguageProvider>
         <Analytics />
         {/* Phase 8 — Plausible (privacy-friendly, cookieless) runs
             alongside Vercel Analytics: Vercel for aggregate pageviews,

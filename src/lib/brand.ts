@@ -36,6 +36,16 @@ export const BRAND = {
     founder: "Krishna Yadav",
     email: "grievance.divyavani@gmail.com",
     location: "Kanpur, Uttar Pradesh, India",
+    phone: "+917275606624",
+    phoneDisplay: "+91 72756 06624",
+    phoneHours: "Mon–Sat, 10am–6pm IST",
+    // TODO(founder): replace `address` with your full registered /
+    // virtual-office street address (street, city, state, PIN) before
+    // Razorpay International + Google Ads verification. It MUST match the
+    // address on your GST registration + Razorpay business profile, or
+    // ads/onboarding can be rejected for a mismatch. Edit here only — the
+    // /contact page + footer read from this one field.
+    address: "Kanpur, Uttar Pradesh, India",
   },
   copyright: {
     year: 2026,
