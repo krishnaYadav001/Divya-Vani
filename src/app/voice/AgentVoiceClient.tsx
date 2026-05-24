@@ -46,6 +46,7 @@ import { getTiersInOrder } from "@/lib/seva";
 import AgentOrb, { type AgentOrbState } from "./AgentOrb";
 import HelplineOverlay from "./HelplineOverlay";
 import DiyaSevaPanel from "../components/DiyaSevaPanel";
+import PeacockFeather from "../components/motifs/PeacockFeather";
 
 // Phase 11.6 env-var candidate (NEXT_PUBLIC_ELEVENLABS_AGENT_ID). Hardcoded for
 // now — this is the "Krishna-Voice-Test" agent wired to /api/agent-llm.
@@ -415,69 +416,101 @@ function VoiceInner() {
     }
   }, []);
 
-  // Bilingual transcript row.
+  // Bilingual transcript row (night ivory ramp).
   const renderTurn = (t: TranscriptTurn, i: number) => (
     <p
       key={`${i}-${t.role}`}
       className={
         "text-sm leading-snug " +
         (t.role === "user"
-          ? "text-right text-ink-soft"
-          : "text-left font-devanagari text-ink")
+          ? "ivory-soft text-right"
+          : "ivory font-devanagari text-left")
       }
     >
-      <span className="mr-1 text-[10px] uppercase tracking-wide text-ink-faint">
+      <span className="ivory-faint mr-1 text-[10px] uppercase tracking-wide">
         {t.role === "user" ? C.youLabel.hi : C.krishnaLabel.hi}
       </span>
       {t.text}
     </p>
   );
 
+  // Dim the Krishna-flute backdrop when the orb isn't the focus (post-call
+  // transcript, paywall, or an error) so overlaid text stays legible.
+  const backdropDim = showEndedView || showPaywallOverlay || !!error;
+
   return (
     <>
-      {/* ── Zone 1: top bar ─────────────────────────────────────────── */}
-      <header className="relative z-30 flex shrink-0 items-center justify-between gap-2 border-b border-gold-leaf/20 bg-mist/70 px-3 py-2.5 backdrop-blur">
-        <Link
-          href="/chat"
-          onClick={() => void endSession()}
-          aria-label="वापस चैट पर · Back to chat"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-gold-leaf/10 hover:text-ink focus:outline-none focus:ring-2 focus:ring-gold-leaf/40"
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-        </Link>
+      {/* ── Krishna-flute painting backdrop (z-1, above the starfield) ── */}
+      <KrishnaBackdrop dim={backdropDim} />
 
-        <span className="font-[family-name:var(--font-display)] text-sm tracking-[0.12em] text-ink">
-          {BRAND.name.en}
-        </span>
-
-        <div className="relative flex shrink-0 items-center">
-          <button
-            type="button"
-            onClick={handleEnd}
-            aria-label={`${C.exit.hi} · ${C.exit.en}`}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-vermillion/10 hover:text-vermillion focus:outline-none focus:ring-2 focus:ring-vermillion/40"
+      {/* ── Zone 1: top bar — borderless + transparent (founder 2026-05-24).
+          Just the centred logo (peacock feather + wordmark) floating over
+          the night scene; the top scrim of the painting backdrop is the
+          legibility backing. Back-to-chat (left) + exit/seva (right) stay
+          as bare floating icons — no bar. ───────────────────────────── */}
+      <header className="relative z-30 shrink-0 px-3 py-3 sm:px-4 sm:py-4">
+        <div className="mx-auto flex max-w-[600px] items-center gap-2">
+          {/* back to chat (left) */}
+          <Link
+            href="/chat"
+            onClick={() => void endSession()}
+            aria-label="वापस चैट पर · Back to chat"
+            className="ivory-soft flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-gold-leaf/10 hover:text-[oklch(95%_0.025_70)] focus:outline-none focus:ring-2 focus:ring-gold-leaf/40 [filter:drop-shadow(0_1px_4px_oklch(8%_0.05_260/0.7))]"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
             </svg>
-          </button>
-          <DiyaSevaPanel
-            isOpen={isSevaOpen}
-            onClose={() => setIsSevaOpen(false)}
-            messageCount={counter.messageCount}
-            sevaBalance={counter.sevaBalance}
-            tiers={TIERS}
-            onPurchaseSuccess={onPurchaseSuccess}
-          />
+          </Link>
+
+          {/* centred brand group — peacock feather + wordmark only */}
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+            <PeacockFeather
+              className="h-9 w-auto shrink-0 [filter:drop-shadow(0_2px_6px_oklch(8%_0.05_260/0.6))] sm:h-11"
+              width={44}
+              height={44}
+              priority
+            />
+            <h1
+              className="ivory min-w-0 truncate font-[family-name:var(--font-display)] text-2xl font-normal leading-none tracking-[0.02em] sm:text-3xl"
+              style={{ textShadow: "0 2px 8px oklch(8% 0.05 260 / 0.7)" }}
+            >
+              {BRAND.name.en}
+            </h1>
+          </div>
+
+          {/* exit (right) + seva panel anchor */}
+          <div className="relative flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={handleEnd}
+              aria-label={`${C.exit.hi} · ${C.exit.en}`}
+              className="ivory-soft flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-vermillion/15 hover:text-[oklch(72%_0.16_28)] focus:outline-none focus:ring-2 focus:ring-vermillion/40 [filter:drop-shadow(0_1px_4px_oklch(8%_0.05_260/0.7))]"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+            <DiyaSevaPanel
+              isOpen={isSevaOpen}
+              onClose={() => setIsSevaOpen(false)}
+              messageCount={counter.messageCount}
+              sevaBalance={counter.sevaBalance}
+              tiers={TIERS}
+              onPurchaseSuccess={onPurchaseSuccess}
+            />
+          </div>
         </div>
       </header>
 
-      {/* ── Zone 2: identity disclaimer strip (Locked Decision #1) ──── */}
-      <p className="relative z-20 shrink-0 border-b border-gold-leaf/10 bg-mist/40 px-4 py-1 text-center text-[11px] leading-tight text-ink-faint backdrop-blur">
+      {/* ── Zone 2: identity disclaimer (Locked Decision #1) — borderless +
+          transparent like the header (founder 2026-05-24); just the text
+          floating over the scene, with a shadow for legibility. ──────── */}
+      <p
+        className="ivory-faint relative z-20 shrink-0 px-4 py-1 text-center text-[11px] leading-tight"
+        style={{ textShadow: "0 1px 4px oklch(8% 0.05 260 / 0.7)" }}
+      >
         <span className="font-devanagari">{C.disclaimer.hi}</span>
         <span aria-hidden className="mx-1.5 text-gold-leaf/70">·</span>
         <span className="font-serif italic">{C.disclaimer.en}</span>
@@ -491,16 +524,17 @@ function VoiceInner() {
           /* Post-call transcript (Gemini-style) — the full conversation. */
           <div className="flex min-h-0 w-full max-w-[480px] flex-1 flex-col py-4">
             <p className="shrink-0 pb-3 text-center">
-              <span className="block font-[family-name:var(--font-display)] text-xl text-ink">
+              <span className="ivory block font-[family-name:var(--font-display)] text-xl">
                 {C.states.ended.hi}
               </span>
-              <span className="mt-0.5 block font-serif text-sm italic text-ink-soft">
+              <span className="ivory-soft mt-0.5 block font-serif text-sm italic">
                 {C.states.ended.en}
               </span>
             </p>
             <div
               ref={transcriptRef}
-              className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto rounded-2xl border border-gold-leaf/20 bg-mist/50 px-4 py-3"
+              className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto rounded-2xl border border-gold-leaf/25 px-4 py-3 backdrop-blur"
+              style={{ background: "oklch(15% 0.04 260 / 0.55)" }}
             >
               {transcript.map(renderTurn)}
             </div>
@@ -513,11 +547,12 @@ function VoiceInner() {
                 "mb-6 text-center transition-opacity duration-500 " +
                 (isActive ? "opacity-60" : "opacity-100")
               }
+              style={{ textShadow: "0 2px 8px oklch(10% 0.05 260 / 0.6)" }}
             >
-              <span className="block font-[family-name:var(--font-display)] text-2xl text-ink sm:text-3xl">
+              <span className="ivory block font-[family-name:var(--font-display)] text-2xl sm:text-3xl">
                 {C.title.hi}
               </span>
-              <span className="mt-1 block font-serif text-sm italic text-ink-soft">
+              <span className="ivory-soft mt-1 block font-serif text-sm italic">
                 {C.title.en}
               </span>
             </p>
@@ -528,24 +563,35 @@ function VoiceInner() {
 
         {/* Paywall overlay — voice is paid-seva only. */}
         {showPaywallOverlay && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-mist/55 px-6 backdrop-blur-sm">
-            <div className="fade-up max-w-[360px] rounded-3xl border border-gold-leaf/40 bg-cloud/90 px-6 py-6 text-center shadow-[0_18px_48px_-16px_oklch(40%_0.08_30_/_0.4)]">
-              <p className="font-[family-name:var(--font-display)] text-lg text-ink">
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center px-6 backdrop-blur-sm"
+            style={{ background: "oklch(15% 0.04 260 / 0.55)" }}
+          >
+            <div
+              className="fade-up max-w-[360px] rounded-3xl border border-gold-leaf/40 px-6 py-6 text-center shadow-[0_24px_48px_-18px_oklch(8%_0.06_280_/_0.7)] backdrop-blur"
+              style={{ background: "oklch(15% 0.04 260 / 0.85)" }}
+            >
+              <p className="ivory font-[family-name:var(--font-display)] text-lg">
                 {C.paywall.hi}
               </p>
-              <p className="mt-1 font-serif text-sm italic text-ink-soft">
+              <p className="ivory-soft mt-1 font-serif text-sm italic">
                 {C.paywall.en}
               </p>
-              <p className="mt-3 font-devanagari text-sm leading-relaxed text-ink-soft">
+              <p className="ivory-soft mt-3 font-devanagari text-sm leading-relaxed">
                 {C.paywall.body.hi}
               </p>
               <button
                 type="button"
                 onClick={() => setIsSevaOpen(true)}
-                className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf bg-linear-to-b from-buttermilk to-peach px-7 py-3 font-[family-name:var(--font-devanagari)] text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf"
+                className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-7 py-3 font-[family-name:var(--font-devanagari)] text-[15px] shadow-[0_1px_0_rgba(255,255,255,.4)_inset] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, oklch(72% 0.13 80), oklch(55% 0.14 70))",
+                  color: "oklch(18% 0.04 60)",
+                }}
               >
                 {C.paywall.openSeva.hi}
-                <span className="ml-2 font-serif text-sm italic text-ink-soft">
+                <span className="ml-2 font-serif text-sm italic" style={{ color: "oklch(30% 0.05 60)" }}>
                   · {C.paywall.openSeva.en}
                 </span>
               </button>
@@ -569,9 +615,10 @@ function VoiceInner() {
         aria-live="polite"
         className="relative z-10 flex shrink-0 items-center justify-center gap-2 px-4 py-2 text-center text-sm"
       >
-        <span className="font-devanagari text-ink-soft">{strip.hi}</span>
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-leaf shadow-[0_0_10px_oklch(82%_0.12_80)]" />
+        <span className="ivory font-devanagari">{strip.hi}</span>
         <span aria-hidden className="text-gold-leaf/60">·</span>
-        <span className="font-serif italic text-ink-faint">{strip.en}</span>
+        <span className="ivory-soft font-serif italic">{strip.en}</span>
       </p>
 
       {/* ── Zone 5: bottom action row ───────────────────────────────── */}
@@ -583,10 +630,15 @@ function VoiceInner() {
             onClick={handleBegin}
             disabled={!bootstrapped}
             aria-label={`${beginLabel.hi} · ${beginLabel.en}`}
-            className="inline-flex min-h-14 items-center justify-center rounded-full border border-gold-leaf bg-linear-to-b from-buttermilk to-peach px-12 py-4 font-[family-name:var(--font-devanagari)] text-lg text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_10px_28px_-10px_oklch(50%_0.1_30_/_0.35)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf disabled:opacity-50"
+            className="inline-flex min-h-14 items-center justify-center rounded-full border border-gold-leaf px-12 py-4 font-[family-name:var(--font-devanagari)] text-lg shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_14px_32px_-10px_oklch(60%_0.16_70_/_0.55),0_0_28px_oklch(76%_0.14_80_/_0.35)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf disabled:opacity-50 motion-reduce:hover:translate-y-0"
+            style={{
+              background:
+                "linear-gradient(180deg, oklch(72% 0.13 80), oklch(55% 0.14 70))",
+              color: "oklch(18% 0.04 60)",
+            }}
           >
             {error && error.code !== "paywall" ? C.retry.hi : beginLabel.hi}
-            <span className="ml-2 font-serif text-base italic text-ink-soft">
+            <span className="ml-2 font-serif text-base italic" style={{ color: "oklch(30% 0.05 60)" }}>
               · {error && error.code !== "paywall" ? C.retry.en : beginLabel.en}
             </span>
           </button>
@@ -597,10 +649,11 @@ function VoiceInner() {
             type="button"
             onClick={handleEnd}
             aria-label={`${C.exit.hi} · ${C.exit.en}`}
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-ink-line bg-white/40 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-line"
+            className="ivory-soft inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf/30 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base backdrop-blur transition-colors hover:border-gold-leaf/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40"
+            style={{ background: "oklch(25% 0.05 260 / 0.55)" }}
           >
             {C.exit.hi}
-            <span className="ml-2 font-serif text-sm italic text-ink-faint">
+            <span className="ivory-faint ml-2 font-serif text-sm italic">
               · {C.exit.en}
             </span>
           </button>
@@ -611,20 +664,26 @@ function VoiceInner() {
             <button
               type="button"
               onClick={handleStartAgain}
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf bg-linear-to-b from-buttermilk to-peach px-8 py-3 font-[family-name:var(--font-devanagari)] text-base text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf"
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-8 py-3 font-[family-name:var(--font-devanagari)] text-base shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_0_22px_oklch(76%_0.14_80_/_0.3)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0"
+              style={{
+                background:
+                  "linear-gradient(180deg, oklch(72% 0.13 80), oklch(55% 0.14 70))",
+                color: "oklch(18% 0.04 60)",
+              }}
             >
               {C.startNew.hi}
-              <span className="ml-2 font-serif text-sm italic text-ink-soft">
+              <span className="ml-2 font-serif text-sm italic" style={{ color: "oklch(30% 0.05 60)" }}>
                 · {C.startNew.en}
               </span>
             </button>
             <button
               type="button"
               onClick={handleBackToChat}
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-ink-line bg-white/40 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-line"
+              className="ivory-soft inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf/30 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base backdrop-blur transition-colors hover:border-gold-leaf/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40"
+              style={{ background: "oklch(25% 0.05 260 / 0.55)" }}
             >
               {C.backToChat.hi}
-              <span className="ml-2 font-serif text-sm italic text-ink-faint">
+              <span className="ivory-faint ml-2 font-serif text-sm italic">
                 · {C.backToChat.en}
               </span>
             </button>
@@ -632,5 +691,68 @@ function VoiceInner() {
         )}
       </div>
     </>
+  );
+}
+
+// ── Krishna-flute painting backdrop ──────────────────────────────────────
+// The night scene: the founder's Krishna-with-flute painting sits behind the
+// orb (the orb is where the music ribbon resolves). Responsive crops — a
+// landscape image on desktop, the portrait crop on mobile — both object-cover
+// so nothing important is lost. Dimmed + blurred when the orb isn't the focus.
+// If an image 404s the container is still dark (bg-night under it), so the page
+// never goes blank (edge: fresco-load fallback).
+function KrishnaBackdrop({ dim }: { dim: boolean }) {
+  // Shimmer animates `filter`, so it would cancel the dim blur — only run
+  // it when the painting is the focus (not dimmed).
+  const imgBase = `absolute inset-0 h-full w-full object-cover transition-[opacity,filter] duration-500 ${
+    dim ? "" : "voice-painting"
+  }`;
+  const dimCls = dim
+    ? "opacity-30 blur-[2px] saturate-[.8]"
+    : "opacity-90";
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+      {/* desktop / wide */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/krishna-flute-night.jpg"
+        alt=""
+        className={`${imgBase} hidden object-[20%_center] sm:block ${dimCls}`}
+      />
+      {/* mobile portrait */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/krishna-flute-mobile.jpg"
+        alt=""
+        className={`${imgBase} object-top sm:hidden ${dim ? "opacity-30 blur-[2px] saturate-[.8]" : "opacity-95"}`}
+      />
+      {/* top scrim — a gentle veil; the header is now borderless/transparent,
+          so this is the legibility backing for the floating logo + icons */}
+      <div
+        className="absolute inset-x-0 top-0 h-32"
+        style={{
+          background:
+            "linear-gradient(180deg, oklch(15% 0.04 260 / 0.65) 0%, oklch(15% 0.04 260 / 0.28) 55%, transparent 100%)",
+        }}
+      />
+      {/* bottom scrim — anchors the state strip + buttons on a dark base but
+          turns transparent sooner so more of the painting stays visible */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-52"
+        style={{
+          background:
+            "linear-gradient(0deg, oklch(15% 0.04 260 / 0.92) 0%, oklch(15% 0.04 260 / 0.45) 35%, transparent 100%)",
+        }}
+      />
+      {/* soft cyan glow where the music ribbon resolves (behind the orb) */}
+      <div
+        className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, oklch(75% 0.15 220 / 0.22) 0%, transparent 65%)",
+          mixBlendMode: "screen",
+        }}
+      />
+    </div>
   );
 }

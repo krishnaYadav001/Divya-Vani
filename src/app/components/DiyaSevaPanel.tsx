@@ -181,6 +181,34 @@ export default function DiyaSevaPanel({
       ) : (
         <div className="mt-5">
           <SevaTierPicker tiers={tiers} onSuccess={handlePickerSuccess} />
+          {/* Secured-by-Razorpay trust badge (founder 2026-05-24). Payment
+              runs through Razorpay UPI (Locked Decision #11); the lock +
+              wordmark reassure the user at the point of payment. Inline SVG
+              padlock — no trademarked image asset. */}
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-brass-dark">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.18em]">
+              Secured by Razorpay
+            </span>
+            <span aria-hidden className="text-brass/60">
+              ·
+            </span>
+            <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.18em]">
+              UPI
+            </span>
+          </div>
         </div>
       )}
     </div>

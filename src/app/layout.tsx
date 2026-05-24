@@ -8,8 +8,8 @@ import {
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
-import Link from "next/link";
 import { BRAND } from "@/lib/brand";
+import SiteFooter from "./components/SiteFooter";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -52,6 +52,21 @@ export const metadata: Metadata = {
   metadataBase: new URL(BRAND.url),
   title: BRAND.name.en,
   description: BRAND.description.en,
+  // Brand icon set — the Sudarshan Chakra mark from the Dawn Aarti
+  // handoff, rasterized at every standard size into /public. The SVG is
+  // the canonical source (modern browsers prefer it); the PNGs cover
+  // older browsers, Android, and PWA install. The legacy app/favicon.ico
+  // stays as the .ico fallback. apple-touch-icon is the iOS home-screen
+  // tile (180×180).
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     type: "website",
     url: BRAND.url,
@@ -119,55 +134,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
-        {/* Phase 6.6 Stage C-1 — text-sm + py-3 on footer, each link sized
-            to inline-flex min-h-11 (44px) so the tap target meets Apple
-            HIG and Google MWG. Static © text stays inline. */}
-        <footer className="shrink-0 py-3 text-center text-sm text-brass-dark">
-          <Link
-            href="/demo"
-            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-          >
-            Examples
-          </Link>
-          <span aria-hidden className="text-brass">
-            ·
-          </span>
-          <Link
-            href="/voice"
-            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-          >Voice</Link>
-          <span aria-hidden className="text-brass">
-            ·
-          </span>
-          <Link
-            href="/privacy"
-            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-          >
-            Privacy
-          </Link>
-          <span aria-hidden className="text-brass">
-            ·
-          </span>
-          <Link
-            href="/terms"
-            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-          >
-            Terms
-          </Link>
-          <span aria-hidden className="text-brass">
-            ·
-          </span>
-          <Link
-            href="/settings"
-            className="inline-flex min-h-11 items-center px-3 hover:underline underline-offset-2"
-          >
-            Settings
-          </Link>
-          <span aria-hidden className="mx-2 text-brass">
-            ·
-          </span>
-          <span>{BRAND.copyright.text}</span>
-        </footer>
+        <SiteFooter />
         <Analytics />
         {/* Phase 8 — Plausible (privacy-friendly, cookieless) runs
             alongside Vercel Analytics: Vercel for aggregate pageviews,

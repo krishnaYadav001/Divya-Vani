@@ -431,9 +431,170 @@ body {
   background: transparent;
 }
 
+/* ── Night theme — /voice (Krishna at his flute) ──────────────────────
+   The voice page is the NIGHT counterpart of the Dawn pastel system:
+   a deep midnight ground, a quiet starfield, the Krishna-with-flute
+   painting, and a luminous orb sitting at the music ribbon's terminus.
+   Ported from the handoff (dawn-voice.jsx + dawn-styles night block).
+   Scoped entirely by class so it never bleeds into the pastel surfaces.
+   Orb-internal keyframes (night-orb-…) + the particle keyframes
+   (ribbon-flow-in / -out / -swirl) are global so AgentOrb's scoped
+   style block can reference them. Every animation has a reduced-motion
+   off-switch below. */
+.bg-night {
+  background:
+    radial-gradient(ellipse 90% 60% at 25% 18%, oklch(28% 0.07 250) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 70% 55%, oklch(35% 0.08 280) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, oklch(20% 0.05 260) 0%, transparent 60%),
+    oklch(15% 0.04 260);
+}
+
+/* Ivory text ramp for night surfaces (dawn-styles night block). */
+.ivory {
+  color: oklch(95% 0.025 70);
+}
+.ivory-soft {
+  color: oklch(82% 0.025 70);
+}
+.ivory-faint {
+  color: oklch(62% 0.025 70);
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+.voice-star {
+  animation: star-twinkle var(--star-dur, 4s) ease-in-out var(--star-delay, 0s)
+    infinite;
+}
+
+@keyframes meteor {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-25deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(220px, 90px, 0) rotate(-25deg);
+    opacity: 0;
+  }
+}
+.voice-meteor {
+  animation: meteor var(--meteor-dur, 8s) ease-out var(--meteor-delay, 1s)
+    infinite;
+}
+
+@keyframes ribbon-shimmer {
+  0%,
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.12) saturate(1.12);
+  }
+}
+.voice-painting {
+  animation: ribbon-shimmer 5.5s ease-in-out infinite;
+}
+
+/* Particles travelling along the music ribbon (state-driven; the orb
+   sets --p-x / --p-y + picks which keyframe per state). */
+@keyframes ribbon-flow-in {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(var(--p-x, 0px), var(--p-y, 0px), 0) scale(1.2);
+    opacity: 0;
+  }
+}
+@keyframes ribbon-flow-out {
+  0% {
+    transform: translate3d(var(--p-x, 0px), var(--p-y, 0px), 0) scale(0.4);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.4);
+    opacity: 0;
+  }
+}
+@keyframes ribbon-swirl {
+  0% {
+    transform: rotate(0deg) translateY(-22px) scale(0.9);
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) translateY(-22px) scale(1);
+    opacity: 0.4;
+  }
+}
+
+@keyframes night-orb-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 30px oklch(85% 0.15 220 / 0.35),
+      0 0 60px oklch(72% 0.18 280 / 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 50px oklch(85% 0.15 220 / 0.6),
+      0 0 90px oklch(72% 0.18 280 / 0.45);
+    transform: scale(1.04);
+  }
+}
+@keyframes night-orb-sonar {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes night-orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes night-orb-drift {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── Accessibility: honour reduced-motion across every decorative
-   animation (existing + Dawn). The handoff edge-case list requires
-   this for petals / sparkles / drift / breathe / sonar. None of these
+   animation (existing + Dawn + night). The handoff edge-case list requires
+   this for petals / sparkles / drift / breathe / sonar / stars. None of these
    animations are load-bearing. ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .fade-up,
@@ -448,7 +609,10 @@ body {
   .dawn-float,
   .dawn-breathe,
   .dawn-sonar,
-  .dawn-sonar-delayed {
+  .dawn-sonar-delayed,
+  .voice-star,
+  .voice-meteor,
+  .voice-painting {
     animation: none !important;
   }
   /* keep the thinking dots visible when motion is off */

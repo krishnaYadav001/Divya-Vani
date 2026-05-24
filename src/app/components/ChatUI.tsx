@@ -6,7 +6,6 @@ import Link from "next/link";
 import type { Message, SafetyCard } from "@/lib/messages";
 import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
-import { getTiersInOrder } from "@/lib/seva";
 import { clearSession, loadSession, saveSession } from "@/lib/chatStorage";
 import { BRAND } from "@/lib/brand";
 
@@ -16,7 +15,6 @@ import { BRAND } from "@/lib/brand";
 // rest.join(" ") fallback still renders the full name (just with all
 // non-first words sharing the second color).
 const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
-import DiyaSevaPanel from "./DiyaSevaPanel";
 import SevaPaywall from "./SevaPaywall";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
@@ -25,10 +23,6 @@ import DiyaIcon from "./motifs/DiyaIcon";
 import PeacockFeather from "./motifs/PeacockFeather";
 import Atmosphere from "./Atmosphere";
 
-// Phase 5.4 — static tier list for the diya seva panel. TIER_CONFIG is a
-// frozen const so this is computed once at module load (avoids handing
-// the panel a fresh array on every render and triggering useless work).
-const TIERS = getTiersInOrder();
 
 export default function ChatUI() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -101,12 +95,13 @@ export default function ChatUI() {
   const micErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  // Phase 5.4 — diya seva panel visibility + counter state. counterState
-  // seeds from /api/me on mount and updates from each chat response's
-  // message_count + seva_balance fields (both streaming meta frames and
-  // plain-JSON paths). The panel reads these as props.
-  const [isDiyaOpen, setIsDiyaOpen] = useState(false);
-  const [counterState, setCounterState] = useState<{
+  // Phase 5.4 — seva counter state. Seeds from /api/me on mount and updates
+  // from each chat response's message_count + seva_balance (streaming meta
+  // frames + plain-JSON). The header seva trigger now links to /settings#seva
+  // (payment moved off the header to declutter mobile, founder 2026-05-24),
+  // so the value is no longer rendered here — kept updated for parity with
+  // the server (and any future in-header counter).
+  const [, setCounterState] = useState<{
     message_count: number;
     seva_balance: number;
   }>({ message_count: 0, seva_balance: 0 });
@@ -1134,25 +1129,18 @@ export default function ChatUI() {
             >
               <SettingsIcon className="h-6 w-6" />
             </Link>
-            <button
-              type="button"
+            {/* Seva — payment lives in /settings now (founder 2026-05-24);
+                the diya links there instead of opening a header popup that
+                crowded the mobile header. The in-chat SevaPaywall (when free
+                messages run out) is unchanged. */}
+            <Link
+              href="/settings#seva"
               aria-label="Seva · सेवा"
-              aria-expanded={isDiyaOpen}
-              onClick={() => setIsDiyaOpen((prev) => !prev)}
+              title="Seva · सेवा"
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
             >
               <DiyaIcon className="h-6 w-6" />
-            </button>
-            <DiyaSevaPanel
-              isOpen={isDiyaOpen}
-              onClose={() => setIsDiyaOpen(false)}
-              messageCount={counterState.message_count}
-              sevaBalance={counterState.seva_balance}
-              tiers={TIERS}
-              onPurchaseSuccess={(newBalance) => {
-                setCounterState((prev) => ({ ...prev, seva_balance: newBalance }));
-              }}
-            />
+            </Link>
           </div>
         </div>
       </header>

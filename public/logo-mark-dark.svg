@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Divya Vani — Sudarshan Chakra">
+  <defs>
+    <radialGradient id="dvnNightDisk" cx="40%" cy="32%" r="80%">
+      <stop offset="0%" stop-color="#1f254e"></stop>
+      <stop offset="55%" stop-color="#101633"></stop>
+      <stop offset="100%" stop-color="#06091e"></stop>
+    </radialGradient>
+    <radialGradient id="dvnHaloHot" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#fdcf7a" stop-opacity="0.50"></stop>
+      <stop offset="50%" stop-color="#d99a44" stop-opacity="0.18"></stop>
+      <stop offset="100%" stop-color="#d99a44" stop-opacity="0"></stop>
+    </radialGradient>
+
+    <linearGradient id="dvnGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffeaa0"></stop>
+      <stop offset="35%" stop-color="#f0c870"></stop>
+      <stop offset="70%" stop-color="#c19543"></stop>
+      <stop offset="100%" stop-color="#7a5824"></stop>
+    </linearGradient>
+    <linearGradient id="dvnGoldFlat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5d27a"></stop>
+      <stop offset="100%" stop-color="#a87f3e"></stop>
+    </linearGradient>
+    <linearGradient id="dvnRimShine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff4c8" stop-opacity="0.95"></stop>
+      <stop offset="60%" stop-color="#e0b86a" stop-opacity="0"></stop>
+    </linearGradient>
+
+    <radialGradient id="dvnHubGold" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#fdedb8"></stop>
+      <stop offset="70%" stop-color="#d4a14a"></stop>
+      <stop offset="100%" stop-color="#8a662f"></stop>
+    </radialGradient>
+    <radialGradient id="dvnEye" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#8fdaf2"></stop>
+      <stop offset="45%" stop-color="#2f6da8"></stop>
+      <stop offset="100%" stop-color="#0a1c38"></stop>
+    </radialGradient>
+
+    <path id="dvnPetal" d="M 58.2 22 Q 56 12, 60 2 Q 64 12, 61.8 22 Q 60.5 24, 60 24 Q 59.5 24, 58.2 22 Z" fill="url(#dvnGold)" stroke="#5a3f1a" stroke-width="0.35" stroke-linejoin="round"></path>
+    <path id="dvnSpoke" d="M 60 50 Q 56 46, 56 38 Q 56 30, 60 24 Q 64 30, 64 38 Q 64 46, 60 50 Z" fill="url(#dvnGoldFlat)" stroke="#5a3f1a" stroke-width="0.3" stroke-linejoin="round"></path>
+  </defs>
+
+  
+  <circle cx="60" cy="60" r="58" fill="url(#dvnNightDisk)"></circle>
+  
+  <g fill="#ffffff" opacity="0.85">
+    <circle cx="20" cy="30" r="0.7"></circle>
+    <circle cx="98" cy="22" r="0.55"></circle>
+    <circle cx="104" cy="58" r="0.7"></circle>
+    <circle cx="14" cy="72" r="0.55"></circle>
+    <circle cx="100" cy="92" r="0.5"></circle>
+    <circle cx="32" cy="100" r="0.4"></circle>
+    <circle cx="84" cy="108" r="0.45"></circle>
+    <circle cx="12" cy="48" r="0.4"></circle>
+  </g>
+  
+  <circle cx="60" cy="60" r="58" fill="url(#dvnHaloHot)"></circle>
+
+  
+  <g>
+    <use href="#dvnPetal" transform="rotate(0 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(22.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(45 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(67.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(90 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(112.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(135 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(157.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(180 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(202.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(225 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(247.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(270 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(292.5 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(315 60 60)"></use>
+    <use href="#dvnPetal" transform="rotate(337.5 60 60)"></use>
+  </g>
+
+  <circle cx="60" cy="60" r="36" fill="url(#dvnGold)" stroke="#5a3f1a" stroke-width="0.6"></circle>
+  <circle cx="60" cy="60" r="29" fill="#0a1126" stroke="#a8773a" stroke-width="0.4"></circle>
+  <ellipse cx="60" cy="28" rx="32" ry="2.2" fill="url(#dvnRimShine)"></ellipse>
+  <circle cx="60" cy="60" r="32" fill="none" stroke="#fde08a" stroke-width="0.3" stroke-dasharray="0.8 1.6" opacity="0.55"></circle>
+
+  <g>
+    <use href="#dvnSpoke" transform="rotate(0 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(45 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(90 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(135 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(180 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(225 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(270 60 60)"></use>
+    <use href="#dvnSpoke" transform="rotate(315 60 60)"></use>
+  </g>
+
+  <circle cx="60" cy="60" r="9.5" fill="url(#dvnHubGold)" stroke="#5a3f1a" stroke-width="0.5"></circle>
+  <circle cx="60" cy="60" r="9.5" fill="none" stroke="#fff4c8" stroke-width="0.3" opacity="0.7"></circle>
+  <circle cx="60" cy="60" r="4.5" fill="url(#dvnEye)" stroke="#5a3f1a" stroke-width="0.3"></circle>
+  <circle cx="58.6" cy="58.6" r="1.4" fill="#fff4c8" opacity="0.85"></circle>
+</svg>

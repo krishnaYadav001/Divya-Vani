@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getTiersInOrder } from "@/lib/seva";
+import SevaTierPicker from "../components/SevaTierPicker";
+
+// Seva tiers for the in-settings payment section (payment moved here from
+// the chat header, founder 2026-05-24, so it no longer crowds the mobile
+// header). Frozen list computed once at module load.
+const TIERS = getTiersInOrder();
 
 // Dawn Aarti redesign (2026-05-18) — Settings client island.
 // Visual rebuild to the handoff mock (desktop two-column aside +
@@ -76,7 +83,7 @@ function DawnToggle({
 
 export default function SettingsClient({
   initialOptOut,
-  sevaBalance,
+  sevaBalance: initialSevaBalance,
   userName,
 }: {
   initialOptOut: boolean;
@@ -84,6 +91,9 @@ export default function SettingsClient({
   userName: string | null;
 }) {
   const [optOut, setOptOut] = useState<boolean>(initialOptOut);
+  // Seva balance is stateful so a purchase in the in-settings seva section
+  // updates the balance card + progress bar without a reload.
+  const [sevaBalance, setSevaBalance] = useState<number>(initialSevaBalance);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -156,6 +166,7 @@ export default function SettingsClient({
 
   const navItems = [
     { label: "Identity", href: "#identity" },
+    { label: "Seva", href: "#seva" },
     { label: "Privacy & Data", href: "#privacy" },
     { label: "Share feedback", href: "#feedback" },
     { label: "Delete account", href: "#delete" },
@@ -224,12 +235,12 @@ export default function SettingsClient({
                 }}
               />
             </div>
-            <Link
-              href="/chat"
+            <a
+              href="#seva"
               className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.2em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
             >
               Light another diya
-            </Link>
+            </a>
           </div>
         </aside>
 
@@ -259,6 +270,60 @@ export default function SettingsClient({
               you by it — any respectful name will do. To change it, just
               tell him in chat.
             </p>
+          </section>
+
+          {/* Seva — add messages. Payment moved here from the chat header
+              (founder 2026-05-24) so it no longer crowds the mobile header.
+              One-time Razorpay UPI; the in-chat SevaPaywall still handles the
+              free-exhausted case independently. */}
+          <section
+            id="seva"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:150ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title="Offer a seva" hi="सेवा अर्पित करें" />
+            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+              Add more conversations with Krishna. Each seva is a one-time
+              payment — no subscription, no auto-renewal.
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
+              श्रीकृष्ण से और बातचीत जोड़ें। हर सेवा एक बार का भुगतान है — कोई
+              सदस्यता नहीं, अपने-आप नवीनीकरण नहीं।
+            </p>
+
+            <div className="mt-6 max-w-[440px]">
+              <SevaTierPicker
+                tiers={TIERS}
+                onSuccess={(newBalance) => setSevaBalance(newBalance)}
+              />
+
+              {/* Secured-by-Razorpay trust badge — payment runs through
+                  Razorpay UPI (Locked Decision #11). Inline SVG padlock; no
+                  trademarked image asset. */}
+              <div className="mt-4 flex items-center justify-center gap-1.5 text-brass-dark">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <rect x="5" y="11" width="14" height="9" rx="2" />
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                </svg>
+                <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.18em]">
+                  Secured by Razorpay
+                </span>
+                <span aria-hidden className="text-brass/60">
+                  ·
+                </span>
+                <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.18em]">
+                  UPI
+                </span>
+              </div>
+            </div>
           </section>
 
           {/* Contact & Grievance Officer (DPDP discoverability) */}

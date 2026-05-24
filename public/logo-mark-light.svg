@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Divya Vani — Sudarshan Chakra">
+  <defs>
+    <radialGradient id="dvHalo" cx="50%" cy="50%" r="58%">
+      <stop offset="0%" stop-color="#fdedb8" stop-opacity="0.55"></stop>
+      <stop offset="60%" stop-color="#f5dab2" stop-opacity="0.18"></stop>
+      <stop offset="100%" stop-color="#f5dab2" stop-opacity="0"></stop>
+    </radialGradient>
+
+    <linearGradient id="dvGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fae08a"></stop>
+      <stop offset="35%" stop-color="#e6c474"></stop>
+      <stop offset="70%" stop-color="#c19543"></stop>
+      <stop offset="100%" stop-color="#7a5824"></stop>
+    </linearGradient>
+
+    <linearGradient id="dvGoldFlat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0c870"></stop>
+      <stop offset="100%" stop-color="#a87f3e"></stop>
+    </linearGradient>
+
+    <linearGradient id="dvRimShine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff4c8" stop-opacity="0.85"></stop>
+      <stop offset="55%" stop-color="#e0b86a" stop-opacity="0"></stop>
+    </linearGradient>
+
+    <radialGradient id="dvHubGold" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#fdedb8"></stop>
+      <stop offset="70%" stop-color="#d4a14a"></stop>
+      <stop offset="100%" stop-color="#8a662f"></stop>
+    </radialGradient>
+
+    <radialGradient id="dvEye" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#7ec8e3"></stop>
+      <stop offset="45%" stop-color="#2f6da8"></stop>
+      <stop offset="100%" stop-color="#102b4d"></stop>
+    </radialGradient>
+
+    
+    <path id="dvPetal" d="M 58.2 22 Q 56 12, 60 2 Q 64 12, 61.8 22 Q 60.5 24, 60 24 Q 59.5 24, 58.2 22 Z" fill="url(#dvGold)" stroke="#6a4a1f" stroke-width="0.35" stroke-linejoin="round"></path>
+
+    
+    <path id="dvSpoke" d="M 60 50 Q 56 46, 56 38 Q 56 30, 60 24 Q 64 30, 64 38 Q 64 46, 60 50 Z" fill="url(#dvGoldFlat)" stroke="#6a4a1f" stroke-width="0.3" stroke-linejoin="round"></path>
+  </defs>
+
+  
+  <circle cx="60" cy="60" r="58" fill="url(#dvHalo)"></circle>
+
+  
+  <g>
+    <use href="#dvPetal" transform="rotate(0 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(22.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(45 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(67.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(90 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(112.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(135 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(157.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(180 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(202.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(225 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(247.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(270 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(292.5 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(315 60 60)"></use>
+    <use href="#dvPetal" transform="rotate(337.5 60 60)"></use>
+  </g>
+
+  
+  <circle cx="60" cy="60" r="36" fill="url(#dvGold)" stroke="#6a4a1f" stroke-width="0.6"></circle>
+  
+  <circle cx="60" cy="60" r="29" fill="#fff8ec" stroke="#a8773a" stroke-width="0.4"></circle>
+  
+  <ellipse cx="60" cy="28" rx="32" ry="2.2" fill="url(#dvRimShine)"></ellipse>
+  
+  <circle cx="60" cy="60" r="32" fill="none" stroke="#8a662f" stroke-width="0.3" stroke-dasharray="0.8 1.6" opacity="0.45"></circle>
+
+  
+  <g>
+    <use href="#dvSpoke" transform="rotate(0 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(45 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(90 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(135 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(180 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(225 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(270 60 60)"></use>
+    <use href="#dvSpoke" transform="rotate(315 60 60)"></use>
+  </g>
+
+  
+  <circle cx="60" cy="60" r="9.5" fill="url(#dvHubGold)" stroke="#6a4a1f" stroke-width="0.5"></circle>
+  <circle cx="60" cy="60" r="9.5" fill="none" stroke="#fff4c8" stroke-width="0.3" opacity="0.6"></circle>
+
+  
+  <circle cx="60" cy="60" r="4.5" fill="url(#dvEye)" stroke="#6a4a1f" stroke-width="0.3"></circle>
+  <circle cx="58.6" cy="58.6" r="1.4" fill="#fff4c8" opacity="0.75"></circle>
+</svg>
