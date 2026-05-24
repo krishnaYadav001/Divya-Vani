@@ -22,9 +22,13 @@ import Bansuri from "./motifs/Bansuri";
 import DiyaIcon from "./motifs/DiyaIcon";
 import PeacockFeather from "./motifs/PeacockFeather";
 import Atmosphere from "./Atmosphere";
+import { useLanguage } from "../providers/LanguageProvider";
 
 
 export default function ChatUI() {
+  // Phase 12 — UI-chrome language (placeholder + empty-state heading only).
+  // Krishna's replies are NOT switched here; they follow the user's input.
+  const { lang, t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -883,7 +887,7 @@ export default function ChatUI() {
               }
             }
           }}
-          placeholder="मन में जो है, कहो…"
+          placeholder={t.chat.placeholder}
           disabled={isSending}
           aria-invalid={bannedWord !== null}
           className="flex-1 resize-none overflow-hidden rounded-3xl border border-gold/25 bg-ink2/65 px-6 py-4 font-devanagari text-base leading-normal text-ivory shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] placeholder:text-ivory/30 focus:border-gold focus:shadow-[0_0_0_4px_rgba(212,162,74,0.08)] focus:outline-none disabled:opacity-60 aria-[invalid=true]:border-red-seal"
@@ -966,9 +970,15 @@ export default function ChatUI() {
           context is useful for returning users too). */}
       {isEmpty && (
         <div className="mt-2 flex w-full flex-col items-center gap-5 text-center">
-          <h2 className="font-devanagari text-2xl font-normal leading-snug text-ivory sm:text-3xl">
-            जो भी मन में हो —{" "}
-            <span className="text-gold">यहाँ कह सकते हो</span>
+          <h2
+            className={`text-2xl font-normal leading-snug text-ivory sm:text-3xl ${
+              lang === "hi"
+                ? "font-devanagari"
+                : "font-[family-name:var(--font-display)]"
+            }`}
+          >
+            {t.chat.promptLead}{" "}
+            <span className="text-gold">{t.chat.promptAccent}</span>
           </h2>
           <div
             aria-hidden
