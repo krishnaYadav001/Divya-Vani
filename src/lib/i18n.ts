@@ -40,9 +40,13 @@ export type Messages = {
     promptAccent: string;
   };
   // Seva paywall invitation line (the eyebrow "Seva · सेवा" stays a fixed
-  // bilingual brand label and is not keyed).
+  // bilingual brand label and is not keyed) + the pre-checkout consent gate.
   paywall: {
     tagline: string;
+    consent: string;
+    consentRequired: string;
+    linkRefund: string;
+    linkTerms: string;
   };
   // Landing hero. Only the body prose, CTA labels, and free-messages line are
   // keyed. The Latin masthead bits (nav, "Mathurā Edition", the Sanskrit quote
@@ -77,6 +81,11 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     paywall: {
       tagline:
         "Offer what arises within — every gift carries the journey forward",
+      consent: "I have read and agree to the policies below.",
+      consentRequired:
+        "Please accept the Refund Policy & Terms to continue.",
+      linkRefund: "Refund Policy",
+      linkTerms: "Terms",
     },
     landing: {
       body: "Krishna in a chat window. The same flute, a smaller room. Ask in Hindi or English; the verses follow you.",
@@ -104,6 +113,11 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     paywall: {
       tagline:
         "जो भीतर से उठे, वही भेंट करो — हर अर्पण इस यात्रा को आगे ले जाता है",
+      consent: "मैंने नीचे दी गई नीतियाँ पढ़ी हैं और उनसे सहमत हूँ।",
+      consentRequired:
+        "जारी रखने के लिए धन-वापसी नीति और नियम स्वीकार करें।",
+      linkRefund: "धन-वापसी नीति",
+      linkTerms: "नियम",
     },
     landing: {
       body: "एक चैट खिड़की में कृष्ण। वही बाँसुरी, बस एक छोटा कमरा। हिंदी या अंग्रेज़ी में पूछो — श्लोक तुम्हारे साथ चलते हैं।",
