@@ -41,10 +41,10 @@ export const BRAND = {
     phoneHours: "Mon–Sat, 10am–6pm IST",
     // Registered business address shown on /contact (Razorpay + Google Ads
     // require a visible physical address). It MUST match the address on your
-    // GST registration + Razorpay business profile, or ads/onboarding can be
-    // rejected for a mismatch. TODO(founder): append your 6-digit PIN code for
-    // a complete postal address. Edit here only — /contact + footer read it.
-    address: "255 EWS, Barra-4, Janta Nagar, Kanpur, Uttar Pradesh, India",
+    // Razorpay business profile, or onboarding can be rejected for a mismatch.
+    // (No GST registration yet — sole proprietor below the ₹20L threshold.)
+    // Edit here only — /contact + footer read it.
+    address: "255 EWS, Barra-4, Janta Nagar, Kanpur, Uttar Pradesh 208027, India",
   },
   copyright: {
     year: 2026,
