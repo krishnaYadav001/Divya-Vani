@@ -683,6 +683,21 @@ export async function POST(req: Request): Promise<Response> {
   }
   const latestUserMessage = lastMsg.content;
 
+  // ── TEMP DIAGNOSTIC (founder 2026-05-26 — REMOVE after the identity fix). ──
+  // Logs the FULL request-body shape MINUS message content, so we can see
+  // exactly where (if anywhere) ElevenLabs places user_id and fix resolveUserId
+  // / the widget accordingly. PII-safe: the messages array is replaced with a
+  // count, so no spoken/typed text is ever logged.
+  try {
+    const diag: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+    if (Array.isArray(diag.messages)) {
+      diag.messages = `[${(diag.messages as unknown[]).length} messages omitted]`;
+    }
+    console.log("[agent-llm DIAG] body shape:", JSON.stringify(diag));
+  } catch (e) {
+    console.error("[agent-llm DIAG] body-shape log failed:", e);
+  }
+
   // ── Step 5: user identity (Phase 11.4 — from dynamic variables). ──
   const idResult = resolveUserId(body as Record<string, unknown>);
   if (!idResult.ok) {
