@@ -32,8 +32,12 @@
 // BOTH `customLlmExtraBody` (which ElevenLabs merges into the OpenAI request
 // body — landing at body.user_id) AND `dynamicVariables`. ElevenLabs versions
 // surface it at slightly different paths, so resolveUserId() reads a cascade
-// (see its comment). When NO id is present (legacy dashboard test calls /
-// misconfigured widget) we fall back to a fixed shared id and warn loudly.
+// (see its comment). When NO real id resolves — legacy dashboard test calls, or
+// the widget's dynamic variable failing to propagate so ElevenLabs sends its
+// placeholder default — the turn is treated as UNIDENTIFIED: we still answer it
+// (a live call is never torn down) but read/write NO Supabase state and alert
+// via Sentry. This prevents distinct real users merging into one shared memory
+// row. See isIdentified in POST.
 //
 // Note we still do NOT read chat_logs back for conversation history
 // (fetchRecentChatHistory / fetchLastChatLanguage): ElevenAgents supplies the
@@ -67,12 +71,17 @@ import {
   type ModerationFlag,
 } from "@/lib/moderation";
 import { hasVoiceAccess } from "@/lib/voiceAccess";
+import * as Sentry from "@sentry/nextjs";
 
 const client = new Anthropic();
 
-// Fallback shared identity — used ONLY when the request carries no user_id
-// (legacy dashboard test calls, or a misconfigured widget). See header note +
-// resolveUserId(). Production widget calls always carry a real cookie UUID.
+// Sentinel "no real identity" id. It is BOTH the absent-id fallback in
+// resolveUserId() AND the placeholder default declared on the agent
+// (setup-elevenlabs-agent.ts → dynamic_variable_placeholders.user_id), so when
+// the widget's dynamic variable fails to propagate ElevenLabs sends THIS string
+// as a real-looking value. A turn resolving to this sentinel is treated as
+// UNIDENTIFIED: the call proceeds, but nothing is read from / written to
+// Supabase (see isIdentified in POST). A real cookie UUID never collides with it.
 const AGENT_USER_ID = "elevenagents-test-user";
 // Model id echoed back in every OpenAI chunk. ElevenAgents sends
 // model:"krishna-sonnet-4-6"; we echo whatever it sends, defaulting to this.
@@ -541,6 +550,18 @@ type UserIdResult =
   | { ok: true; userId: string; usedFallback: boolean }
   | { ok: false };
 
+// A resolved string that does NOT represent a real user: the shared sentinel
+// (AGENT_USER_ID — ElevenLabs injects it as the placeholder default when the
+// dynamic variable doesn't propagate) or an unsubstituted dynamic-variable
+// template that leaked through verbatim ("{{user_id}}", or the bare name). Any
+// of these must be treated as "no id" rather than a real user.
+function isPlaceholderId(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return (
+    v === AGENT_USER_ID || v.includes("{{") || v === "user_id" || v === "{{user_id}}"
+  );
+}
+
 function resolveUserId(body: Record<string, unknown>): UserIdResult {
   const asObj = (v: unknown): Record<string, unknown> | undefined =>
     v && typeof v === "object" ? (v as Record<string, unknown>) : undefined;
@@ -558,12 +579,17 @@ function resolveUserId(body: Record<string, unknown>): UserIdResult {
   let sawMalformed = false; // edge A5.3: present but non-string somewhere
   for (const c of candidates) {
     if (typeof c === "string" && c.trim()) {
+      // A real id wins immediately. The placeholder/sentinel/template is NOT a
+      // real id — skip it and keep scanning so a real id later in the cascade
+      // still wins, and an all-placeholder request falls through to the
+      // usedFallback path below (NOT a 400).
+      if (isPlaceholderId(c)) continue;
       return { ok: true, userId: c.trim(), usedFallback: false };
     }
     if (c !== undefined && c !== null) sawMalformed = true;
   }
   if (sawMalformed) return { ok: false }; // edge A5.3 → 400
-  // Edges A5.1 + A5.2: no user_id anywhere → shared-test-user fallback + warn.
+  // No REAL id anywhere (absent, or only the placeholder/sentinel) → unidentified.
   return { ok: true, userId: AGENT_USER_ID, usedFallback: true };
 }
 
@@ -663,13 +689,28 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError("`user_id` must be a string", 400); // edge A5.3
   }
   const userId = idResult.userId;
-  if (idResult.usedFallback) {
-    console.warn(
-      "[agent-llm] no user_id in request — using shared fallback id. " +
-        "Production widget calls must pass user_id via customLlmExtraBody/dynamicVariables.",
+  // A turn is "identified" only when a real cookie UUID resolved. When it did
+  // NOT (the widget's dynamic variable failed to propagate, so ElevenLabs sent
+  // its placeholder default — or a dashboard test call), we still answer the
+  // turn so a live call is never torn down, but we DO NOT read or write any
+  // Supabase state: otherwise every unidentified turn would merge into one
+  // shared users_memory row (overwriting different real people's name /
+  // emotion / growing_edge) and read a stranger's memory back. We alert loudly
+  // — an unidentified PRODUCTION turn means identity propagation is broken.
+  const isIdentified = !idResult.usedFallback;
+  if (!isIdentified) {
+    console.error(
+      "[agent-llm] CRITICAL: no real user_id resolved — identity did not " +
+        "propagate from the widget. Answering WITHOUT persistence (no memory, " +
+        "no chat_logs, no safety_events). Check the agent's dynamic_variables " +
+        "config + the widget startSession({ dynamicVariables }) call.",
+    );
+    Sentry.captureMessage(
+      "agent-llm: voice turn with no real user_id — identity propagation broken (turn not persisted)",
+      "error",
     );
   }
-  console.log(`[agent-llm] user_id=${userId}`);
+  console.log(`[agent-llm] user_id=${userId} identified=${isIdentified}`);
 
   // ── Step 5b: paywall (Phase 11.4) — kicked off CONCURRENTLY here and checked
   // after the parallel pre-AI block, so its Supabase round-trip OVERLAPS the
@@ -694,16 +735,18 @@ export async function POST(req: Request): Promise<Response> {
   // safety_events, return a graceful in-character refusal as a 200 SSE stream.
   const bannedWordHit = findBannedWord(latestUserMessage);
   if (bannedWordHit) {
-    waitUntil(
-      logSafetyEvent({
-        userId,
-        messageText: latestUserMessage,
-        flag: "hostility",
-        confidence: 1,
-        replyText: BANNED_WORD_REPLY,
-        versesReferenced: [],
-      }).catch((e) => console.error("[agent-llm] banned-word logSafetyEvent failed:", e)),
-    );
+    if (isIdentified) {
+      waitUntil(
+        logSafetyEvent({
+          userId,
+          messageText: latestUserMessage,
+          flag: "hostility",
+          confidence: 1,
+          replyText: BANNED_WORD_REPLY,
+          versesReferenced: [],
+        }).catch((e) => console.error("[agent-llm] banned-word logSafetyEvent failed:", e)),
+      );
+    }
     return new Response(
       fixedReplyStream(BANNED_WORD_REPLY, includeUsage, responseModel),
       { status: 200, headers: SSE_HEADERS },
@@ -711,7 +754,10 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // ── Step 6b: prior memory + derived flags. ──
-  const priorMemory = await fetchMemory(userId);
+  // Unidentified turns NEVER read memory: the sentinel row is shared, so
+  // reading it would leak another person's name / growing_edge / "welcome
+  // back". Treat unidentified as a clean first-time user.
+  const priorMemory = isIdentified ? await fetchMemory(userId) : null;
   const priorCount = priorMemory?.message_count ?? 0;
   const isFirstTime = priorMemory?.is_first_time !== false;
   const isReturningUser = isReturningAfterGap(priorMemory);
@@ -797,16 +843,18 @@ export async function POST(req: Request): Promise<Response> {
       : null;
 
   if (moderationFlag) {
-    waitUntil(
-      logSafetyEvent({
-        userId,
-        messageText: latestUserMessage,
-        flag: moderationFlag,
-        confidence: moderation.confidence,
-        replyText: MODERATION_REPLY,
-        versesReferenced: [],
-      }).catch((e) => console.error("[agent-llm] moderation logSafetyEvent failed:", e)),
-    );
+    if (isIdentified) {
+      waitUntil(
+        logSafetyEvent({
+          userId,
+          messageText: latestUserMessage,
+          flag: moderationFlag,
+          confidence: moderation.confidence,
+          replyText: MODERATION_REPLY,
+          versesReferenced: [],
+        }).catch((e) => console.error("[agent-llm] moderation logSafetyEvent failed:", e)),
+      );
+    }
     return new Response(
       fixedReplyStream(MODERATION_REPLY, includeUsage, responseModel),
       { status: 200, headers: SSE_HEADERS },
@@ -816,13 +864,17 @@ export async function POST(req: Request): Promise<Response> {
   // ── Latency: kick off memory extraction NOW (off the critical path). It runs
   // concurrently with Sonnet's stream and is awaited in persistTurnState. Placed
   // after the gates so a moderation/paywall short-circuit never spends it. ──
-  const extractedPromise = extractMemory(
-    latestUserMessage,
-    priorSummary,
-    nameAwaited,
-    priorLang,
-    priorMemory?.growing_edge ?? null,
-  );
+  // Skip the (heaviest) Haiku extraction entirely for unidentified turns —
+  // nothing will be persisted, so there's no reason to spend it.
+  const extractedPromise: Promise<ExtractedTurn | null> = isIdentified
+    ? extractMemory(
+        latestUserMessage,
+        priorSummary,
+        nameAwaited,
+        priorLang,
+        priorMemory?.growing_edge ?? null,
+      )
+    : Promise.resolve(null);
 
   // ── Step 8 prep: memory + conversation language for THIS turn. ──
   // Prior memory carries the running context (the user's live message is in the
@@ -881,6 +933,11 @@ export async function POST(req: Request): Promise<Response> {
 
   // ── Step 11 prep: turn-state persistence (runs post-stream, in waitUntil). ──
   async function persistTurnState(replyText: string): Promise<void> {
+    // Unidentified turn (resolveUserId fell back to the shared sentinel): never
+    // touch Supabase — no memory merge into a shared row, no chat_logs
+    // pollution. The alert already fired at resolve time. (Guarded again here
+    // so EVERY persistence path is covered, not just the gates above.)
+    if (!isIdentified) return;
     // Memory extraction was kicked off before the stream (off the critical
     // path); await its result now for the memory write. extractMemory catches
     // internally, so this resolves to its value or null — it never throws.

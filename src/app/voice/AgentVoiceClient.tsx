@@ -11,9 +11,11 @@
 //     Start-again / Back-to-chat actions.
 //
 // Orb states map from the SDK: connecting / listening (recording you) /
-// thinking (your turn ended, Krishna processing) / speaking. A soft tone plays
-// when listening (re)starts so the user knows it's their turn. The orb's
-// recording pulse + REC dot make "I'm listening" vs "I've stopped" legible.
+// thinking (your turn ended, Krishna processing) / speaking. Soft chimes mark
+// the turn edges (Gemini-style): a rising tone when listening (re)starts —
+// your turn — and a falling tone when he stops listening and begins replying.
+// The orb's recording pulse + REC dot make "I'm listening" vs "I've stopped"
+// legible.
 //
 // Engine wiring:
 //   • ConversationProvider holds the (public) agent id.
@@ -119,29 +121,40 @@ function VoiceInner() {
   const [isSevaOpen, setIsSevaOpen] = useState(false);
   const [hasConnected, setHasConnected] = useState(false);
 
-  // Soft "your turn" tone. The AudioContext is created/resumed inside the Begin
-  // click (a user gesture) to satisfy autoplay policy.
+  // Soft earcons (Gemini-assistant style): a RISING chime the instant Krishna
+  // starts listening (your turn), and a FALLING chime the instant he stops
+  // listening and begins his reply. The AudioContext is created/resumed inside
+  // the Begin click (a user gesture) to satisfy autoplay policy; both chimes
+  // reuse it. Shared envelope (~0.26s sine swell) so they sound like a pair.
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const playListeningTone = useCallback(() => {
+  const playChime = useCallback((fromHz: number, toHz: number) => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     try {
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(659.25, now); // E5
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // → A5 (gentle rise)
+      // Triangle (vs sine) carries a little more harmonic presence so the chime
+      // cuts through Krishna's voice without needing a harsh volume. Peak gain
+      // ~0.34 (was 0.085 ≈ −21 dB, inaudible) so it's clearly heard on phone
+      // speakers; quick swell + ~0.4s ring reads as a notification, not a beep.
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(fromHz, now);
+      osc.frequency.exponentialRampToValueAtTime(toHz, now + 0.12);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.085, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+      gain.gain.exponentialRampToValueAtTime(0.34, now + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
       osc.connect(gain).connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.26);
+      osc.stop(now + 0.42);
     } catch {
       /* tone is best-effort — never let it break the session */
     }
   }, []);
+  // E5 → A5 rising: "your turn" (Krishna starts listening).
+  const playListeningTone = useCallback(() => playChime(659.25, 880), [playChime]);
+  // A5 → E5 falling: "stopped listening — replying now" (Krishna starts responding).
+  const playRespondingTone = useCallback(() => playChime(880, 659.25), [playChime]);
 
   // Parse + apply the helpline tool parameters defensively (edge B6.12).
   const applyHelplineParams = useCallback((rawParams: unknown) => {
@@ -317,15 +330,25 @@ function VoiceInner() {
   const isActive = started && (status === "connecting" || status === "connected");
   const showEndedView = ended && transcript.length > 0;
 
-  // Play the "your turn" tone on the rising edge into listening (first connect
-  // and after each Krishna reply).
+  // Play the chimes on orb-state edges (Gemini-style open/close earcons):
+  //  • RISING tone on the edge INTO listening — first connect + after each
+  //    Krishna reply ("your turn").
+  //  • FALLING tone on the edge OUT of listening into thinking/speaking — the
+  //    moment Krishna stops listening and begins replying. Gated to those two
+  //    targets so ending the call (→ disconnected/error) never chimes.
   const prevOrbRef = useRef<AgentOrbState>("disconnected");
   useEffect(() => {
-    if (orbState === "listening" && prevOrbRef.current !== "listening") {
+    const prev = prevOrbRef.current;
+    if (orbState === "listening" && prev !== "listening") {
       playListeningTone();
+    } else if (
+      prev === "listening" &&
+      (orbState === "thinking" || orbState === "speaking")
+    ) {
+      playRespondingTone();
     }
     prevOrbRef.current = orbState;
-  }, [orbState, playListeningTone]);
+  }, [orbState, playListeningTone, playRespondingTone]);
 
   const strip: Bilingual = useMemo(() => {
     if (error) return error.copy;
@@ -448,7 +471,7 @@ function VoiceInner() {
           the night scene; the top scrim of the painting backdrop is the
           legibility backing. Back-to-chat (left) + exit/seva (right) stay
           as bare floating icons — no bar. ───────────────────────────── */}
-      <header className="relative z-30 shrink-0 px-3 py-3 sm:px-4 sm:py-4">
+      <header className="relative z-30 shrink-0 px-3 pt-[calc(0.75rem_+_env(safe-area-inset-top,0px))] pb-3 sm:px-4 sm:pt-[calc(1rem_+_env(safe-area-inset-top,0px))] sm:pb-4">
         <div className="mx-auto flex max-w-[600px] items-center gap-2">
           {/* back to chat (left) */}
           <Link
@@ -622,7 +645,7 @@ function VoiceInner() {
       </p>
 
       {/* ── Zone 5: bottom action row ───────────────────────────────── */}
-      <div className="relative z-20 flex shrink-0 flex-wrap items-center justify-center gap-3 px-5 pb-6 pt-1">
+      <div className="relative z-20 flex shrink-0 flex-wrap items-center justify-center gap-3 px-5 pb-[calc(1.5rem_+_env(safe-area-inset-bottom,0px))] pt-1">
         {showBegin && (
           <button
             ref={beginRef}

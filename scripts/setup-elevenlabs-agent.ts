@@ -67,6 +67,20 @@ const CONFIG = {
   voiceStability: 0.6,
   voiceSimilarityBoost: 0.85,
   voiceSpeed: 1.0,
+  // Turn-taking (founder 2026-05-25) — cut the dead-air pause after the user
+  // stops talking. ElevenLabs' end-of-turn is MODEL-based; there is NO literal
+  // "silence seconds" field (verified against TurnConfig/VadConfig in
+  // @elevenlabs/elevenlabs-js v2.49.0 — only turn_eagerness + speculative_turn).
+  //   • speculativeTurn: start generating Krishna's reply DURING the end-of-
+  //     speech silence so he speaks the instant the turn is confirmed — overlaps
+  //     our LLM first-token latency with the turn-confidence wait (~1s off the
+  //     perceived pause) WITHOUT making him interrupt a user who pauses to think.
+  //   • turnEagerness stays "normal" on purpose: "eager" jumps in at the
+  //     earliest gap and would cut people off mid-thought — wrong for a
+  //     contemplative Krishna. Bump to "eager" ONLY if speculative alone isn't
+  //     snappy enough AND you accept the interruption risk.
+  turnEagerness: "normal" as const, // "patient" | "normal" | "eager"
+  speculativeTurn: true,
   systemPromptPlaceholder:
     "You are Krishna. Reply briefly in Hindi. The real persona prompt comes via the custom LLM endpoint.",
   customLlm: {
@@ -336,6 +350,12 @@ function buildConversationConfig(secretId: string, llmUrl: string) {
         // POST /v1/convai/tools and reference it here as `tool_ids: [<id>]`.
         tools: [HELPLINE_TOOL],
       },
+    },
+    // Turn detection (founder 2026-05-25) — see CONFIG.turnEagerness /
+    // .speculativeTurn. Sibling of `agent` per ConversationalConfig.turn.
+    turn: {
+      turn_eagerness: CONFIG.turnEagerness,
+      speculative_turn: CONFIG.speculativeTurn,
     },
     tts: {
       voice_id: CONFIG.voiceId,
