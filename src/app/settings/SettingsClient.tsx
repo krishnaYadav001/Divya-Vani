@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getTiersInOrder } from "@/lib/seva";
+import { BRAND } from "@/lib/brand";
+import { useLanguage } from "../providers/LanguageProvider";
 import SevaTierPicker from "../components/SevaTierPicker";
 
 // Seva tiers for the in-settings payment section (payment moved here from
@@ -100,6 +102,10 @@ export default function SettingsClient({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
+  // UI-language preference (static chrome only — Krishna's replies follow the
+  // user's input language per Locked Decision #12). The footer hosts the same
+  // toggle; this is the explicit-choice surface in Settings.
+  const { lang, setLang } = useLanguage();
 
   const reviewAllowed = !optOut;
 
@@ -166,8 +172,10 @@ export default function SettingsClient({
 
   const navItems = [
     { label: "Identity", href: "#identity" },
+    { label: "Language", href: "#language" },
     { label: "Seva", href: "#seva" },
     { label: "Examples", href: "#examples" },
+    { label: "About us", href: "#about" },
     { label: "Privacy & Data", href: "#privacy" },
     { label: "Share feedback", href: "#feedback" },
     { label: "Delete account", href: "#delete" },
@@ -273,6 +281,57 @@ export default function SettingsClient({
             </p>
           </section>
 
+          {/* Language — UI-language preference (founder 2026-05-25). Segmented
+              English / हिन्दी choice, wired to the same LanguageProvider as the
+              footer toggle. Affects static chrome only; Krishna replies in the
+              user's input language (Locked Decision #12). */}
+          <section
+            id="language"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:135ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title="Language" hi="भाषा" />
+            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+              Choose the language for the app&apos;s buttons and labels.
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
+              ऐप के बटन और लेबल की भाषा चुनें।
+            </p>
+
+            <div
+              role="group"
+              aria-label="Interface language · इंटरफ़ेस भाषा"
+              className="mt-5 inline-flex rounded-full border border-[oklch(86%_0.04_70)] bg-white/50 p-1"
+            >
+              {(["en", "hi"] as const).map((code) => {
+                const active = lang === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setLang(code)}
+                    aria-pressed={active}
+                    className={`min-h-10 rounded-full px-6 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                      active
+                        ? "bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset]"
+                        : "text-ink-soft hover:text-ink"
+                    } ${
+                      code === "hi"
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-display)] tracking-[0.06em]"
+                    }`}
+                  >
+                    {code === "en" ? "English" : "हिन्दी"}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-4 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
+              Krishna always replies in the language you write or speak to him
+              in — this setting only changes the app&apos;s own labels.
+            </p>
+          </section>
+
           {/* Seva — add messages. Payment moved here from the chat header
               (founder 2026-05-24) so it no longer crowds the mobile header.
               One-time Razorpay UPI; the in-chat SevaPaywall still handles the
@@ -349,6 +408,68 @@ export default function SettingsClient({
               >
                 See examples →
               </Link>
+            </div>
+          </section>
+
+          {/* About us — who/what Divya Vani is, the AI-identity note, and the
+              business details most companies surface (operator, registered
+              office, India). Real data only, read from BRAND.contact so it
+              stays in sync with /contact + the footer. (founder 2026-05-25) */}
+          <section
+            id="about"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:172ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title="About us" hi="हमारे बारे में" />
+            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+              {BRAND.name.en} is an AI that speaks in Krishna&apos;s voice —
+              grounded in the Bhagavad Gita, the Mahabharata, and the
+              Bhagavata Purana. It&apos;s built as a calm, private place to
+              talk through life, emotions, and dharma, whenever you need it.
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.7] text-ink-soft">
+              दिव्य वाणी एक AI है जो श्रीकृष्ण की वाणी में बात करता है — भगवद्गीता,
+              महाभारत और श्रीमद्भागवत पर आधारित। यह एक शांत, निजी जगह है जहाँ आप
+              जीवन, भावनाओं और धर्म पर मन की बात कह सकते हैं।
+            </p>
+
+            <p className="mt-4 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
+              {BRAND.disclaimer.en} It is not a substitute for professional
+              medical, legal, or mental-health advice.
+            </p>
+
+            <dl className="mt-5 space-y-3 border-t border-[var(--color-ink-line)] pt-5">
+              <div>
+                <dt className="font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-faint">
+                  Operated by · संचालक
+                </dt>
+                <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic text-ink">
+                  {BRAND.contact.founder} — sole proprietorship
+                </dd>
+              </div>
+              <div>
+                <dt className="font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-faint">
+                  Registered office · पंजीकृत पता
+                </dt>
+                <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+                  {BRAND.contact.address}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                { href: "/contact", label: "Contact" },
+                { href: "/terms", label: "Terms" },
+                { href: "/privacy", label: "Privacy" },
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-xs tracking-[0.1em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+                >
+                  {l.label} →
+                </Link>
+              ))}
             </div>
           </section>
 
