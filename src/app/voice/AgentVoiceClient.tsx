@@ -45,6 +45,7 @@ import {
 } from "@elevenlabs/react";
 import { BRAND } from "@/lib/brand";
 import { getTiersInOrder } from "@/lib/seva";
+import { loadTranscript, saveTranscript } from "@/lib/voiceTranscriptStorage";
 import AgentOrb, { type AgentOrbState } from "./AgentOrb";
 import HelplineOverlay from "./HelplineOverlay";
 import DiyaSevaPanel from "../components/DiyaSevaPanel";
@@ -294,12 +295,20 @@ function VoiceInner() {
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
-        userIdRef.current = typeof d.userId === "string" ? d.userId : null;
+        const uid = typeof d.userId === "string" ? d.userId : null;
+        userIdRef.current = uid;
         setHasAccess(d.hasAccess === true);
         setCounter({
           messageCount: typeof d.messageCount === "number" ? d.messageCount : 0,
           sevaBalance: typeof d.sevaBalance === "number" ? d.sevaBalance : 0,
         });
+        // Restore the persisted voice transcript (its own localStorage key,
+        // separate from chat) so a returning user sees their past voice
+        // conversation — it is never wiped (founder 2026-05-26).
+        if (uid) {
+          const saved = loadTranscript(uid);
+          if (saved && saved.length > 0) setTranscript(saved);
+        }
       })
       .catch(() => {
         if (!cancelled) setHasAccess(false); // fail closed → paywall
@@ -311,6 +320,15 @@ function VoiceInner() {
       cancelled = true;
     };
   }, []);
+
+  // ── persist the voice transcript on every change (separate localStorage key
+  // from chat, founder 2026-05-26) so it survives reload/revisit and is never
+  // lost. saveTranscript silent-fails + skips empty, so this is safe to run on
+  // each turn. ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const uid = userIdRef.current;
+    if (uid && transcript.length > 0) saveTranscript(uid, transcript);
+  }, [transcript]);
 
   // ── cleanup on unmount (edge B6.4: navigating away ends the session) ──────
   useEffect(() => {
@@ -373,7 +391,12 @@ function VoiceInner() {
 
   const isReconnecting = status === "connecting" && hasConnected;
   const isActive = started && (status === "connecting" || status === "connected");
-  const showEndedView = ended && transcript.length > 0;
+  // Show the transcript whenever we're NOT in a live call AND there is history —
+  // covers both "a call just ended" and "returning user with persisted history"
+  // (founder 2026-05-26: the transcript is never wiped). During a live call the
+  // orb takes over (immersive). Name kept as `showEndedView` to avoid churn
+  // across its references; it now means "the transcript view is showing".
+  const showEndedView = !isActive && transcript.length > 0;
 
   // Play the chimes on orb-state edges (Gemini-style open/close earcons):
   //  • RISING tone on the edge INTO listening — first connect + after each
@@ -470,9 +493,12 @@ function VoiceInner() {
     setStarted(false);
   }, [endSession]);
 
-  const handleStartAgain = useCallback(() => {
+  // "Continue" — resume talking WITHOUT wiping the transcript (founder
+  // 2026-05-26, replaces "Start again"). The existing transcript stays on
+  // screen + in storage; the new call's turns append to it, and shared
+  // users_memory keeps Krishna's recollection continuous.
+  const handleContinue = useCallback(() => {
     setEnded(false);
-    setTranscript([]);
     if (!hasAccess) {
       setIsSevaOpen(true);
       return;
@@ -602,10 +628,10 @@ function VoiceInner() {
           <div className="flex min-h-0 w-full max-w-[480px] flex-1 flex-col py-4">
             <p className="shrink-0 pb-3 text-center">
               <span className="ivory block font-[family-name:var(--font-display)] text-xl">
-                {C.states.ended.hi}
+                {ended ? C.states.ended.hi : C.title.hi}
               </span>
               <span className="ivory-soft mt-0.5 block font-serif text-sm italic">
-                {C.states.ended.en}
+                {ended ? C.states.ended.en : C.title.en}
               </span>
             </p>
             <div
@@ -740,7 +766,7 @@ function VoiceInner() {
           <>
             <button
               type="button"
-              onClick={handleStartAgain}
+              onClick={handleContinue}
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-8 py-3 font-[family-name:var(--font-devanagari)] text-base shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_0_22px_oklch(76%_0.14_80_/_0.3)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0"
               style={{
                 background:
@@ -748,9 +774,9 @@ function VoiceInner() {
                 color: "oklch(18% 0.04 60)",
               }}
             >
-              {C.startNew.hi}
+              जारी रखो
               <span className="ml-2 font-serif text-sm italic" style={{ color: "oklch(30% 0.05 60)" }}>
-                · {C.startNew.en}
+                · Continue
               </span>
             </button>
             <button

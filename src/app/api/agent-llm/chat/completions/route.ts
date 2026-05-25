@@ -1009,6 +1009,7 @@ export async function POST(req: Request): Promise<Response> {
         versesReferenced: verseRefs,
         safetyFlag: safety.flag,
         messageCountAfter: priorCount + 1,
+        source: "voice", // tag voice turns distinctly from chat in chat_logs
       }).catch((err) => console.warn("[agent-llm chat_logs] insert failed:", err));
     }
   }

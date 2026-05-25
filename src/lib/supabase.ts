@@ -547,6 +547,11 @@ export async function logChatTurn(params: {
   versesReferenced?: string[];
   safetyFlag?: string;
   messageCountAfter?: number;
+  // 'chat' (default) or 'voice' — tags which surface produced the turn so the
+  // two can be told apart in storage / shown separately. The chat route omits
+  // it (→ 'chat'); the voice route passes 'voice'. Requires the chat_logs.source
+  // column (manual SQL — run BEFORE deploying this change; see deploy runbook).
+  source?: string;
 }): Promise<void> {
   try {
     const client = getClient();
@@ -559,6 +564,7 @@ export async function logChatTurn(params: {
       verses_referenced: params.versesReferenced ?? [],
       safety_flag: params.safetyFlag ?? null,
       message_count_after: params.messageCountAfter ?? null,
+      source: params.source ?? "chat",
     });
     if (error) {
       console.error("[supabase] logChatTurn error:", error);
