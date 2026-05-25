@@ -39,13 +39,12 @@ export const BRAND = {
     phone: "+917275606624",
     phoneDisplay: "+91 72756 06624",
     phoneHours: "Mon–Sat, 10am–6pm IST",
-    // TODO(founder): replace `address` with your full registered /
-    // virtual-office street address (street, city, state, PIN) before
-    // Razorpay International + Google Ads verification. It MUST match the
-    // address on your GST registration + Razorpay business profile, or
-    // ads/onboarding can be rejected for a mismatch. Edit here only — the
-    // /contact page + footer read from this one field.
-    address: "Kanpur, Uttar Pradesh, India",
+    // Registered business address shown on /contact (Razorpay + Google Ads
+    // require a visible physical address). It MUST match the address on your
+    // GST registration + Razorpay business profile, or ads/onboarding can be
+    // rejected for a mismatch. TODO(founder): append your 6-digit PIN code for
+    // a complete postal address. Edit here only — /contact + footer read it.
+    address: "255 EWS, Barra-4, Janta Nagar, Kanpur, Uttar Pradesh, India",
   },
   copyright: {
     year: 2026,
