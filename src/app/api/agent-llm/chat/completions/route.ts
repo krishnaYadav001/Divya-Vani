@@ -570,11 +570,15 @@ function resolveUserId(body: Record<string, unknown>): UserIdResult {
   const dyn = asObj(body.dynamic_variables);
   // Most → least likely path given the verified live request shape.
   const candidates: unknown[] = [
-    body.user_id, // customLlmExtraBody merged to top level (most likely)
+    // VERIFIED 2026-05-26 against the LIVE request body: ElevenLabs merges the
+    // widget's customLlmExtraBody into body.elevenlabs_extra_body, so the id
+    // lands at body.elevenlabs_extra_body.user_id. This is the real path.
+    eeb?.user_id,
+    body.user_id, // top-level merge (other ElevenLabs versions)
     clb?.user_id, // custom_llm_extra_body passed through verbatim
     dyn?.user_id, // top-level dynamic_variables object
-    asObj(eeb?.dynamic_variables)?.user_id, // the original spec's guess
-    asObj(clb?.dynamic_variables)?.user_id, // dynamic_variables nested in extra body
+    asObj(eeb?.dynamic_variables)?.user_id, // dynamic_variables nested in extra body
+    asObj(clb?.dynamic_variables)?.user_id,
   ];
   let sawMalformed = false; // edge A5.3: present but non-string somewhere
   for (const c of candidates) {
@@ -682,21 +686,6 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError("the last message must be from the user", 400);
   }
   const latestUserMessage = lastMsg.content;
-
-  // ── TEMP DIAGNOSTIC (founder 2026-05-26 — REMOVE after the identity fix). ──
-  // Logs the FULL request-body shape MINUS message content, so we can see
-  // exactly where (if anywhere) ElevenLabs places user_id and fix resolveUserId
-  // / the widget accordingly. PII-safe: the messages array is replaced with a
-  // count, so no spoken/typed text is ever logged.
-  try {
-    const diag: Record<string, unknown> = { ...(body as Record<string, unknown>) };
-    if (Array.isArray(diag.messages)) {
-      diag.messages = `[${(diag.messages as unknown[]).length} messages omitted]`;
-    }
-    console.log("[agent-llm DIAG] body shape:", JSON.stringify(diag));
-  } catch (e) {
-    console.error("[agent-llm DIAG] body-shape log failed:", e);
-  }
 
   // ── Step 5: user identity (Phase 11.4 — from dynamic variables). ──
   const idResult = resolveUserId(body as Record<string, unknown>);
