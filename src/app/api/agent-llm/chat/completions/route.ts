@@ -328,8 +328,15 @@ Return ONLY valid JSON in this exact shape, with no surrounding text or markdown
           },
         ],
       },
-      // Fail-fast 3s Haiku timeout, no SDK retries — same as /api/chat.
-      { timeout: 3000, maxRetries: 0 },
+      // extractMemory runs in the BACKGROUND (kicked off pre-stream, awaited in
+      // persistTurnState inside waitUntil AFTER the reply has streamed) — it is
+      // NOT on the user's response path. The old 3s fail-fast timeout (copied
+      // from a critical-path call) was firing here ("Request timed out"), so the
+      // memory WRITE (name / emotion / context_summary / growing_edge) silently
+      // fell back to a minimal save and Krishna forgot the user. A generous 10s
+      // timeout lets Haiku finish; zero impact on response latency since this is
+      // post-stream background work.
+      { timeout: 10000, maxRetries: 0 },
     );
     const text = response.content.find((b) => b.type === "text")?.text ?? "";
     let parsed: Record<string, unknown> | null = null;
