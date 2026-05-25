@@ -154,6 +154,22 @@ const DYNAMIC_VARIABLES = {
   },
 };
 
+// ─── Phase 11.x (founder 2026-05-26) — allow customLlmExtraBody forwarding ─────
+// THE FIX for voice having no per-user memory. A live diagnostic proved
+// ElevenLabs was sending a BARE OpenAI body (no user_id anywhere): dynamic
+// variables are for prompt templating, NOT forwarded to a custom LLM. The
+// channel that IS merged into the custom-LLM request body is the widget's
+// `customLlmExtraBody`, but ElevenLabs only forwards it when this override is
+// enabled on the agent. Without it, /api/agent-llm can't identify the user and
+// skips all memory. SHAPE VERIFIED against ConversationInitiationClientData-
+// ConfigInput in @elevenlabs/elevenlabs-js v2.49.0:
+// platform_settings.overrides.custom_llm_extra_body (snake_case wire name).
+const PLATFORM_SETTINGS = {
+  overrides: {
+    custom_llm_extra_body: true,
+  },
+};
+
 // ─── Constants verified against the SDK / live API ───────────────────────────
 const API_BASE = "https://api.elevenlabs.io";
 const PLACEHOLDER_URL = "PASTE_YOUR_WEBHOOK_SITE_URL_HERE";
@@ -391,6 +407,7 @@ async function createAgent(apiKey: string, secretId: string, llmUrl: string) {
     body: {
       name: CONFIG.agentName,
       conversation_config: buildConversationConfig(secretId, llmUrl),
+      platform_settings: PLATFORM_SETTINGS,
     },
   });
 }
@@ -408,6 +425,7 @@ async function updateAgent(
     body: {
       name: CONFIG.agentName,
       conversation_config: buildConversationConfig(secretId, llmUrl),
+      platform_settings: PLATFORM_SETTINGS,
     },
   });
 }

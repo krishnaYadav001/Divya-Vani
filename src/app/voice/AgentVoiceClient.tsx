@@ -439,11 +439,20 @@ function VoiceInner() {
     setStarted(true);
     ensureAudioCtx();
     const userId = userIdRef.current ?? undefined;
-    // Identity via dynamicVariables only (the agent declares user_id; it rejects
-    // customLlmExtraBody). WebSocket transport (WebRTC data channels failed).
+    // Identity: the cookie UUID must reach /api/agent-llm so Krishna loads the
+    // right per-user memory. A live diagnostic (2026-05-26) proved
+    // dynamicVariables are NOT forwarded to the custom-LLM body — the request
+    // arrived with no user_id at all. The channel ElevenLabs DOES merge into the
+    // request body is customLlmExtraBody (it lands at body.user_id), gated by
+    // platform_settings.overrides.custom_llm_extra_body=true on the agent (set in
+    // setup-elevenlabs-agent.ts). Also send the SDK's userId (ElevenLabs end-user
+    // mapping) and keep dynamicVariables as a harmless secondary. WebSocket
+    // transport (WebRTC data channels failed).
     startSession({
       connectionType: "websocket",
-      dynamicVariables: userId ? { user_id: userId } : undefined,
+      ...(userId ? { userId } : {}),
+      ...(userId ? { customLlmExtraBody: { user_id: userId } } : {}),
+      ...(userId ? { dynamicVariables: { user_id: userId } } : {}),
     });
   }, [ensureAudioCtx, startSession]);
 
