@@ -11,11 +11,11 @@
 //     Start-again / Back-to-chat actions.
 //
 // Orb states map from the SDK: connecting / listening (recording you) /
-// thinking (your turn ended, Krishna processing) / speaking. Soft chimes mark
-// the turn edges (Gemini-style): a rising tone when listening (re)starts —
-// your turn — and a falling tone when he stops listening and begins replying.
-// The orb's recording pulse + REC dot make "I'm listening" vs "I've stopped"
-// legible.
+// thinking (your turn ended, Krishna processing) / speaking. Soft, soothing
+// chimes mark the turn edges: a gentle ascending swell when listening (re)starts
+// — your turn — and a soft descending settle when he stops listening and begins
+// replying. The orb's recording pulse + REC dot make "I'm listening" vs "I've
+// stopped" legible.
 //
 // Engine wiring:
 //   • ConversationProvider holds the (public) agent id.
@@ -121,40 +121,85 @@ function VoiceInner() {
   const [isSevaOpen, setIsSevaOpen] = useState(false);
   const [hasConnected, setHasConnected] = useState(false);
 
-  // Soft earcons (Gemini-assistant style): a RISING chime the instant Krishna
-  // starts listening (your turn), and a FALLING chime the instant he stops
-  // listening and begins his reply. The AudioContext is created/resumed inside
-  // the Begin click (a user gesture) to satisfy autoplay policy; both chimes
-  // reuse it. Shared envelope (~0.26s sine swell) so they sound like a pair.
+  // Soft chimes (founder 2026-05-25) — calm, soothing earcons in the spirit of a
+  // modern voice assistant's "ready" sound (an ORIGINAL tone, not Google's
+  // proprietary Gemini asset). Each note layers a warm sine fundamental + a quiet
+  // octave + a faintly DETUNED twin that beats gently for an ethereal shimmer,
+  // in a low/warm register through a soft lowpass. The SLOW bloom attack (a swell,
+  // not a percussive strike) + long fade is what makes it soothing rather than a
+  // notification beep.
+  //   • listening  → a gentle ascending perfect-fifth swell, A4 → E5 (your turn).
+  //   • responding → a soft descending settle, E5 → A4, shorter so it doesn't sit
+  //                  on top of Krishna's first words.
+  // The AudioContext is created/resumed inside the Begin click (a user gesture)
+  // to satisfy autoplay policy; both chimes reuse it.
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const playChime = useCallback((fromHz: number, toHz: number) => {
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-    try {
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      // Triangle (vs sine) carries a little more harmonic presence so the chime
-      // cuts through Krishna's voice without needing a harsh volume. Peak gain
-      // ~0.34 (was 0.085 ≈ −21 dB, inaudible) so it's clearly heard on phone
-      // speakers; quick swell + ~0.4s ring reads as a notification, not a beep.
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(fromHz, now);
-      osc.frequency.exponentialRampToValueAtTime(toHz, now + 0.12);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.34, now + 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.42);
-    } catch {
-      /* tone is best-effort — never let it break the session */
-    }
-  }, []);
-  // E5 → A5 rising: "your turn" (Krishna starts listening).
-  const playListeningTone = useCallback(() => playChime(659.25, 880), [playChime]);
-  // A5 → E5 falling: "stopped listening — replying now" (Krishna starts responding).
-  const playRespondingTone = useCallback(() => playChime(880, 659.25), [playChime]);
+  const playChime = useCallback(
+    (notes: Array<{ freq: number; at: number }>, dur: number, attack: number) => {
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      try {
+        const now = ctx.currentTime;
+        // Soft, warm lowpass keeps the swell rounded and mellow, never tinny.
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 2400;
+        lp.connect(ctx.destination);
+        for (const n of notes) {
+          const t = now + n.at;
+          // Three voices per note: sine fundamental + a quiet octave for glassy
+          // warmth + a faintly detuned twin (+7 cents) whose slow beating reads
+          // as a soothing shimmer. Peaks kept low so overlap never clips.
+          for (const v of [
+            { mult: 1, peak: 0.22, detune: 0 },
+            { mult: 2, peak: 0.05, detune: 0 },
+            { mult: 1, peak: 0.1, detune: 7 },
+          ]) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.value = n.freq * v.mult;
+            osc.detune.value = v.detune;
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(v.peak, t + attack); // slow bloom
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + dur); // long gentle fade
+            osc.connect(gain).connect(lp);
+            osc.start(t);
+            osc.stop(t + dur + 0.05);
+          }
+        }
+      } catch {
+        /* tone is best-effort — never let it break the session */
+      }
+    },
+    [],
+  );
+  // Gentle ascending A4 → E5 (a calm perfect fifth), slow bloom: "your turn".
+  const playListeningTone = useCallback(
+    () =>
+      playChime(
+        [
+          { freq: 440, at: 0 },
+          { freq: 659.25, at: 0.16 },
+        ],
+        1.1,
+        0.05,
+      ),
+    [playChime],
+  );
+  // Soft descending E5 → A4 settle, shorter + softer: "replying now".
+  const playRespondingTone = useCallback(
+    () =>
+      playChime(
+        [
+          { freq: 659.25, at: 0 },
+          { freq: 440, at: 0.14 },
+        ],
+        0.9,
+        0.045,
+      ),
+    [playChime],
+  );
 
   // Parse + apply the helpline tool parameters defensively (edge B6.12).
   const applyHelplineParams = useCallback((rawParams: unknown) => {
