@@ -167,6 +167,7 @@ export default function SettingsClient({
   const navItems = [
     { label: "Identity", href: "#identity" },
     { label: "Seva", href: "#seva" },
+    { label: "Examples", href: "#examples" },
     { label: "Privacy & Data", href: "#privacy" },
     { label: "Share feedback", href: "#feedback" },
     { label: "Delete account", href: "#delete" },
@@ -323,6 +324,31 @@ export default function SettingsClient({
                   UPI
                 </span>
               </div>
+            </div>
+          </section>
+
+          {/* Examples — the /demo "see real conversations" surface, moved
+              here from the chat header (founder 2026-05-25) so the header
+              stays uncrowded on mobile. */}
+          <section
+            id="examples"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:165ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title="See examples" hi="देखो — असली बातचीत" />
+            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+              A glimpse of real conversations with Krishna — videos,
+              screenshots, and example replies.
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
+              श्रीकृष्ण से असली बातचीत की एक झलक — वीडियो, स्क्रीनशॉट और उदाहरण।
+            </p>
+            <div className="mt-5">
+              <Link
+                href="/demo"
+                className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-xs tracking-[0.1em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+              >
+                See examples →
+              </Link>
             </div>
           </section>
 

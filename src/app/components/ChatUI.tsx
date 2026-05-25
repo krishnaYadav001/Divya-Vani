@@ -1030,11 +1030,13 @@ export default function ChatUI() {
               priority
             />
             <div className="min-w-0 text-center">
-              <h1 className="font-[family-name:var(--font-display)] text-2xl font-normal leading-none tracking-[0.02em] text-ivory sm:text-3xl">
+              <h1 className="whitespace-nowrap font-[family-name:var(--font-display)] text-xl font-normal leading-none tracking-[0.02em] text-ivory sm:text-3xl">
                 <span>{BRAND_HEAD}</span>
                 <span> {BRAND_TAIL.join(" ")}</span>
               </h1>
-              <p className="mt-1 font-devanagari text-xs leading-snug text-gold-dim sm:text-sm">
+              {/* Subtitle hidden on mobile — at ~360px it stacked one word
+                  per line beside the icon cluster (founder 2026-05-25). */}
+              <p className="mt-1 hidden font-devanagari text-xs leading-snug text-gold-dim sm:block sm:text-sm">
                 एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
               </p>
             </div>
@@ -1108,30 +1110,9 @@ export default function ChatUI() {
                 <line x1="20" y1="10" x2="20" y2="14" />
               </svg>
             </Link>
-            {/* /demo link — small "examples" affordance for visitors who
-                landed straight on /chat (Reddit/X traffic) and want to
-                see what conversations look like. Icon-only on mobile to
-                fit the 360px header alongside disclaimer/Settings/Seva;
-                Tiro Devanagari label fades in from sm+. Sparkle glyph
-                matches the ✦ ornaments used on /demo itself. */}
-            <Link
-              href="/demo"
-              aria-label="See examples · एक झलक"
-              title="See examples · एक झलक"
-              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40 sm:px-2.5"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="currentColor"
-                aria-hidden
-              >
-                <path d="M12 2L13.6 10.4L22 12L13.6 13.6L12 22L10.4 13.6L2 12L10.4 10.4L12 2Z" />
-              </svg>
-              <span className="hidden font-devanagari text-sm leading-none text-brass-dark sm:inline">
-                एक झलक
-              </span>
-            </Link>
+            {/* /demo "examples" affordance moved into /settings (founder
+                2026-05-25) to declutter the header — it lives there as the
+                "See examples" section now. */}
             <Link
               href="/settings"
               aria-label="Settings · सेटिंग्स"
@@ -1139,10 +1120,10 @@ export default function ChatUI() {
             >
               <SettingsIcon className="h-6 w-6" />
             </Link>
-            {/* Seva — payment lives in /settings now (founder 2026-05-24);
-                the diya links there instead of opening a header popup that
-                crowded the mobile header. The in-chat SevaPaywall (when free
-                messages run out) is unchanged. */}
+            {/* Seva (subscription) — the one monetization affordance kept in
+                the header on every breakpoint (founder 2026-05-25). Links to
+                the in-settings seva section; payment runs there. The in-chat
+                SevaPaywall (when free messages run out) is unchanged. */}
             <Link
               href="/settings#seva"
               aria-label="Seva · सेवा"
