@@ -753,11 +753,39 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // ── Step 6b: prior memory + derived flags. ──
-  // Unidentified turns NEVER read memory: the sentinel row is shared, so
-  // reading it would leak another person's name / growing_edge / "welcome
-  // back". Treat unidentified as a clean first-time user.
-  const priorMemory = isIdentified ? await fetchMemory(userId) : null;
+  // ── Step 6b/6c: prior memory + pre-AI pipeline, ALL in parallel. ──
+  // RAG candidates + safety + moderation only need the raw user message, and
+  // prior memory only feeds the NEXT-turn extraction + the USER CONTEXT block
+  // (never RAG/safety) — so fetchMemory runs CONCURRENTLY with them instead of
+  // as a serial DB hop before them, shaving ~one Supabase round-trip off the
+  // latency-critical path. Each silent-fails to a safe default. Voice mode skips
+  // query rewrite (RAG runs on the raw message). The heaviest Haiku call (memory
+  // EXTRACTION) is still excluded — it only updates memory for the next turn,
+  // kicked off after the gates + awaited post-stream.
+  const ragFlags = getRagFlags();
+  const wantWidePool =
+    ragFlags.themeRerank || ragFlags.sourceDiversity || ragFlags.queryRewrite;
+  const fetchK = wantWidePool ? ragFlags.candidatesK : 5;
+
+  const [priorMemory, candidates, safety, moderation] = await Promise.all([
+    // Unidentified turns NEVER read memory: the sentinel row is shared, so
+    // reading it would leak another person's name / growing_edge / "welcome
+    // back". Treat unidentified as a clean first-time user.
+    isIdentified
+      ? fetchMemory(userId).catch((e) => {
+          console.error("[agent-llm] fetchMemory threw:", e);
+          return null;
+        })
+      : Promise.resolve(null),
+    fetchCandidates(latestUserMessage, fetchK).catch((e) => {
+      console.error("[agent-llm] fetchCandidates threw:", e);
+      return [] as VerseHit[];
+    }),
+    safetyClassify(latestUserMessage),
+    moderateInput(latestUserMessage),
+  ]);
+
+  // Memory-derived flags (after the parallel fetch above).
   const priorCount = priorMemory?.message_count ?? 0;
   const isFirstTime = priorMemory?.is_first_time !== false;
   const isReturningUser = isReturningAfterGap(priorMemory);
@@ -767,7 +795,7 @@ export async function POST(req: Request): Promise<Response> {
   // priorLang for extractMemory stickiness. DEVIATION: derived from the live
   // ElevenAgents history (the previous user turn) rather than fetchLastChatLanguage
   // — for the shared test id, chat_logs language would be cross-contaminated, and
-  // this avoids a serial DB hit on the latency-critical path.
+  // this avoids another serial DB hit on the latency-critical path.
   const priorUserTurns = anthropicMessages.filter((m) => m.role === "user");
   const priorUserMessage =
     priorUserTurns.length >= 2
@@ -778,26 +806,6 @@ export async function POST(req: Request): Promise<Response> {
     : priorSummary
       ? detectLang(priorSummary)
       : undefined;
-
-  // ── Step 6c: pre-AI pipeline in parallel (mirror /api/chat). ──
-  // RAG candidates + safety + moderation, each silent-failing to a safe default.
-  // Voice mode skips query rewrite (RAG runs on the raw message). Memory
-  // extraction is DELIBERATELY excluded from this await (latency): it's the
-  // heaviest Haiku call and only updates memory for the NEXT turn, so Sonnet
-  // shouldn't block on it — it's kicked off after the gates + awaited post-stream.
-  const ragFlags = getRagFlags();
-  const wantWidePool =
-    ragFlags.themeRerank || ragFlags.sourceDiversity || ragFlags.queryRewrite;
-  const fetchK = wantWidePool ? ragFlags.candidatesK : 5;
-
-  const [candidates, safety, moderation] = await Promise.all([
-    fetchCandidates(latestUserMessage, fetchK).catch((e) => {
-      console.error("[agent-llm] fetchCandidates threw:", e);
-      return [] as VerseHit[];
-    }),
-    safetyClassify(latestUserMessage),
-    moderateInput(latestUserMessage),
-  ]);
 
   // Paywall — checked now; its Supabase round-trip overlapped the work above
   // (Step 5b). Only block a RESOLVED real user definitively denied; the fallback
@@ -1142,6 +1150,13 @@ export async function POST(req: Request): Promise<Response> {
         // Retry overload/5xx BEFORE first token only (after first token a retry
         // would prepend a second partial reply to the stream the SDK is reading).
         const runSonnetStream = async () => {
+          // Latency split: time spent on OUR pre-Sonnet work (body parse,
+          // identity, banned-word, the parallel memory+RAG+safety+moderation
+          // block, gates, prompt build) before the first Anthropic call. Logged
+          // alongside first_token_ms below so "our server prep" is separable
+          // from "Sonnet TTFT (+ any overload backoff)" — that tells us which
+          // half to attack next without guessing.
+          const preSonnetMs = Date.now() - turnStart;
           let lastErr: unknown;
           for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
             // edge 12: discard any partial buffer before (re)trying. Retries only
@@ -1162,8 +1177,9 @@ export async function POST(req: Request): Promise<Response> {
               if (!delta) return; // edge 6: ignore empty deltas (no buffer change)
               if (!firstTokenLogged) {
                 firstTokenLogged = true;
+                const ftMs = Date.now() - turnStart;
                 console.log(
-                  `[agent-llm] first_token_ms=${Date.now() - turnStart}`,
+                  `[agent-llm] pre_sonnet_ms=${preSonnetMs} first_token_ms=${ftMs} sonnet_ttft_ms=${ftMs - preSonnetMs}`,
                 );
               }
               // Buffer the delta and emit only at sentence boundaries so each
