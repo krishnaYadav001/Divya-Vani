@@ -103,10 +103,6 @@ export default function SevaTierPicker({
   const { lang, t } = useLanguage();
   const [pendingTierId, setPendingTierId] = useState<TierId | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  // Pre-checkout consent gate (Razorpay + Google Ads compliance): no Razorpay
-  // order is created until the user accepts the Refund Policy + Terms. Tier
-  // buttons are disabled until then; this guard is the belt-and-suspenders.
-  const [consented, setConsented] = useState(false);
 
   function reportError(msg: string) {
     setErrorMessage(msg);
@@ -115,10 +111,6 @@ export default function SevaTierPicker({
 
   async function handleTierTap(tier: TierConfig) {
     if (pendingTierId) return;
-    if (!consented) {
-      reportError(t.paywall.consentRequired);
-      return;
-    }
     setPendingTierId(tier.id);
     setErrorMessage(null);
 
@@ -203,44 +195,6 @@ export default function SevaTierPicker({
 
   return (
     <>
-      <label className="mb-2.5 flex items-start gap-2 rounded-lg border border-[oklch(86%_0.03_60)] bg-white/70 px-3 py-2 text-left">
-        <input
-          type="checkbox"
-          checked={consented}
-          onChange={(e) => {
-            setConsented(e.target.checked);
-            if (e.target.checked) setErrorMessage(null);
-          }}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[oklch(53%_0.19_28)]"
-        />
-        <span
-          className={`text-[11px] leading-snug text-ink-soft ${
-            lang === "hi"
-              ? "font-[family-name:var(--font-devanagari)]"
-              : "font-[family-name:var(--font-serif)]"
-          }`}
-        >
-          {t.paywall.consent}{" "}
-          <Link
-            href="/refund"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-ink underline decoration-[oklch(80%_0.04_50)] underline-offset-2 hover:text-[oklch(53%_0.19_28)]"
-          >
-            {t.paywall.linkRefund}
-          </Link>
-          {" · "}
-          <Link
-            href="/terms"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-ink underline decoration-[oklch(80%_0.04_50)] underline-offset-2 hover:text-[oklch(53%_0.19_28)]"
-          >
-            {t.paywall.linkTerms}
-          </Link>
-        </span>
-      </label>
-
       <div className="flex flex-col gap-2.5">
         {tiers.map((tier) => {
           const isPending = pendingTierId === tier.id;
@@ -260,7 +214,7 @@ export default function SevaTierPicker({
               key={tier.id}
               type="button"
               onClick={() => handleTierTap(tier)}
-              disabled={isDisabledByOther || isPending || !consented}
+              disabled={isDisabledByOther || isPending}
               aria-busy={isPending}
               className="group relative flex items-center gap-2.5 overflow-hidden rounded-xl border border-[oklch(86%_0.03_60)] bg-white/60 p-2 text-left transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:cursor-not-allowed disabled:opacity-50"
               style={
@@ -324,6 +278,36 @@ export default function SevaTierPicker({
           );
         })}
       </div>
+
+      {/* Passive policy disclosure (non-blocking) — shown AFTER the tiers so
+          the Refund + Terms links are visible at the point of payment without
+          gating tier selection. The footer also links these on every page. */}
+      <p
+        className={`mt-3 text-center text-[11px] leading-snug text-ink-soft ${
+          lang === "hi"
+            ? "font-[family-name:var(--font-devanagari)]"
+            : "font-[family-name:var(--font-serif)]"
+        }`}
+      >
+        {t.paywall.agreeNote}{" "}
+        <Link
+          href="/refund"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ink underline decoration-[oklch(80%_0.04_50)] underline-offset-2 hover:text-[oklch(53%_0.19_28)]"
+        >
+          {t.paywall.linkRefund}
+        </Link>
+        {" · "}
+        <Link
+          href="/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ink underline decoration-[oklch(80%_0.04_50)] underline-offset-2 hover:text-[oklch(53%_0.19_28)]"
+        >
+          {t.paywall.linkTerms}
+        </Link>
+      </p>
 
       {errorMessage && (
         <p

@@ -43,8 +43,7 @@ export type Messages = {
   // bilingual brand label and is not keyed) + the pre-checkout consent gate.
   paywall: {
     tagline: string;
-    consent: string;
-    consentRequired: string;
+    agreeNote: string;
     linkRefund: string;
     linkTerms: string;
   };
@@ -81,9 +80,7 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     paywall: {
       tagline:
         "Offer what arises within — every gift carries the journey forward",
-      consent: "I have read and agree to the policies below.",
-      consentRequired:
-        "Please accept the Refund Policy & Terms to continue.",
+      agreeNote: "By offering a seva, you accept our policies:",
       linkRefund: "Refund Policy",
       linkTerms: "Terms",
     },
@@ -113,9 +110,7 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     paywall: {
       tagline:
         "जो भीतर से उठे, वही भेंट करो — हर अर्पण इस यात्रा को आगे ले जाता है",
-      consent: "मैंने नीचे दी गई नीतियाँ पढ़ी हैं और उनसे सहमत हूँ।",
-      consentRequired:
-        "जारी रखने के लिए धन-वापसी नीति और नियम स्वीकार करें।",
+      agreeNote: "सेवा अर्पित करके आप हमारी नीतियाँ स्वीकार करते हैं:",
       linkRefund: "धन-वापसी नीति",
       linkTerms: "नियम",
     },
