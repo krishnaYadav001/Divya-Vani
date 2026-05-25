@@ -108,6 +108,11 @@ body {
   background-attachment: fixed;
   font-family: var(--font-cormorant), Georgia, serif;
   letter-spacing: 0.005em;
+  /* Suppress the grey tap-flash on touch — the app supplies its own
+     :active / focus-visible affordances, so the default highlight just
+     looks unpolished. WebKit/Blink-only property; other engines ignore
+     it. Layout-neutral on every device. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Foundational background washes (token-only; used by body +

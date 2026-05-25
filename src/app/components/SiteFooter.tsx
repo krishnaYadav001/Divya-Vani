@@ -32,7 +32,7 @@ export default function SiteFooter() {
   if (pathname === "/voice") return null;
 
   return (
-    <footer className="shrink-0 py-3 text-center text-sm text-brass-dark">
+    <footer className="shrink-0 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom,0px))] text-center text-sm text-brass-dark">
       <Link href="/demo" className={LINK_CLASS}>
         {t.footer.examples}
       </Link>

@@ -103,7 +103,7 @@ export default function TranscriptModal({
           </button>
         </div>
 
-        <div className="dv-scroll flex-1 overflow-y-auto px-5 py-5">
+        <div className="dv-scroll flex-1 overflow-y-auto px-5 pt-5 pb-[calc(1.25rem_+_env(safe-area-inset-bottom,0px))]">
           {turns.length === 0 ? (
             <p className="py-8 text-center font-devanagari text-base leading-relaxed text-ink-soft">
               {C.transcriptEmpty.hi}

@@ -246,7 +246,7 @@ export default function VoiceClient() {
       <audio ref={audioRef} className="hidden" preload="auto" aria-hidden />
 
       {/* ── Zone 1: top bar ─────────────────────────────────────────── */}
-      <header className="relative z-30 flex shrink-0 items-center justify-between gap-2 border-b border-gold-leaf/20 bg-mist/70 px-3 py-2.5 backdrop-blur">
+      <header className="relative z-30 flex shrink-0 items-center justify-between gap-2 border-b border-gold-leaf/20 bg-mist/70 px-3 pt-[calc(0.625rem_+_env(safe-area-inset-top,0px))] pb-2.5 backdrop-blur">
         <Link
           href="/chat"
           onClick={() => void voice.endSession()}
@@ -456,7 +456,7 @@ export default function VoiceClient() {
       </p>
 
       {/* ── Zone 5: bottom action row ───────────────────────────────── */}
-      <div className="relative z-20 flex shrink-0 items-center justify-center gap-3 px-5 pb-6 pt-1">
+      <div className="relative z-20 flex shrink-0 items-center justify-center gap-3 px-5 pb-[calc(1.5rem_+_env(safe-area-inset-bottom,0px))] pt-1">
         {state === "idle" && (
           <button
             ref={beginRef}

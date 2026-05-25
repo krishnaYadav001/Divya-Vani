@@ -1013,7 +1013,7 @@ export default function ChatUI() {
         <Atmosphere mode={isEmpty ? "chat" : "deep"} intensity={1} vignette={1} />
       </div>
 
-      <header className="relative z-20 border-b border-brass/30 bg-parchment/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
+      <header className="relative z-20 border-b border-brass/30 bg-parchment/70 px-4 pt-[calc(1rem_+_env(safe-area-inset-top,0px))] pb-4 backdrop-blur sm:px-6 sm:pt-[calc(1.25rem_+_env(safe-area-inset-top,0px))] sm:pb-5">
         {/* Phase 8 launch-eve mobile fix — was a centred title with an
             `absolute right-3 top-3` controls overlay, which collided
             with the title on ~360px. Now an in-flow 2-zone flex:

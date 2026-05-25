@@ -118,6 +118,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#faf7f2",
+  // viewport-fit=cover lets the Dawn Aarti atmosphere bleed to the
+  // physical screen edges on notched iPhones (no flat letterbox strips —
+  // CLAUDE.md principle 6). Interactive surfaces (chat header, voice
+  // controls, footer, transcript sheet) re-inset themselves with
+  // env(safe-area-inset-*) so nothing hides under the Dynamic Island or
+  // home indicator. No-op on every non-notched device (env() = 0px there).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
