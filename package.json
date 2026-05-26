@@ -34,6 +34,8 @@
     "ingest:bhagavata:canto11:dry": "tsx --env-file=.env.local scripts/ingest-bhagavata.ts --input=data/bhagavata-canto11-regenerated-cleaned.json --dry-run",
     "screenshot:chat": "tsx scripts/screenshot-chat.ts",
     "smoke:webhook": "tsx --env-file=.env.local scripts/smoke-test-webhook.ts",
+    "setup:razorpay-plans": "tsx --env-file=.env.local scripts/setup-razorpay-plans.ts",
+    "setup:razorpay-plans:dry": "tsx --env-file=.env.local scripts/setup-razorpay-plans.ts --dry-run",
     "test": "tsx --test src/lib/__tests__/*.test.ts"
   },
   "dependencies": {
