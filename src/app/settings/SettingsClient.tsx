@@ -26,19 +26,32 @@ const TIERS = getTiersInOrder();
 //
 // State mapping (deliberately inverted): Toggle ON = founder review
 // ALLOWED = training_opt_out FALSE.
+//
+// Phase 12 (i18n, founder 2026-05-26) — every product-authored string here
+// now follows the EN/हिन्दी language toggle (English by default; Hindi when
+// the user picks it in the footer or the Language card below) instead of the
+// prior always-stacked English+Hindi pairs. Krishna's chat/voice REPLIES are
+// unaffected — they follow the user's input language at the model layer
+// (Locked Decision #12).
 
 const CARD =
   "rounded-2xl border border-[oklch(88%_0.02_60)] bg-white/55 p-6 shadow-[0_1px_0_rgba(255,255,255,.6)_inset,0_12px_28px_-18px_oklch(35%_0.05_30_/_0.35)] backdrop-blur-sm sm:p-8";
 
-function CardHeader({ title, hi }: { title: string; hi: string }) {
+// Section heading — single, in the active UI language (devanagari face for
+// Hindi; the English display face otherwise).
+function CardHeader({ title }: { title: string }) {
+  const { lang } = useLanguage();
   return (
-    <header className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-      <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ink">
+    <header className="mb-6">
+      <h2
+        className={`text-2xl font-normal text-ink ${
+          lang === "hi"
+            ? "font-[family-name:var(--font-devanagari)] leading-relaxed"
+            : "font-[family-name:var(--font-display)]"
+        }`}
+      >
         {title}
       </h2>
-      <span className="font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-faint">
-        · {hi}
-      </span>
     </header>
   );
 }
@@ -54,9 +67,16 @@ function DawnToggle({
   onClick: () => void;
   disabled?: boolean;
 }) {
+  const { lang } = useLanguage();
   return (
     <div className="flex items-center justify-between gap-6 border-b border-[var(--color-ink-line)] py-4">
-      <span className="font-[family-name:var(--font-serif)] text-base not-italic text-ink">
+      <span
+        className={`text-base text-ink ${
+          lang === "hi"
+            ? "font-[family-name:var(--font-devanagari)] leading-relaxed"
+            : "font-[family-name:var(--font-serif)] not-italic"
+        }`}
+      >
         {label}
       </span>
       <button
@@ -105,7 +125,28 @@ export default function SettingsClient({
   // UI-language preference (static chrome only — Krishna's replies follow the
   // user's input language per Locked Decision #12). The footer hosts the same
   // toggle; this is the explicit-choice surface in Settings.
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
+  const tt = t.settings;
+  const dev = lang === "hi";
+
+  // Font helpers — Hindi text must render in the Tiro Devanagari face
+  // (Cormorant / Marcellus have no Devanagari glyphs). English keeps the
+  // serif-italic body / display-heading faces.
+  const fBody = dev
+    ? "font-[family-name:var(--font-devanagari)] leading-relaxed"
+    : "font-[family-name:var(--font-serif)] italic";
+  const fFaint = dev
+    ? "font-[family-name:var(--font-devanagari)] leading-relaxed"
+    : "font-[family-name:var(--font-serif)] italic";
+  // Display eyebrows: uppercase + wide tracking reads badly in Devanagari, so
+  // Hindi drops both and uses the Devanagari face.
+  const fEyebrow = (extra = "") =>
+    dev
+      ? "font-[family-name:var(--font-devanagari)]"
+      : `font-[family-name:var(--font-display)] uppercase ${extra}`;
+  const fLabel = dev
+    ? "font-[family-name:var(--font-devanagari)]"
+    : "font-[family-name:var(--font-display)]";
 
   const reviewAllowed = !optOut;
 
@@ -160,7 +201,7 @@ export default function SettingsClient({
       console.error("[settings] delete failed:", e);
       setDeleting(false);
       setConfirmDelete(false);
-      setDeleteError("Something went wrong, please try again.");
+      setDeleteError(tt.delete.error);
     }
   }
 
@@ -171,14 +212,14 @@ export default function SettingsClient({
   );
 
   const navItems = [
-    { label: "Identity", href: "#identity" },
-    { label: "Language", href: "#language" },
-    { label: "Seva", href: "#seva" },
-    { label: "Examples", href: "#examples" },
-    { label: "About us", href: "#about" },
-    { label: "Privacy & Data", href: "#privacy" },
-    { label: "Share feedback", href: "#feedback" },
-    { label: "Delete account", href: "#delete" },
+    { label: tt.nav.identity, href: "#identity" },
+    { label: tt.nav.language, href: "#language" },
+    { label: tt.nav.seva, href: "#seva" },
+    { label: tt.nav.examples, href: "#examples" },
+    { label: tt.nav.about, href: "#about" },
+    { label: tt.nav.privacy, href: "#privacy" },
+    { label: tt.nav.feedback, href: "#feedback" },
+    { label: tt.nav.delete, href: "#delete" },
   ];
 
   return (
@@ -188,21 +229,29 @@ export default function SettingsClient({
         <aside className="fade-up lg:sticky lg:top-16 lg:self-start [animation-delay:0ms] [animation-fill-mode:backwards]">
           <Link
             href="/chat"
-            className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+            className={`inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-[11px] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${fEyebrow(
+              "tracking-[0.28em]",
+            )}`}
           >
-            ← Back to chat
+            {tt.backToChat}
           </Link>
 
-          <p className="mt-9 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.4em] text-ink-faint">
-            Settings
+          <p
+            className={`mt-9 text-[11px] text-ink-faint ${fEyebrow("tracking-[0.4em]")}`}
+          >
+            {tt.eyebrow}
           </p>
-          <h1 className="mt-5 font-[family-name:var(--font-display)] text-[clamp(2.5rem,6vw,3.6rem)] font-normal leading-[1.02] text-ink">
-            Your
-            <br />
-            own room.
+          <h1
+            className={`mt-5 whitespace-pre-line text-[clamp(2.5rem,6vw,3.6rem)] font-normal leading-[1.02] text-ink ${
+              dev
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
+          >
+            {tt.title}
           </h1>
-          <p className="mt-4 font-[family-name:var(--font-serif)] text-lg italic leading-relaxed text-ink-soft">
-            How Krishna speaks to you, and what we keep.
+          <p className={`mt-4 text-lg leading-relaxed text-ink-soft ${fBody}`}>
+            {tt.subtitle}
           </p>
 
           <nav className="mt-10 flex flex-col gap-1">
@@ -210,7 +259,11 @@ export default function SettingsClient({
               <a
                 key={item.href}
                 href={item.href}
-                className={`rounded-[10px] border px-3.5 py-2.5 font-[family-name:var(--font-display)] text-sm tracking-[0.08em] transition-colors ${
+                className={`rounded-[10px] border px-3.5 py-2.5 text-sm transition-colors ${
+                  dev
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)] tracking-[0.08em]"
+                } ${
                   i === 0
                     ? "border-[oklch(86%_0.04_70)] bg-white/70 text-ink"
                     : "border-transparent text-ink-soft hover:bg-white/40 hover:text-ink"
@@ -223,15 +276,17 @@ export default function SettingsClient({
 
           {/* Sevā balance card — real balance */}
           <div className="mt-12 rounded-2xl border border-[oklch(86%_0.03_60)] bg-white/55 p-5">
-            <p className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.3em] text-ink-faint">
-              Sevā balance
+            <p
+              className={`text-[10px] text-ink-faint ${fEyebrow("tracking-[0.3em]")}`}
+            >
+              {tt.sevaBalance}
             </p>
             <div className="mt-2.5 flex items-baseline gap-1.5">
               <span className="font-[family-name:var(--font-display)] text-4xl text-ink">
                 {sevaBalance}
               </span>
-              <span className="font-[family-name:var(--font-serif)] text-sm italic text-ink-soft">
-                messages
+              <span className={`text-sm text-ink-soft ${fBody}`}>
+                {tt.messages}
               </span>
             </div>
             <div className="mt-3 h-1 overflow-hidden rounded-full bg-[oklch(92%_0.02_60)]">
@@ -246,9 +301,11 @@ export default function SettingsClient({
             </div>
             <a
               href="#seva"
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.2em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+              className={`mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-[11px] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${fEyebrow(
+                "tracking-[0.2em]",
+              )}`}
             >
-              Light another diya
+              {tt.lightDiya}
             </a>
           </div>
         </aside>
@@ -261,23 +318,18 @@ export default function SettingsClient({
             id="identity"
             className={`fade-up scroll-mt-20 ${CARD} [animation-delay:120ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader
-              title="What Krishna calls you"
-              hi="किस नाम से पुकारूँ?"
-            />
+            <CardHeader title={tt.identity.title} />
             {userName ? (
               <p className="font-[family-name:var(--font-serif)] text-lg italic text-ink">
                 {userName}
               </p>
             ) : (
-              <p className="font-[family-name:var(--font-serif)] text-base italic text-ink-soft">
-                Krishna hasn&apos;t learned your name yet.
+              <p className={`text-base text-ink-soft ${fBody}`}>
+                {tt.identity.nameUnknown}
               </p>
             )}
-            <p className="mt-3 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
-              Krishna asks your name softly in conversation and addresses
-              you by it — any respectful name will do. To change it, just
-              tell him in chat.
+            <p className={`mt-3 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {tt.identity.help}
             </p>
           </section>
 
@@ -289,17 +341,14 @@ export default function SettingsClient({
             id="language"
             className={`fade-up scroll-mt-20 ${CARD} [animation-delay:135ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader title="Language" hi="भाषा" />
-            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-              Choose the language for the app&apos;s buttons and labels.
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
-              ऐप के बटन और लेबल की भाषा चुनें।
+            <CardHeader title={tt.language.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.language.desc}
             </p>
 
             <div
               role="group"
-              aria-label="Interface language · इंटरफ़ेस भाषा"
+              aria-label={tt.language.ariaGroup}
               className="mt-5 inline-flex rounded-full border border-[oklch(86%_0.04_70)] bg-white/50 p-1"
             >
               {(["en", "hi"] as const).map((code) => {
@@ -326,9 +375,8 @@ export default function SettingsClient({
               })}
             </div>
 
-            <p className="mt-4 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
-              Krishna always replies in the language you write or speak to him
-              in — this setting only changes the app&apos;s own labels.
+            <p className={`mt-4 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {tt.language.note}
             </p>
           </section>
 
@@ -340,14 +388,9 @@ export default function SettingsClient({
             id="seva"
             className={`fade-up scroll-mt-20 ${CARD} [animation-delay:150ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader title="Offer a seva" hi="सेवा अर्पित करें" />
-            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-              Add more conversations with Krishna. Each seva is a one-time
-              payment — no subscription, no auto-renewal.
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
-              श्रीकृष्ण से और बातचीत जोड़ें। हर सेवा एक बार का भुगतान है — कोई
-              सदस्यता नहीं, अपने-आप नवीनीकरण नहीं।
+            <CardHeader title={tt.sevaSection.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.sevaSection.desc}
             </p>
 
             <div className="mt-6 max-w-[440px]">
@@ -373,8 +416,8 @@ export default function SettingsClient({
                   <rect x="5" y="11" width="14" height="9" rx="2" />
                   <path d="M8 11V8a4 4 0 0 1 8 0v3" />
                 </svg>
-                <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.18em]">
-                  Secured by Razorpay
+                <span className={`text-[10px] ${fEyebrow("tracking-[0.18em]")}`}>
+                  {tt.sevaSection.securedBy}
                 </span>
                 <span aria-hidden className="text-brass/60">
                   ·
@@ -393,20 +436,20 @@ export default function SettingsClient({
             id="examples"
             className={`fade-up scroll-mt-20 ${CARD} [animation-delay:165ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader title="See examples" hi="देखो — असली बातचीत" />
-            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-              A glimpse of real conversations with Krishna — videos,
-              screenshots, and example replies.
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
-              श्रीकृष्ण से असली बातचीत की एक झलक — वीडियो, स्क्रीनशॉट और उदाहरण।
+            <CardHeader title={tt.examples.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.examples.desc}
             </p>
             <div className="mt-5">
               <Link
                 href="/demo"
-                className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-xs tracking-[0.1em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+                className={`inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-xs text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                  dev
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)] tracking-[0.1em]"
+                }`}
               >
-                See examples →
+                {tt.examples.cta}
               </Link>
             </div>
           </section>
@@ -419,36 +462,27 @@ export default function SettingsClient({
             id="about"
             className={`fade-up scroll-mt-20 ${CARD} [animation-delay:172ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader title="About us" hi="हमारे बारे में" />
-            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-              {BRAND.name.en} is an AI that speaks in Krishna&apos;s voice —
-              grounded in the Bhagavad Gita, the Mahabharata, and the
-              Bhagavata Purana. It&apos;s built as a calm, private place to
-              talk through life, emotions, and dharma, whenever you need it.
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.7] text-ink-soft">
-              दिव्य वाणी एक AI है जो श्रीकृष्ण की वाणी में बात करता है — भगवद्गीता,
-              महाभारत और श्रीमद्भागवत पर आधारित। यह एक शांत, निजी जगह है जहाँ आप
-              जीवन, भावनाओं और धर्म पर मन की बात कह सकते हैं।
+            <CardHeader title={tt.about.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.about.body.replace("{brand}", BRAND.name[lang])}
             </p>
 
-            <p className="mt-4 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
-              {BRAND.disclaimer.en} It is not a substitute for professional
-              medical, legal, or mental-health advice.
+            <p className={`mt-4 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {BRAND.disclaimer[lang]} {tt.about.notSubstitute}
             </p>
 
             <dl className="mt-5 space-y-3 border-t border-[var(--color-ink-line)] pt-5">
               <div>
-                <dt className="font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-faint">
-                  Operated by · संचालक
+                <dt className={`text-[11px] text-ink-faint ${fEyebrow("tracking-[0.28em]")}`}>
+                  {tt.about.operatedBy}
                 </dt>
                 <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic text-ink">
-                  {BRAND.contact.founder} — sole proprietorship
+                  {BRAND.contact.founder} — {tt.about.soleProprietorship}
                 </dd>
               </div>
               <div>
-                <dt className="font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.28em] text-ink-faint">
-                  Registered office · पंजीकृत पता
+                <dt className={`text-[11px] text-ink-faint ${fEyebrow("tracking-[0.28em]")}`}>
+                  {tt.about.registeredOffice}
                 </dt>
                 <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
                   {BRAND.contact.address}
@@ -458,14 +492,18 @@ export default function SettingsClient({
 
             <div className="mt-5 flex flex-wrap gap-2">
               {[
-                { href: "/contact", label: "Contact" },
-                { href: "/terms", label: "Terms" },
-                { href: "/privacy", label: "Privacy" },
+                { href: "/contact", label: t.footer.contact },
+                { href: "/terms", label: t.footer.terms },
+                { href: "/privacy", label: t.footer.privacy },
               ].map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-xs tracking-[0.1em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+                  className={`inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-xs text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                    dev
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-display)] tracking-[0.1em]"
+                  }`}
                 >
                   {l.label} →
                 </Link>
@@ -477,21 +515,13 @@ export default function SettingsClient({
           <section
             className={`fade-up ${CARD} [animation-delay:180ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader
-              title="Contact & Grievance Officer"
-              hi="संपर्क एवं शिकायत अधिकारी"
-            />
-            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-              For privacy questions, deletion requests, or grievances
-              under the DPDP Act, contact:
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
-              गोपनीयता संबंधी प्रश्न, डेटा हटाने के अनुरोध, या DPDP अधिनियम
-              के अंतर्गत शिकायतों के लिए संपर्क करें:
+            <CardHeader title={tt.grievance.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.grievance.body}
             </p>
             <dl className="mt-5 space-y-1">
-              <dt className="font-[family-name:var(--font-serif)] text-sm italic text-ink-faint">
-                Grievance Officer · शिकायत अधिकारी
+              <dt className={`text-sm text-ink-faint ${fFaint}`}>
+                {tt.grievance.officer}
               </dt>
               <dd className="font-[family-name:var(--font-display)] text-lg text-ink">
                 Krishna Yadav
@@ -505,13 +535,8 @@ export default function SettingsClient({
                 </a>
               </dd>
             </dl>
-            <p className="mt-5 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
-              Per Section 13 of the DPDP Act, we acknowledge grievances
-              and respond within 30 days.
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-faint">
-              DPDP अधिनियम की धारा 13 के अनुसार, हम शिकायतों को स्वीकार
-              करते हैं और 30 दिनों के भीतर उत्तर देते हैं।
+            <p className={`mt-5 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {tt.grievance.perSection}
             </p>
           </section>
 
@@ -520,9 +545,9 @@ export default function SettingsClient({
             id="privacy"
             className={`fade-up scroll-mt-20 ${CARD} [animation-delay:240ms] [animation-fill-mode:backwards]`}
           >
-            <CardHeader title="Privacy & Data" hi="निजता" />
+            <CardHeader title={tt.privacy.title} />
             <DawnToggle
-              label="Allow us to learn from your conversations to improve Krishna"
+              label={tt.privacy.toggleLabel}
               on={reviewAllowed}
               onClick={handleToggle}
               disabled={saving}
@@ -530,26 +555,27 @@ export default function SettingsClient({
             <p
               role="status"
               aria-live="polite"
-              className={`mt-3 font-[family-name:var(--font-serif)] text-xs italic text-[oklch(52%_0.13_205)] transition-opacity duration-500 ${
+              className={`mt-3 text-xs text-[oklch(52%_0.13_205)] transition-opacity duration-500 ${fFaint} ${
                 savedAt && Date.now() - savedAt < 3000
                   ? "opacity-100"
                   : "opacity-0"
               }`}
             >
-              saved
+              {tt.privacy.saved}
             </p>
-            <p className="mt-4 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
-              When enabled, your conversations help us understand what
-              users need and refine how Krishna responds. Server-side,
-              chats are kept 180 days for safety review, then permanently
-              deleted.
+            <p className={`mt-4 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {tt.privacy.body}
             </p>
             <div className="mt-5">
               <Link
                 href="/privacy"
-                className="inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 font-[family-name:var(--font-display)] text-xs tracking-[0.1em] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+                className={`inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-xs text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                  dev
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)] tracking-[0.1em]"
+                }`}
               >
-                Read privacy in full →
+                {tt.privacy.readFull}
               </Link>
             </div>
           </section>
@@ -562,15 +588,12 @@ export default function SettingsClient({
             id="delete"
             className={`fade-up scroll-mt-20 rounded-2xl border border-[oklch(60%_0.18_25_/_0.4)] bg-white/55 p-6 shadow-[0_1px_0_rgba(255,255,255,.6)_inset,0_12px_28px_-18px_oklch(45%_0.12_25_/_0.3)] backdrop-blur-sm [animation-delay:360ms] [animation-fill-mode:backwards] sm:p-8`}
           >
-            <CardHeader title="Delete all my data" hi="सब हटाएँ" />
-            <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-              Krishna will no longer remember you. All your conversations,
-              the name he calls you by, and your shared moments will be
-              permanently deleted. This cannot be undone.
+            <CardHeader title={tt.delete.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.delete.body}
             </p>
-            <p className="mt-3 font-[family-name:var(--font-serif)] text-sm italic leading-relaxed text-ink-faint">
-              Payment records are retained as required by Indian financial
-              regulations.
+            <p className={`mt-3 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {tt.delete.paymentNote}
             </p>
 
             {!confirmDelete ? (
@@ -578,9 +601,13 @@ export default function SettingsClient({
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(60%_0.18_25)] bg-transparent px-6 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.06em] text-[oklch(50%_0.18_25)] transition-colors hover:bg-[oklch(60%_0.18_25_/_0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(60%_0.18_25)] disabled:opacity-50"
+                className={`mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(60%_0.18_25)] bg-transparent px-6 py-2 text-sm text-[oklch(50%_0.18_25)] transition-colors hover:bg-[oklch(60%_0.18_25_/_0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(60%_0.18_25)] disabled:opacity-50 ${
+                  dev
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)] tracking-[0.06em]"
+                }`}
               >
-                Delete all my data
+                {tt.delete.button}
               </button>
             ) : (
               <div
@@ -590,33 +617,45 @@ export default function SettingsClient({
               >
                 <p
                   id="confirm-delete-heading"
-                  className="font-[family-name:var(--font-serif)] text-base font-semibold italic text-[oklch(50%_0.18_25)]"
+                  className={`text-base font-semibold text-[oklch(50%_0.18_25)] ${
+                    dev
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-serif)] italic"
+                  }`}
                 >
-                  Are you sure?
+                  {tt.delete.areYouSure}
                 </p>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <button
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-[oklch(60%_0.18_25)] bg-[oklch(60%_0.18_25_/_0.1)] px-5 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-[oklch(50%_0.18_25)] transition-colors hover:bg-[oklch(60%_0.18_25_/_0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(60%_0.18_25)] disabled:opacity-50"
+                    className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-[oklch(60%_0.18_25)] bg-[oklch(60%_0.18_25_/_0.1)] px-5 py-2 text-sm text-[oklch(50%_0.18_25)] transition-colors hover:bg-[oklch(60%_0.18_25_/_0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(60%_0.18_25)] disabled:opacity-50 ${
+                      dev
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-display)] tracking-[0.04em]"
+                    }`}
                   >
-                    {deleting ? "Deleting…" : "Yes, delete"}
+                    {deleting ? tt.delete.deleting : tt.delete.confirm}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(false)}
                     disabled={deleting}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/55 px-5 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-ink transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:opacity-50"
+                    className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/55 px-5 py-2 text-sm text-ink transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:opacity-50 ${
+                      dev
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-display)] tracking-[0.04em]"
+                    }`}
                   >
-                    Cancel
+                    {tt.delete.cancel}
                   </button>
                 </div>
                 {deleteError && (
                   <p
                     role="status"
                     aria-live="polite"
-                    className="mt-3 font-[family-name:var(--font-serif)] text-sm italic text-[oklch(50%_0.18_25)]"
+                    className={`mt-3 text-sm text-[oklch(50%_0.18_25)] ${fFaint}`}
                   >
                     {deleteError}
                   </p>
@@ -637,7 +676,7 @@ export default function SettingsClient({
 // ── Share Feedback — Dawn card. ALL form behaviour preserved
 // verbatim (honeypot, IME composition guard, 15s timeout, counter,
 // idle/submitting/success(auto-dismiss)/error+retry); only the
-// presentational JSX/classes were restyled to Dawn.
+// presentational JSX/classes + copy (now language-aware) changed.
 type FeedbackStatus = "idle" | "submitting" | "success" | "error";
 
 const FB_MSG_MIN = 10;
@@ -649,6 +688,13 @@ const FB_FIELD =
   "mt-2 w-full rounded-xl border border-[oklch(86%_0.04_70)] bg-white/70 px-4 py-3 font-[family-name:var(--font-serif)] text-base italic text-ink shadow-[0_1px_0_rgba(255,255,255,.6)_inset] placeholder:text-ink-faint/60 focus:border-[oklch(76%_0.12_80)] focus:outline-none focus:ring-2 focus:ring-[oklch(76%_0.12_80_/_0.25)] disabled:opacity-60";
 
 function FeedbackSection() {
+  const { lang, t } = useLanguage();
+  const tf = t.settings.feedback;
+  const dev = lang === "hi";
+  const fBody = dev
+    ? "font-[family-name:var(--font-devanagari)] leading-relaxed"
+    : "font-[family-name:var(--font-serif)] italic";
+
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [hp, setHp] = useState(""); // honeypot — humans never fill this
@@ -697,7 +743,7 @@ function FeedbackSection() {
         signal: controller.signal,
       });
       if (!res.ok) {
-        let m = "Something went wrong. Please try again.";
+        let m = tf.errorGeneric;
         try {
           const j = await res.json();
           if (j && typeof j.message === "string" && j.message) m = j.message;
@@ -718,11 +764,7 @@ function FeedbackSection() {
     } catch (e) {
       const aborted = e instanceof DOMException && e.name === "AbortError";
       setStatus("error");
-      setErrorMsg(
-        aborted
-          ? "This is taking too long. Please check your connection and try again."
-          : "Network problem. Please check your connection and try again.",
-      );
+      setErrorMsg(aborted ? tf.timeout : tf.network);
     } finally {
       clearTimeout(timeout);
     }
@@ -733,15 +775,8 @@ function FeedbackSection() {
       id="feedback"
       className={`fade-up scroll-mt-20 ${CARD} [animation-delay:300ms] [animation-fill-mode:backwards]`}
     >
-      <CardHeader title="Share feedback" hi="अपनी प्रतिक्रिया साझा करें" />
-      <p className="font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-        Tell us how Krishna&apos;s voice is landing for you. Your words
-        help us refine.
-      </p>
-      <p className="mt-2 font-[family-name:var(--font-devanagari)] text-sm leading-[1.6] text-ink-soft">
-        हमें बताएं कि कृष्ण की वाणी आपको कैसी लग रही है। आपके शब्द हमें इसे
-        और बेहतर करने में मदद करते हैं।
-      </p>
+      <CardHeader title={tf.title} />
+      <p className={`text-base leading-relaxed text-ink ${fBody}`}>{tf.body}</p>
 
       <form
         className="mt-6 space-y-4"
@@ -769,9 +804,9 @@ function FeedbackSection() {
         <div>
           <label
             htmlFor="fb-name"
-            className="block font-[family-name:var(--font-serif)] text-sm italic text-ink-soft"
+            className={`block text-sm text-ink-soft ${fBody}`}
           >
-            Your name (optional) · आपका नाम (वैकल्पिक)
+            {tf.nameLabel}
           </label>
           <input
             id="fb-name"
@@ -799,9 +834,9 @@ function FeedbackSection() {
         <div>
           <label
             htmlFor="fb-message"
-            className="block font-[family-name:var(--font-serif)] text-sm italic text-ink-soft"
+            className={`block text-sm text-ink-soft ${fBody}`}
           >
-            Your feedback · आपकी प्रतिक्रिया
+            {tf.messageLabel}
           </label>
           <textarea
             id="fb-message"
@@ -826,13 +861,11 @@ function FeedbackSection() {
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <p
-              className="font-[family-name:var(--font-serif)] text-xs italic text-[oklch(53%_0.19_28)]"
+              className={`text-xs text-[oklch(53%_0.19_28)] ${fBody}`}
               role="status"
               aria-live="polite"
             >
-              {tooShort
-                ? `Please write at least ${FB_MSG_MIN} characters.`
-                : ""}
+              {tooShort ? tf.minChars.replace("{n}", String(FB_MSG_MIN)) : ""}
             </p>
             <span
               id="fb-counter"
@@ -848,34 +881,39 @@ function FeedbackSection() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-6 py-2.5 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:translate-y-0 disabled:opacity-50"
+          className={`inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-6 py-2.5 text-sm text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:translate-y-0 disabled:opacity-50 ${
+            dev
+              ? "font-[family-name:var(--font-devanagari)]"
+              : "font-[family-name:var(--font-display)] tracking-[0.04em]"
+          }`}
         >
-          {status === "submitting"
-            ? "Sending… · भेजा जा रहा है…"
-            : "Send feedback · प्रतिक्रिया भेजें"}
+          {status === "submitting" ? tf.sending : tf.send}
         </button>
 
         {status === "success" && (
           <p
             role="status"
             aria-live="polite"
-            className="font-[family-name:var(--font-serif)] text-sm italic text-[oklch(52%_0.13_205)]"
+            className={`text-sm text-[oklch(52%_0.13_205)] ${fBody}`}
           >
-            Thank you. Your feedback was received. · धन्यवाद। आपकी
-            प्रतिक्रिया मिल गई।
+            {tf.success}
           </p>
         )}
         {status === "error" && (
           <div role="status" aria-live="polite" className="space-y-3">
-            <p className="font-[family-name:var(--font-serif)] text-sm italic text-[oklch(53%_0.19_28)]">
-              {errorMsg ?? "Something went wrong. Please try again."}
+            <p className={`text-sm text-[oklch(53%_0.19_28)] ${fBody}`}>
+              {errorMsg ?? tf.errorGeneric}
             </p>
             <button
               type="button"
               onClick={submit}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/55 px-5 py-2 font-[family-name:var(--font-display)] text-sm tracking-[0.04em] text-ink transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+              className={`inline-flex min-h-11 items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/55 px-5 py-2 text-sm text-ink transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                dev
+                  ? "font-[family-name:var(--font-devanagari)]"
+                  : "font-[family-name:var(--font-display)] tracking-[0.04em]"
+              }`}
             >
-              Retry · पुनः प्रयास करें
+              {tf.retry}
             </button>
           </div>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "../providers/LanguageProvider";
 
 // Tile for one /demo screenshot. Renders a plain <img> (NOT next/image)
 // so a missing /public/demo/placeholder-N.png swaps to a soft "coming
@@ -20,7 +21,9 @@ export function ScreenshotTile({
   altHi,
   altEn,
 }: ScreenshotTileProps) {
+  const { lang, t } = useLanguage();
   const [failed, setFailed] = useState(false);
+  const alt = lang === "hi" ? altHi : altEn;
 
   return (
     <div
@@ -32,18 +35,21 @@ export function ScreenshotTile({
           <span aria-hidden className="text-base text-[var(--color-gold-leaf)]">
             ✦
           </span>
-          <p className="font-[family-name:var(--font-devanagari)] text-xs leading-relaxed text-ink">
-            जल्द आ रहा है
-          </p>
-          <p className="font-[family-name:var(--font-serif)] text-[11px] italic text-ink-soft">
-            Coming soon
+          <p
+            className={`text-xs leading-relaxed text-ink ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {t.demo.comingSoon}
           </p>
         </div>
       ) : (
         <img
           src={src}
-          alt={altEn}
-          aria-label={`${altHi} — ${altEn}`}
+          alt={alt}
+          aria-label={alt}
           loading="lazy"
           onError={() => setFailed(true)}
           className="absolute inset-0 h-full w-full object-cover"

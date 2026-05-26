@@ -335,8 +335,7 @@ export default function ChatUI() {
             );
             setInput(text);
             setServerModerationWarning(
-              errBody.message ??
-                "कृपया उचित भाषा का प्रयोग करें · Please use respectful language",
+              errBody.message ?? t.chat.moderationWarning,
             );
             return;
           }
@@ -746,9 +745,15 @@ export default function ChatUI() {
   const inputBlock = (
     <div className="mx-auto w-full max-w-[600px]">
       {(bannedWord || serverModerationWarning) && (
-        <p role="status" className="mb-2 text-center text-xs text-sacred">
-          {serverModerationWarning ??
-            "कृपया उचित भाषा का प्रयोग करें · Please use respectful language"}
+        <p
+          role="status"
+          className={`mb-2 text-center text-xs text-sacred ${
+            lang === "hi"
+              ? "font-devanagari"
+              : "font-[family-name:var(--font-serif)] italic"
+          }`}
+        >
+          {serverModerationWarning ?? t.chat.moderationWarning}
         </p>
       )}
       {/* Phase 8.0 mic-error chip — five failure modes (permission,
@@ -765,18 +770,18 @@ export default function ChatUI() {
         >
           <span className="inline-flex max-w-[88%] items-center gap-2 rounded-full border border-sacred/60 bg-parchment px-4 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <AlertTriangleIcon className="h-4 w-4 shrink-0 text-sacred" />
-            <span className="font-devanagari text-sm leading-snug text-krishna">
-              {micErrorMessages[micError.type].hi}
-            </span>
-            <span aria-hidden className="text-sacred/60">·</span>
-            <span className="font-serif text-sm italic leading-snug text-krishna">
-              {micErrorMessages[micError.type].en}
+            <span
+              className={`text-sm leading-snug text-krishna ${
+                lang === "hi" ? "font-devanagari" : "font-serif italic"
+              }`}
+            >
+              {t.chat.micErrors[micError.type]}
             </span>
           </span>
           <button
             type="button"
             onClick={dismissMicError}
-            aria-label="बंद करें · Dismiss"
+            aria-label={t.chat.ariaDismiss}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-krishna/50 transition-colors hover:bg-sacred/10 hover:text-krishna focus:outline-none focus:ring-2 focus:ring-sacred/40"
           >
             <span aria-hidden className="text-lg leading-none">
@@ -803,12 +808,12 @@ export default function ChatUI() {
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brass [animation-delay:150ms]" />
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brass [animation-delay:300ms]" />
               </span>
-              <span className="font-devanagari text-sm text-brass-dark">
-                सुन रहा हूँ…
-              </span>
-              <span aria-hidden className="text-brass/60">·</span>
-              <span className="font-serif text-sm italic text-brass-dark">
-                listening
+              <span
+                className={`text-sm text-brass-dark ${
+                  lang === "hi" ? "font-devanagari" : "font-serif italic"
+                }`}
+              >
+                {t.chat.listening}
               </span>
             </span>
           ) : (
@@ -817,12 +822,12 @@ export default function ChatUI() {
                 aria-hidden
                 className="h-3 w-3 animate-spin rounded-full border-2 border-devotional/30 border-t-devotional"
               />
-              <span className="font-devanagari text-sm italic text-devotional-dark">
-                समझ रहा हूँ…
-              </span>
-              <span aria-hidden className="text-devotional/60">·</span>
-              <span className="font-serif text-sm italic text-devotional-dark">
-                transcribing
+              <span
+                className={`text-sm italic text-devotional-dark ${
+                  lang === "hi" ? "font-devanagari" : "font-serif"
+                }`}
+              >
+                {t.chat.transcribing}
               </span>
             </span>
           )}
@@ -924,10 +929,10 @@ export default function ChatUI() {
               disabled={!isListening && isTranscribing}
               aria-label={
                 !isListening && isTranscribing
-                  ? "लिप्यंतरण हो रहा है · Transcribing"
+                  ? t.chat.ariaMicTranscribing
                   : isListening
-                    ? "बंद करें · Stop recording"
-                    : "बोलें · Start recording"
+                    ? t.chat.ariaMicStop
+                    : t.chat.ariaMicStart
               }
               aria-pressed={isListening}
               className={`relative z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-all focus:outline-none focus:ring-2 focus:ring-devotional/40 ${
@@ -950,11 +955,17 @@ export default function ChatUI() {
         <button
           type="submit"
           disabled={isSending || !input.trim() || bannedWord !== null}
-          aria-label="Send · भेजें"
+          aria-label={t.chat.ariaSend}
           className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-gold bg-linear-to-b from-gold to-gold-dim p-2 font-[family-name:var(--font-display)] text-sm text-ink0 shadow-[0_0_30px_rgba(212,162,74,0.25),0_12px_30px_rgba(0,0,0,0.5)] transition-transform hover:-translate-y-px disabled:opacity-45 sm:min-h-12 sm:min-w-0 sm:px-6"
         >
           <SendIcon className="h-5 w-5 sm:hidden" />
-          <span className="hidden sm:inline">Send</span>
+          <span
+            className={`hidden sm:inline ${
+              lang === "hi" ? "font-devanagari" : ""
+            }`}
+          >
+            {t.chat.sendButton}
+          </span>
         </button>
       </form>
       {/* Phase 7.0 onboarding-suggestion redesign — replaced the 8
@@ -988,11 +999,16 @@ export default function ChatUI() {
             <span className="h-[5px] w-[5px] rotate-45 bg-gold" />
             <span className="h-px w-12 bg-linear-to-l from-transparent to-gold-mute" />
           </div>
-          <div className="flex flex-col gap-2.5 font-devanagari text-base leading-relaxed text-ivory/70">
-            <span>अपने सवाल पूछो</span>
-            <span>मन की बात बाँटो</span>
-            <span>गीता, महाभारत, भागवत से सीखो</span>
-            <span>बस साथ बैठो, कोई कारण नहीं चाहिए</span>
+          <div
+            className={`flex flex-col gap-2.5 text-base leading-relaxed text-ivory/70 ${
+              lang === "hi"
+                ? "font-devanagari"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {t.chat.suggestions.map((s, i) => (
+              <span key={i}>{s}</span>
+            ))}
           </div>
         </div>
       )}
@@ -1036,8 +1052,14 @@ export default function ChatUI() {
               </h1>
               {/* Subtitle hidden on mobile — at ~360px it stacked one word
                   per line beside the icon cluster (founder 2026-05-25). */}
-              <p className="mt-1 hidden font-devanagari text-xs leading-snug text-gold-dim sm:block sm:text-sm">
-                एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं
+              <p
+                className={`mt-1 hidden text-xs leading-snug text-gold-dim sm:block sm:text-sm ${
+                  lang === "hi"
+                    ? "font-devanagari"
+                    : "font-[family-name:var(--font-serif)] italic"
+                }`}
+              >
+                {t.chat.subtitle}
               </p>
             </div>
           </div>
@@ -1068,8 +1090,8 @@ export default function ChatUI() {
               <button
                 type="button"
                 onClick={() => setDisclaimerExpanded(true)}
-                aria-label="अस्वीकरण · disclaimer"
-                title="अस्वीकरण · disclaimer"
+                aria-label={t.chat.ariaDisclaimer}
+                title={t.chat.ariaDisclaimer}
                 aria-expanded={disclaimerExpanded}
                 aria-controls="dv-disclaimer"
                 className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-[#d49a8e] transition-colors hover:bg-red-seal/15 focus:outline-none focus:ring-2 focus:ring-red-seal/40"
@@ -1090,8 +1112,8 @@ export default function ChatUI() {
                 header cluster. */}
             <Link
               href="/voice"
-              aria-label="Voice mode · आवाज़ में बात करो"
-              title="Voice mode · आवाज़ में बात करो"
+              aria-label={t.chat.ariaVoiceMode}
+              title={t.chat.ariaVoiceMode}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
             >
               <svg
@@ -1115,7 +1137,7 @@ export default function ChatUI() {
                 "See examples" section now. */}
             <Link
               href="/settings"
-              aria-label="Settings · सेटिंग्स"
+              aria-label={t.chat.ariaSettings}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
             >
               <SettingsIcon className="h-6 w-6" />
@@ -1126,8 +1148,8 @@ export default function ChatUI() {
                 SevaPaywall (when free messages run out) is unchanged. */}
             <Link
               href="/settings#seva"
-              aria-label="Seva · सेवा"
-              title="Seva · सेवा"
+              aria-label={t.chat.ariaSeva}
+              title={t.chat.ariaSeva}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
             >
               <DiyaIcon className="h-6 w-6" />
@@ -1162,14 +1184,14 @@ export default function ChatUI() {
           }`}
         >
           <div className="overflow-hidden">
-            <p className="mx-auto max-w-[600px] px-4 py-2 text-center text-xs leading-tight text-brass-dark">
-              <span className="font-devanagari">
-                यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।
-              </span>
-              <span aria-hidden className="mx-1.5 text-brass">·</span>
-              <span className="font-serif italic">
-                This is an AI roleplaying Krishna based on scripture, not divine guidance.
-              </span>
+            <p
+              className={`mx-auto max-w-[600px] px-4 py-2 text-center text-xs leading-tight text-brass-dark ${
+                lang === "hi"
+                  ? "font-devanagari"
+                  : "font-[family-name:var(--font-serif)] italic"
+              }`}
+            >
+              {BRAND.disclaimer[lang]}
             </p>
           </div>
         </div>
@@ -1199,8 +1221,14 @@ export default function ChatUI() {
             {/* Copy unchanged (product-locked); Devanagari now rendered
                 in Tiro — Cormorant has no Devanagari glyphs, so the
                 prior font-serif greeting was silently falling back. */}
-            <p className="fade-up text-center font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-soft [animation-delay:120ms] [animation-fill-mode:backwards]">
-              आज मन कैसा लग रहा है…
+            <p
+              className={`fade-up text-center text-base leading-relaxed text-ink-soft [animation-delay:120ms] [animation-fill-mode:backwards] ${
+                lang === "hi"
+                  ? "font-[family-name:var(--font-devanagari)]"
+                  : "font-[family-name:var(--font-serif)] italic"
+              }`}
+            >
+              {t.chat.greeting}
             </p>
             {/* Phase 8 pre-launch — value-prop subtitle for cold-acquired
                 users (Reddit/X/Product Hunt) who land on /chat with no
@@ -1211,8 +1239,14 @@ export default function ChatUI() {
                 greeting. brass-dark is the AA-safe text token on parchment
                 (full-saturation --devotional is not AA). Staggered at 90ms
                 — a breath between greeting (0ms) and input (180ms). */}
-            <p className="fade-up max-w-[460px] text-center font-devanagari text-sm leading-relaxed text-ink-faint [animation-delay:220ms] [animation-fill-mode:backwards]">
-              भगवान कृष्ण से बात करो — हर उत्तर गीता, महाभारत, भागवत से
+            <p
+              className={`fade-up max-w-[460px] text-center text-sm leading-relaxed text-ink-faint [animation-delay:220ms] [animation-fill-mode:backwards] ${
+                lang === "hi"
+                  ? "font-devanagari"
+                  : "font-[family-name:var(--font-serif)] italic"
+              }`}
+            >
+              {t.chat.valueProp}
             </p>
             <div className="fade-up w-full [animation-delay:340ms] [animation-fill-mode:backwards]">
               {inputBlock}
@@ -1241,9 +1275,13 @@ export default function ChatUI() {
                 // slow first token never reads as a frozen UI.
                 <p
                   role="status"
-                  className="fade-up flex items-center justify-center gap-1.5 text-center font-devanagari text-sm italic"
+                  className={`fade-up flex items-center justify-center gap-1.5 text-center text-sm italic ${
+                    lang === "hi"
+                      ? "font-devanagari"
+                      : "font-[family-name:var(--font-serif)]"
+                  }`}
                 >
-                  <span className="dv-thinking-shimmer">सोच रहा हूँ</span>
+                  <span className="dv-thinking-shimmer">{t.chat.thinking}</span>
                   <span aria-hidden className="dv-thinking-dots">
                     <span className="dv-thinking-dot" />
                     <span className="dv-thinking-dot" />
@@ -1566,41 +1604,9 @@ function SendIcon({ className }: { className?: string }) {
   );
 }
 
-// Phase 8.0 mic-error chip — bilingual prose for each of the five
-// failure modes. Hindi-first per the project's Hinglish register;
-// small code-switches (browser, settings, allow, device, transcribe,
-// try) match how the target audience naturally writes/speaks. Kept
-// at module scope (not inside the component) so it isn't reallocated
-// on every render.
-const micErrorMessages: Record<
-  "permission_denied"
-  | "no_hardware"
-  | "unsupported_browser"
-  | "vad_load_failed"
-  | "transcription_failed",
-  { hi: string; en: string }
-> = {
-  permission_denied: {
-    hi: "माइक की अनुमति चाहिए — browser settings में जाकर allow करो।",
-    en: "Microphone permission needed — allow it in your browser settings to use voice.",
-  },
-  no_hardware: {
-    hi: "इस device पर माइक नहीं मिला।",
-    en: "No microphone found on this device.",
-  },
-  unsupported_browser: {
-    hi: "तुम्हारा browser माइक support नहीं करता। Chrome या Safari try करो।",
-    en: "Your browser doesn't support voice input. Try Chrome or Safari.",
-  },
-  vad_load_failed: {
-    hi: "Voice feature load नहीं हुआ। थोड़ी देर बाद try करो।",
-    en: "Voice feature failed to load. Please try again in a moment.",
-  },
-  transcription_failed: {
-    hi: "अभी बातचीत transcribe नहीं हो पा रही। थोड़ी देर बाद try करो।",
-    en: "Transcription unavailable right now. Try again.",
-  },
-};
+// Phase 12 (i18n) — mic-error chip prose now lives in the UI dictionary
+// (t.chat.micErrors), keyed by the same five failure-mode names, so it
+// follows the EN/हिन्दी toggle like the rest of the chat chrome.
 
 // Phase 8.0 mic-error chip — inline alert-triangle icon. Feather/
 // Lucide-style outline, same vocabulary as MicIcon + SendIcon

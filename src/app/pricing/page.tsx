@@ -34,7 +34,7 @@ export default function PricingPage() {
 
         <header className="mb-7">
           <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
-            मूल्य · pricing
+Pricing
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.1] text-ivory">
             Pricing

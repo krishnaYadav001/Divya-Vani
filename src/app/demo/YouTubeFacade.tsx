@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "../providers/LanguageProvider";
 
 // Lightweight YouTube embed: render a static thumbnail + play affordance,
 // only mount the iframe on first click. youtube-nocookie.com defers all
@@ -20,8 +21,10 @@ function isPlaceholder(id: string) {
 }
 
 export default function YouTubeFacade({ id, titleHi, titleEn }: Props) {
+  const { lang } = useLanguage();
   const [playing, setPlaying] = useState(false);
   const placeholder = isPlaceholder(id);
+  const title = lang === "hi" ? titleHi : titleEn;
 
   return (
     <div
@@ -36,17 +39,20 @@ export default function YouTubeFacade({ id, titleHi, titleEn }: Props) {
           >
             ✦
           </span>
-          <p className="font-[family-name:var(--font-devanagari)] text-sm leading-relaxed text-ink">
-            {titleHi}
-          </p>
-          <p className="font-[family-name:var(--font-serif)] text-xs italic text-ink-soft">
-            {titleEn}
+          <p
+            className={`text-sm leading-relaxed text-ink ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {title}
           </p>
         </div>
       ) : playing ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${id}?rel=0&autoplay=1`}
-          title={titleEn}
+          title={title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           loading="lazy"
@@ -56,7 +62,7 @@ export default function YouTubeFacade({ id, titleHi, titleEn }: Props) {
         <button
           type="button"
           onClick={() => setPlaying(true)}
-          aria-label={`${titleEn} — play`}
+          aria-label={`${title} — play`}
           className="group absolute inset-0 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
         >
           <img

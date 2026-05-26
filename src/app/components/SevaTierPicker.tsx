@@ -232,26 +232,42 @@ export default function SevaTierPicker({
                 <Diya tone={tone.diya} className="h-full w-full" />
               </span>
 
-              {/* Tier text — two tight lines, no wrap */}
+              {/* Tier text — two tight lines, no wrap. Single-language tier
+                  name following the EN/हिन्दी toggle (Phase 12). */}
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-baseline gap-1.5">
-                  <span className="truncate font-[family-name:var(--font-devanagari)] text-[15px] leading-tight text-ink">
-                    {shortHi}
-                  </span>
-                  <span className="shrink-0 font-[family-name:var(--font-display)] text-[8px] uppercase tracking-[0.22em] text-ink-soft">
-                    {shortEn} Sevā
+                  <span
+                    className={`truncate text-[15px] leading-tight text-ink ${
+                      lang === "hi"
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-display)]"
+                    }`}
+                  >
+                    {lang === "hi" ? `${shortHi} सेवा` : `${shortEn} Sevā`}
                   </span>
                 </span>
                 <span className="mt-0.5 flex items-baseline gap-1.5">
                   <span className="font-[family-name:var(--font-display)] text-lg tabular-nums leading-none text-ink">
                     ₹{tier.priceInr}
                   </span>
-                  <span className="font-[family-name:var(--font-serif)] text-[11px] italic text-ink-soft">
-                    · {tier.messages} msgs
+                  <span
+                    className={`text-[11px] text-ink-soft ${
+                      lang === "hi"
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-serif)] italic"
+                    }`}
+                  >
+                    · {tier.messages} {t.seva.msgs}
                   </span>
                   {fav && (
-                    <span className="font-[family-name:var(--font-display)] text-[8px] uppercase tracking-[0.18em] text-[oklch(53%_0.19_28)]">
-                      · top
+                    <span
+                      className={`text-[8px] text-[oklch(53%_0.19_28)] ${
+                        lang === "hi"
+                          ? "font-[family-name:var(--font-devanagari)]"
+                          : "font-[family-name:var(--font-display)] uppercase tracking-[0.18em]"
+                      }`}
+                    >
+                      · {t.seva.top}
                     </span>
                   )}
                 </span>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TierConfig } from "@/lib/seva";
 import SevaTierPicker from "./SevaTierPicker";
+import { useLanguage } from "../providers/LanguageProvider";
 
 const FREE_LIMIT = 10;
 
@@ -23,6 +24,7 @@ export default function DiyaSevaPanel({
   tiers,
   onPurchaseSuccess,
 }: DiyaSevaPanelProps) {
+  const { lang, t } = useLanguage();
   const panelRef = useRef<HTMLDivElement>(null);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confirmedCount, setConfirmedCount] = useState<number | null>(null);
@@ -96,7 +98,7 @@ export default function DiyaSevaPanel({
     <div
       ref={panelRef}
       role="dialog"
-      aria-label="Seva · सेवा"
+      aria-label={t.seva.ariaSevaPanel}
       // Phase 6.6 Stage C-1 — `inert` (not aria-hidden) when closed.
       // inert removes children from the accessibility tree AND the focus
       // order (aria-hidden only does the former), fixing the WCAG
@@ -112,7 +114,7 @@ export default function DiyaSevaPanel({
     >
       <button
         type="button"
-        aria-label="Close · बंद करें"
+        aria-label={t.seva.ariaClose}
         onClick={onClose}
         // Phase 6.6 Stage C-1 — h-12 w-12 (48×48) for unambiguous Apple
         // HIG / Google MWG tap target. min-h-11 measured 42px on iPhone
@@ -155,12 +157,12 @@ export default function DiyaSevaPanel({
               {countDisplay}
             </p>
           </div>
-          <p className="relative mt-3 text-xs text-brass-dark">
-            <span className="font-devanagari">बातचीत और हैं</span>
-            <span aria-hidden className="mx-1.5 text-brass/70">
-              ·
-            </span>
-            <span className="font-serif">conversations remain</span>
+          <p
+            className={`relative mt-3 text-xs text-brass-dark ${
+              lang === "hi" ? "font-devanagari" : "font-serif"
+            }`}
+          >
+            {t.seva.conversationsRemain}
           </p>
         </div>
       </div>
@@ -168,15 +170,11 @@ export default function DiyaSevaPanel({
       {confirmedCount !== null ? (
         <div
           role="status"
-          className="mt-4 rounded-xl bg-devotional/10 px-3 py-3 text-center text-sm text-devotional-dark ring-1 ring-devotional/40"
+          className={`mt-4 rounded-xl bg-devotional/10 px-3 py-3 text-center text-sm text-devotional-dark ring-1 ring-devotional/40 ${
+            lang === "hi" ? "font-devanagari" : "font-serif"
+          }`}
         >
-          <span className="font-devanagari">
-            {confirmedCount} बातचीत जुड़ गई
-          </span>
-          <span aria-hidden className="mx-1.5 text-brass/70">
-            ·
-          </span>
-          <span className="font-serif">{confirmedCount} messages added</span>
+          {t.seva.messagesAdded.replace("{n}", String(confirmedCount))}
         </div>
       ) : (
         <div className="mt-5">

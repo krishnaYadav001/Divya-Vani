@@ -29,7 +29,7 @@ export default function ContactPage() {
 
         <header className="mb-7">
           <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
-            संपर्क · contact
+Contact
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.1] text-ivory">
             Contact Us

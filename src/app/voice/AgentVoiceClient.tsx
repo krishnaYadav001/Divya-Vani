@@ -44,6 +44,7 @@ import {
   useConversationClientTool,
 } from "@elevenlabs/react";
 import { BRAND } from "@/lib/brand";
+import { useLanguage } from "../providers/LanguageProvider";
 import { getTiersInOrder } from "@/lib/seva";
 import { loadTranscript, saveTranscript } from "@/lib/voiceTranscriptStorage";
 import AgentOrb, { type AgentOrbState } from "./AgentOrb";
@@ -102,6 +103,11 @@ export default function AgentVoiceClient() {
 
 function VoiceInner() {
   const router = useRouter();
+  // UI-language toggle (Phase 12) — the night-scene chrome (titles, state
+  // strip, disclaimer, paywall, action buttons) now follows the EN/हिन्दी
+  // choice instead of always stacking both. Krishna's spoken reply (the SDK
+  // TTS) and the transcript CONTENT are untouched — only screen chrome.
+  const { lang } = useLanguage();
   const orbRef = useRef<HTMLDivElement>(null);
   const beginRef = useRef<HTMLButtonElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -557,7 +563,7 @@ function VoiceInner() {
           <Link
             href="/chat"
             onClick={() => void endSession()}
-            aria-label="वापस चैट पर · Back to chat"
+            aria-label={C.backToChat[lang]}
             className="ivory-soft flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-gold-leaf/10 hover:text-[oklch(95%_0.025_70)] focus:outline-none focus:ring-2 focus:ring-gold-leaf/40 [filter:drop-shadow(0_1px_4px_oklch(8%_0.05_260/0.7))]"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -587,7 +593,7 @@ function VoiceInner() {
             <button
               type="button"
               onClick={handleEnd}
-              aria-label={`${C.exit.hi} · ${C.exit.en}`}
+              aria-label={C.exit[lang]}
               className="ivory-soft flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-vermillion/15 hover:text-[oklch(72%_0.16_28)] focus:outline-none focus:ring-2 focus:ring-vermillion/40 [filter:drop-shadow(0_1px_4px_oklch(8%_0.05_260/0.7))]"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -611,12 +617,12 @@ function VoiceInner() {
           transparent like the header (founder 2026-05-24); just the text
           floating over the scene, with a shadow for legibility. ──────── */}
       <p
-        className="ivory-faint relative z-20 shrink-0 px-4 py-1 text-center text-[11px] leading-tight"
+        className={`ivory-faint relative z-20 shrink-0 px-4 py-1 text-center text-[11px] leading-tight ${
+          lang === "hi" ? "font-devanagari" : "font-serif italic"
+        }`}
         style={{ textShadow: "0 1px 4px oklch(8% 0.05 260 / 0.7)" }}
       >
-        <span className="font-devanagari">{C.disclaimer.hi}</span>
-        <span aria-hidden className="mx-1.5 text-gold-leaf/70">·</span>
-        <span className="font-serif italic">{C.disclaimer.en}</span>
+        {C.disclaimer[lang]}
       </p>
 
       {/* ── Zone 3: hero — orb DURING the call, transcript AFTER it ──── */}
@@ -627,11 +633,14 @@ function VoiceInner() {
           /* Post-call transcript (Gemini-style) — the full conversation. */
           <div className="flex min-h-0 w-full max-w-[480px] flex-1 flex-col py-4">
             <p className="shrink-0 pb-3 text-center">
-              <span className="ivory block font-[family-name:var(--font-display)] text-xl">
-                {ended ? C.states.ended.hi : C.title.hi}
-              </span>
-              <span className="ivory-soft mt-0.5 block font-serif text-sm italic">
-                {ended ? C.states.ended.en : C.title.en}
+              <span
+                className={`ivory block text-xl ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)]"
+                }`}
+              >
+                {ended ? C.states.ended[lang] : C.title[lang]}
               </span>
             </p>
             <div
@@ -652,11 +661,14 @@ function VoiceInner() {
               }
               style={{ textShadow: "0 2px 8px oklch(10% 0.05 260 / 0.6)" }}
             >
-              <span className="ivory block font-[family-name:var(--font-display)] text-2xl sm:text-3xl">
-                {C.title.hi}
-              </span>
-              <span className="ivory-soft mt-1 block font-serif text-sm italic">
-                {C.title.en}
+              <span
+                className={`ivory block text-2xl sm:text-3xl ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)]"
+                }`}
+              >
+                {C.title[lang]}
               </span>
             </p>
 
@@ -674,29 +686,37 @@ function VoiceInner() {
               className="fade-up max-w-[360px] rounded-3xl border border-gold-leaf/40 px-6 py-6 text-center shadow-[0_24px_48px_-18px_oklch(8%_0.06_280_/_0.7)] backdrop-blur"
               style={{ background: "oklch(15% 0.04 260 / 0.85)" }}
             >
-              <p className="ivory font-[family-name:var(--font-display)] text-lg">
-                {C.paywall.hi}
+              <p
+                className={`ivory text-lg ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)]"
+                }`}
+              >
+                {C.paywall[lang]}
               </p>
-              <p className="ivory-soft mt-1 font-serif text-sm italic">
-                {C.paywall.en}
-              </p>
-              <p className="ivory-soft mt-3 font-devanagari text-sm leading-relaxed">
-                {C.paywall.body.hi}
+              <p
+                className={`ivory-soft mt-3 text-sm leading-relaxed ${
+                  lang === "hi" ? "font-devanagari" : "font-serif italic"
+                }`}
+              >
+                {C.paywall.body[lang]}
               </p>
               <button
                 type="button"
                 onClick={() => setIsSevaOpen(true)}
-                className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-7 py-3 font-[family-name:var(--font-devanagari)] text-[15px] shadow-[0_1px_0_rgba(255,255,255,.4)_inset] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0"
+                className={`mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-7 py-3 text-[15px] shadow-[0_1px_0_rgba(255,255,255,.4)_inset] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0 ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)]"
+                }`}
                 style={{
                   background:
                     "linear-gradient(180deg, oklch(72% 0.13 80), oklch(55% 0.14 70))",
                   color: "oklch(18% 0.04 60)",
                 }}
               >
-                {C.paywall.openSeva.hi}
-                <span className="ml-2 font-serif text-sm italic" style={{ color: "oklch(30% 0.05 60)" }}>
-                  · {C.paywall.openSeva.en}
-                </span>
+                {C.paywall.openSeva[lang]}
               </button>
             </div>
           </div>
@@ -719,9 +739,13 @@ function VoiceInner() {
         className="relative z-10 flex shrink-0 items-center justify-center gap-2 px-4 py-2 text-center text-sm"
       >
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-leaf shadow-[0_0_10px_oklch(82%_0.12_80)]" />
-        <span className="ivory font-devanagari">{strip.hi}</span>
-        <span aria-hidden className="text-gold-leaf/60">·</span>
-        <span className="ivory-soft font-serif italic">{strip.en}</span>
+        <span
+          className={`ivory ${
+            lang === "hi" ? "font-devanagari" : "font-serif italic"
+          }`}
+        >
+          {strip[lang]}
+        </span>
       </p>
 
       {/* ── Zone 5: bottom action row ───────────────────────────────── */}
@@ -732,18 +756,23 @@ function VoiceInner() {
             type="button"
             onClick={handleBegin}
             disabled={!bootstrapped}
-            aria-label={`${beginLabel.hi} · ${beginLabel.en}`}
-            className="inline-flex min-h-14 items-center justify-center rounded-full border border-gold-leaf px-12 py-4 font-[family-name:var(--font-devanagari)] text-lg shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_14px_32px_-10px_oklch(60%_0.16_70_/_0.55),0_0_28px_oklch(76%_0.14_80_/_0.35)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf disabled:opacity-50 motion-reduce:hover:translate-y-0"
+            aria-label={
+              error && error.code !== "paywall"
+                ? C.retry[lang]
+                : beginLabel[lang]
+            }
+            className={`inline-flex min-h-14 items-center justify-center rounded-full border border-gold-leaf px-12 py-4 text-lg shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_14px_32px_-10px_oklch(60%_0.16_70_/_0.55),0_0_28px_oklch(76%_0.14_80_/_0.35)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf disabled:opacity-50 motion-reduce:hover:translate-y-0 ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
             style={{
               background:
                 "linear-gradient(180deg, oklch(72% 0.13 80), oklch(55% 0.14 70))",
               color: "oklch(18% 0.04 60)",
             }}
           >
-            {error && error.code !== "paywall" ? C.retry.hi : beginLabel.hi}
-            <span className="ml-2 font-serif text-base italic" style={{ color: "oklch(30% 0.05 60)" }}>
-              · {error && error.code !== "paywall" ? C.retry.en : beginLabel.en}
-            </span>
+            {error && error.code !== "paywall" ? C.retry[lang] : beginLabel[lang]}
           </button>
         )}
 
@@ -751,14 +780,15 @@ function VoiceInner() {
           <button
             type="button"
             onClick={handleEnd}
-            aria-label={`${C.exit.hi} · ${C.exit.en}`}
-            className="ivory-soft inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf/30 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base backdrop-blur transition-colors hover:border-gold-leaf/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40"
+            aria-label={C.exit[lang]}
+            className={`ivory-soft inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf/30 px-7 py-3 text-base backdrop-blur transition-colors hover:border-gold-leaf/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40 ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
             style={{ background: "oklch(25% 0.05 260 / 0.55)" }}
           >
-            {C.exit.hi}
-            <span className="ivory-faint ml-2 font-serif text-sm italic">
-              · {C.exit.en}
-            </span>
+            {C.exit[lang]}
           </button>
         )}
 
@@ -767,28 +797,30 @@ function VoiceInner() {
             <button
               type="button"
               onClick={handleContinue}
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-8 py-3 font-[family-name:var(--font-devanagari)] text-base shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_0_22px_oklch(76%_0.14_80_/_0.3)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0"
+              className={`inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf px-8 py-3 text-base shadow-[0_1px_0_rgba(255,255,255,.4)_inset,0_0_22px_oklch(76%_0.14_80_/_0.3)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf motion-reduce:hover:translate-y-0 ${
+                lang === "hi"
+                  ? "font-[family-name:var(--font-devanagari)]"
+                  : "font-[family-name:var(--font-display)]"
+              }`}
               style={{
                 background:
                   "linear-gradient(180deg, oklch(72% 0.13 80), oklch(55% 0.14 70))",
                 color: "oklch(18% 0.04 60)",
               }}
             >
-              जारी रखो
-              <span className="ml-2 font-serif text-sm italic" style={{ color: "oklch(30% 0.05 60)" }}>
-                · Continue
-              </span>
+              {lang === "hi" ? "जारी रखो" : "Continue"}
             </button>
             <button
               type="button"
               onClick={handleBackToChat}
-              className="ivory-soft inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf/30 px-7 py-3 font-[family-name:var(--font-devanagari)] text-base backdrop-blur transition-colors hover:border-gold-leaf/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40"
+              className={`ivory-soft inline-flex min-h-12 items-center justify-center rounded-full border border-gold-leaf/30 px-7 py-3 text-base backdrop-blur transition-colors hover:border-gold-leaf/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40 ${
+                lang === "hi"
+                  ? "font-[family-name:var(--font-devanagari)]"
+                  : "font-[family-name:var(--font-display)]"
+              }`}
               style={{ background: "oklch(25% 0.05 260 / 0.55)" }}
             >
-              {C.backToChat.hi}
-              <span className="ivory-faint ml-2 font-serif text-sm italic">
-                · {C.backToChat.en}
-              </span>
+              {C.backToChat[lang]}
             </button>
           </>
         )}

@@ -13,7 +13,6 @@ import SindoorSeal from "./motifs/SindoorSeal";
 
 type Card = {
   kicker: string;
-  hi: string;
   seal?: boolean;
   bullets: [string, string][];
 };
@@ -21,7 +20,6 @@ type Card = {
 const PRIVACY_CARDS: Card[] = [
   {
     kicker: "What we collect",
-    hi: "क्या एकत्र करते हैं",
     bullets: [
       ["anonymous device id", "no name, no phone, no email by default"],
       ["the messages you send", "stored encrypted on Indian servers"],
@@ -30,7 +28,6 @@ const PRIVACY_CARDS: Card[] = [
   },
   {
     kicker: "What we never do",
-    hi: "जो हम कभी नहीं करते",
     seal: true,
     bullets: [
       ["sell or share your chats with anyone", ""],
@@ -40,7 +37,6 @@ const PRIVACY_CARDS: Card[] = [
   },
   {
     kicker: "How long we keep things",
-    hi: "कितने समय रखते हैं",
     bullets: [
       ["chats — 180 days, then auto-deleted", ""],
       ["voice audio — never stored, transcript only", ""],
@@ -49,7 +45,6 @@ const PRIVACY_CARDS: Card[] = [
   },
   {
     kicker: "Your rights",
-    hi: "आपके अधिकार",
     bullets: [
       ["delete everything in one tap, from Settings", ""],
       ["opt out of model improvement, on by default", ""],
@@ -70,7 +65,7 @@ export default function PolicySummary({
           Privacy · Updated {lastUpdated}
         </p>
         <p className="font-[family-name:var(--font-serif)] text-sm italic text-ink-soft">
-          Bilingual summary · full policy below ↓
+          Summary · full policy below ↓
         </p>
       </div>
 
@@ -93,13 +88,10 @@ export default function PolicySummary({
             key={c.kicker}
             className="relative rounded-2xl border border-[oklch(88%_0.02_60)] bg-white/55 p-7 shadow-[0_1px_0_rgba(255,255,255,.6)_inset,0_12px_28px_-18px_oklch(35%_0.05_30_/_0.35)] backdrop-blur-sm sm:p-8"
           >
-            <header className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pr-10">
+            <header className="mb-5 pr-10">
               <h2 className="font-[family-name:var(--font-display)] text-2xl font-normal text-ink">
                 {c.kicker}
               </h2>
-              <span className="font-[family-name:var(--font-devanagari)] text-base leading-relaxed text-ink-soft">
-                {c.hi}
-              </span>
             </header>
             <ul className="flex flex-col gap-3.5">
               {c.bullets.map((b) => (
