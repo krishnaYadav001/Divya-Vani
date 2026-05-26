@@ -8,6 +8,7 @@ import {
   markPaymentFailed,
   creditSevaBalance,
   fetchMemory,
+  touchActivity,
 } from "@/lib/supabase";
 
 const USER_COOKIE = "god_messenger_uid";
@@ -116,6 +117,16 @@ export async function POST(req: Request) {
     );
   }
 
+  // A voice-first payer (someone who buys seva before ever sending a chat
+  // message — e.g. landing straight on /voice) has NO users_memory row yet.
+  // credit_seva_balance is UPDATE-only (returns null for a missing row), so
+  // without this the credit would 500 here — the payment is already marked
+  // verified above, so the user would be charged, lose their purchased
+  // messages, AND see the voice paywall persist until a manual reload. Ensure
+  // the row exists first: touchActivity is an idempotent upsert that only
+  // writes user_id + last_active_at, never clobbering seva_balance on an
+  // existing row.
+  await touchActivity(userId);
   const newBalance = await creditSevaBalance(userId, tier.messages);
   if (newBalance === null) {
     console.error(

@@ -12,6 +12,7 @@ import {
   recordEvent,
   fetchMemory,
   saveMemory,
+  touchActivity,
 } from "@/lib/supabase";
 
 interface RazorpayPaymentEntity {
@@ -148,6 +149,11 @@ export async function POST(req: Request) {
             );
             break;
           }
+          // Voice-first payers have no users_memory row yet and
+          // credit_seva_balance is UPDATE-only; ensure the row exists so the
+          // recovery path credits instead of silently dropping the purchase.
+          // Idempotent upsert — never clobbers an existing row's seva_balance.
+          await touchActivity(updated.user_id);
           const newBalance = await creditSevaBalance(
             updated.user_id,
             tier.messages,

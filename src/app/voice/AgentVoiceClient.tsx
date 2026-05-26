@@ -519,10 +519,15 @@ function VoiceInner() {
 
   const onPurchaseSuccess = useCallback((newBalance: number) => {
     setCounter((p) => ({ ...p, sevaBalance: newBalance }));
-    if (newBalance > 0) {
-      setHasAccess(true);
-      setError((e) => (e?.code === "paywall" ? null : e));
-    }
+    // Voice access is "has ever completed a paid seva" (see voiceAccess.ts),
+    // NOT "balance > 0". This callback only fires after a verified payment, so
+    // the user now qualifies regardless of the returned balance figure (which
+    // could lag for a brand-new payer whose memory row was only just created).
+    // Grant access + clear any paywall error so the orb is reachable WITHOUT a
+    // reload — the prior `newBalance > 0` guard left the paywall stuck whenever
+    // the balance came back 0/unknown.
+    setHasAccess(true);
+    setError((e) => (e?.code === "paywall" ? null : e));
   }, []);
 
   // Bilingual transcript row (night ivory ramp).
