@@ -778,23 +778,52 @@ export async function POST(req: Request): Promise<Response> {
     ragFlags.themeRerank || ragFlags.sourceDiversity || ragFlags.queryRewrite;
   const fetchK = wantWidePool ? ragFlags.candidatesK : 5;
 
+  // TEMP latency profiling (founder 2026-05-26 — REMOVE after the latency pass).
+  // Each sub-call records its own elapsed time from the block start; since they
+  // run in PARALLEL, the MAX is pre_sonnet's long pole. This tells us whether
+  // the RAG embedding network hop (Gemini, US) or the Haiku safety/moderation
+  // calls dominate — i.e. whether a US region pin or buffered streaming is the
+  // bigger win.
+  const blockStart = Date.now();
+  let memMs = 0;
+  let ragMs = 0;
+  let safetyMs = 0;
+  let moderationMs = 0;
   const [priorMemory, candidates, safety, moderation] = await Promise.all([
     // Unidentified turns NEVER read memory: the sentinel row is shared, so
     // reading it would leak another person's name / growing_edge / "welcome
     // back". Treat unidentified as a clean first-time user.
-    isIdentified
+    (isIdentified
       ? fetchMemory(userId).catch((e) => {
           console.error("[agent-llm] fetchMemory threw:", e);
           return null;
         })
-      : Promise.resolve(null),
-    fetchCandidates(latestUserMessage, fetchK).catch((e) => {
-      console.error("[agent-llm] fetchCandidates threw:", e);
-      return [] as VerseHit[];
+      : Promise.resolve(null)
+    ).then((r) => {
+      memMs = Date.now() - blockStart;
+      return r;
     }),
-    safetyClassify(latestUserMessage),
-    moderateInput(latestUserMessage),
+    fetchCandidates(latestUserMessage, fetchK)
+      .catch((e) => {
+        console.error("[agent-llm] fetchCandidates threw:", e);
+        return [] as VerseHit[];
+      })
+      .then((r) => {
+        ragMs = Date.now() - blockStart;
+        return r;
+      }),
+    safetyClassify(latestUserMessage).then((r) => {
+      safetyMs = Date.now() - blockStart;
+      return r;
+    }),
+    moderateInput(latestUserMessage).then((r) => {
+      moderationMs = Date.now() - blockStart;
+      return r;
+    }),
   ]);
+  console.log(
+    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} safety=${safetyMs} moderation=${moderationMs}`,
+  );
 
   // Memory-derived flags (after the parallel fetch above).
   const priorCount = priorMemory?.message_count ?? 0;
