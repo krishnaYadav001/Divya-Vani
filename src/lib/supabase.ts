@@ -57,6 +57,44 @@ export interface PaymentRow {
   razorpay_refund_id?: string | null;
 }
 
+// Phase 9 — subscription status mirrors Razorpay's subscription lifecycle, plus
+// 'paused' (we never pause in v1 but the column allows it). Only 'active' grants
+// entitlements; the partial unique index guarantees ≤1 active row per user.
+export type SubscriptionStatus =
+  | "created"
+  | "authenticated"
+  | "active"
+  | "pending"
+  | "halted"
+  | "cancelled"
+  | "completed"
+  | "expired"
+  | "paused";
+
+export interface SubscriptionRow {
+  id?: string;
+  user_id: string;
+  razorpay_subscription_id: string;
+  razorpay_customer_id?: string | null;
+  plan_key: string;
+  currency: string;
+  billing_period: string;
+  status: SubscriptionStatus;
+  // Entitlements are SNAPSHOTTED at creation (see schema) so a later config
+  // change never silently alters an existing subscriber's allowance.
+  message_pool: number;
+  messages_used: number;
+  voice_minutes_pool: number;
+  voice_seconds_used: number;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+  cancel_at_period_end: boolean;
+  cancelled_at?: string | null;
+  amount?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 let cachedClient: SupabaseClient | null = null;
 
 function getClient(): SupabaseClient | null {
@@ -796,5 +834,226 @@ export async function insertFeedback(params: {
   } catch (e) {
     console.error("[supabase] insertFeedback threw:", e);
     return { ok: false };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 9 — Subscriptions data layer.
+//
+// Lifecycle: /api/subscriptions/create inserts a row at status 'created', then
+// Razorpay webhooks drive it through authenticated → active → (charged resets
+// the cycle) → cancelled/halted/completed. Reads are by user_id (gating, the
+// Settings panel) or by razorpay_subscription_id (webhooks). All silent-fail
+// per the ops invariant EXCEPT insertSubscription, which returns a boolean so
+// the create route can refuse to hand back a checkout it couldn't record.
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Insert a subscription row when the Razorpay subscription is first created
+ * (status 'created'). Entitlements are snapshotted here. messages_used /
+ * voice_seconds_used / cancel_at_period_end take their schema defaults (0 / 0 /
+ * false). Returns false on error so the route doesn't return a checkout it
+ * failed to persist (which would later orphan the webhook).
+ */
+export async function insertSubscription(sub: {
+  user_id: string;
+  razorpay_subscription_id: string;
+  razorpay_customer_id?: string | null;
+  plan_key: string;
+  currency: string;
+  billing_period: string;
+  status: SubscriptionStatus;
+  message_pool: number;
+  voice_minutes_pool: number;
+  amount: number;
+}): Promise<boolean> {
+  try {
+    const client = getClient();
+    if (!client) return false;
+    const { error } = await client.from("subscriptions").insert(sub);
+    if (error) {
+      console.error("[supabase] insertSubscription error:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[supabase] insertSubscription threw:", e);
+    return false;
+  }
+}
+
+/**
+ * The user's currently-active subscription, or null. The partial unique index
+ * (status = 'active') guarantees at most one. Used by chat gating, voice
+ * metering, and the Settings panel. A subscription scheduled to cancel at
+ * period end is still 'active' until then — entitlements continue, as intended.
+ */
+export async function fetchActiveSubscription(
+  userId: string,
+): Promise<SubscriptionRow | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] fetchActiveSubscription error:", error);
+      return null;
+    }
+    return (data as SubscriptionRow | null) ?? null;
+  } catch (e) {
+    console.error("[supabase] fetchActiveSubscription threw:", e);
+    return null;
+  }
+}
+
+/**
+ * Look up a subscription by its Razorpay id. Used by the webhook handler to
+ * resolve the row a subscription.* event refers to.
+ */
+export async function fetchSubscriptionByRazorpayId(
+  razorpaySubscriptionId: string,
+): Promise<SubscriptionRow | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client
+      .from("subscriptions")
+      .select("*")
+      .eq("razorpay_subscription_id", razorpaySubscriptionId)
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] fetchSubscriptionByRazorpayId error:", error);
+      return null;
+    }
+    return (data as SubscriptionRow | null) ?? null;
+  } catch (e) {
+    console.error("[supabase] fetchSubscriptionByRazorpayId threw:", e);
+    return null;
+  }
+}
+
+/**
+ * Update a subscription's lifecycle fields by Razorpay id. Only the provided
+ * fields are written (always bumps updated_at). Webhook-driven; absolute SETs
+ * (no read-modify-write), so no atomicity concern.
+ *
+ * Edge case — activating a second subscription while one is already active
+ * violates the partial unique index. v1 blocks that at the create route (one
+ * active sub per user); if it still happens, the UPDATE to 'active' errors here
+ * and we log it rather than corrupting the first active row. Returns false on
+ * error so the webhook can decide whether to 200 (idempotent ack) anyway.
+ */
+export async function updateSubscriptionStatus(
+  razorpaySubscriptionId: string,
+  fields: {
+    status?: SubscriptionStatus;
+    razorpay_customer_id?: string | null;
+    current_period_start?: string | null;
+    current_period_end?: string | null;
+    cancel_at_period_end?: boolean;
+    cancelled_at?: string | null;
+  },
+): Promise<boolean> {
+  try {
+    const client = getClient();
+    if (!client) return false;
+    const payload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (fields.status !== undefined) payload.status = fields.status;
+    if (fields.razorpay_customer_id !== undefined) {
+      payload.razorpay_customer_id = fields.razorpay_customer_id;
+    }
+    if (fields.current_period_start !== undefined) {
+      payload.current_period_start = fields.current_period_start;
+    }
+    if (fields.current_period_end !== undefined) {
+      payload.current_period_end = fields.current_period_end;
+    }
+    if (fields.cancel_at_period_end !== undefined) {
+      payload.cancel_at_period_end = fields.cancel_at_period_end;
+    }
+    if (fields.cancelled_at !== undefined) {
+      payload.cancelled_at = fields.cancelled_at;
+    }
+    const { error } = await client
+      .from("subscriptions")
+      .update(payload)
+      .eq("razorpay_subscription_id", razorpaySubscriptionId);
+    if (error) {
+      console.error("[supabase] updateSubscriptionStatus error:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[supabase] updateSubscriptionStatus threw:", e);
+    return false;
+  }
+}
+
+/**
+ * On subscription.charged (each renewal): reset per-cycle usage to zero and
+ * roll the billing window forward. Also re-asserts status='active' so a sub
+ * that recovered from 'halted' via a successful retry charge is usable again.
+ */
+export async function resetSubscriptionCycleUsage(
+  razorpaySubscriptionId: string,
+  period: { current_period_start?: string | null; current_period_end?: string | null },
+): Promise<boolean> {
+  try {
+    const client = getClient();
+    if (!client) return false;
+    const { error } = await client
+      .from("subscriptions")
+      .update({
+        messages_used: 0,
+        voice_seconds_used: 0,
+        status: "active",
+        current_period_start: period.current_period_start ?? null,
+        current_period_end: period.current_period_end ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("razorpay_subscription_id", razorpaySubscriptionId);
+    if (error) {
+      console.error("[supabase] resetSubscriptionCycleUsage error:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[supabase] resetSubscriptionCycleUsage threw:", e);
+    return false;
+  }
+}
+
+/**
+ * Atomically consume one message from the user's active subscription pool.
+ * Returns the new messages_used, or null if there is no active subscription OR
+ * the pool is already exhausted (messages_used >= message_pool). The WHERE
+ * guard in the SQL function makes this race-safe (mirrors decrement_seva_balance).
+ * Requires the increment_subscription_messages SQL function — see
+ * docs/subscriptions-rpcs.sql (manual paste).
+ */
+export async function incrementSubscriptionMessagesUsed(
+  userId: string,
+): Promise<number | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("increment_subscription_messages", {
+      p_user_id: userId,
+    });
+    if (error) {
+      console.error("[supabase] incrementSubscriptionMessagesUsed error:", error);
+      return null;
+    }
+    return typeof data === "number" ? data : null;
+  } catch (e) {
+    console.error("[supabase] incrementSubscriptionMessagesUsed threw:", e);
+    return null;
   }
 }
