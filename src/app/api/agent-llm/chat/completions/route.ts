@@ -955,9 +955,13 @@ export async function POST(req: Request): Promise<Response> {
       cache_control: { type: "ephemeral", ttl: "1h" },
     },
   ];
-  if (dynamic.length > 0) {
-    systemBlocks.push({ type: "text", text: dynamic });
-  }
+  // NOTE: the per-turn `dynamic` block (USER CONTEXT + RELEVANT SCRIPTURE) is
+  // deliberately NOT pushed into `system` anymore. Prompt caching is a strict
+  // prefix match, so volatile per-turn content sitting in `system` (before the
+  // messages) would block the conversation history from ever caching. Instead
+  // `dynamic` is injected into the LATEST user turn below (standard RAG layout),
+  // which keeps the whole conversation prefix cacheable. See the conversation-
+  // caching block after the system blocks.
   // Voice-mode length guidance — additive, AFTER the persona block, NO
   // cache_control so the persona cache breakpoint stays on the persona block.
   // The hard ≤55-word cap was removed (founder 2026-05-25): a SOFT ~150-word
@@ -978,6 +982,47 @@ export async function POST(req: Request): Promise<Response> {
     type: "text",
     text: "VOICE-MODE — NO OPENING GREETING (additive; overrides any welcome or welcome-back cue in USER CONTEXT): begin your spoken reply with substance, never a salutation. Do NOT open with 'नमस्ते' / 'राधे राधे' / 'हे' / 'प्रिय' / 'सुनो' / 'welcome' / 'स्वागत', no self-introduction, and — even for a returning user — no spoken recognition opener like 'फिर आए हो' / 'तुम लौट आए' / 'you're back'. The conversation is already live and the user has just spoken; respond as if mid-conversation. If you still need their name (first turn), weave the ask into the body of your reply instead of leading with a hello. Recognition and warmth show in HOW Krishna attends to what was just said, never in a spoken hello.",
   });
+
+  // ── Conversation prompt caching (incremental, multi-turn) ──────────────────
+  // Long voice calls used to reprocess the entire transcript every turn. Caching
+  // is a prefix match, so we keep the persona cached in `system` (1h) and add a
+  // SECOND breakpoint on the last HISTORY message — each turn then reads the
+  // prior turn's conversation prefix and reprocesses only the newest exchange.
+  // The volatile per-turn `dynamic` (USER CONTEXT + RELEVANT SCRIPTURE) is
+  // injected into the latest user turn so it sits AFTER the cached history
+  // (anything before a breakpoint must be byte-stable turn-to-turn). Full
+  // history is preserved — nothing is dropped, so within-call recall and
+  // personalization are unchanged. The injected `dynamic` is clearly delimited
+  // as reference material so Krishna never mistakes it for the user's words.
+  // 5-min ephemeral TTL: turns in a live call are seconds apart, so the prefix
+  // stays warm; between calls a fresh conversation makes a longer TTL pointless.
+  const builtMessages: Anthropic.MessageParam[] = anthropicMessages.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+  const lastMsgIdx = builtMessages.length - 1;
+  if (dynamic.length > 0 && lastMsgIdx >= 0) {
+    builtMessages[lastMsgIdx] = {
+      role: "user",
+      content:
+        "[CONTEXT FOR THIS TURN — reference material, NOT spoken aloud by the user]\n" +
+        dynamic +
+        "\n[END CONTEXT — the user's actual words follow]\n\n" +
+        anthropicMessages[lastMsgIdx].content,
+    };
+  }
+  // Cache breakpoint on the last history message (the turn before the newest
+  // user turn). Needs ≥1 prior message; on the very first turn there is no
+  // history to cache, so we skip it (and the persona breakpoint still applies).
+  if (lastMsgIdx >= 1) {
+    const prev = anthropicMessages[lastMsgIdx - 1];
+    builtMessages[lastMsgIdx - 1] = {
+      role: prev.role,
+      content: [
+        { type: "text", text: prev.content, cache_control: { type: "ephemeral" } },
+      ],
+    };
+  }
 
   // ── Step 11 prep: turn-state persistence (runs post-stream, in waitUntil). ──
   async function persistTurnState(replyText: string): Promise<void> {
@@ -1209,7 +1254,7 @@ export async function POST(req: Request): Promise<Response> {
                 max_tokens: VOICE_MAX_TOKENS, // override request's 5000
                 temperature: VOICE_TEMPERATURE, // override request's 0.0
                 system: systemBlocks,
-                messages: anthropicMessages,
+                messages: builtMessages,
               },
               { signal: req.signal }, // edge case 10: propagate client abort
             );
