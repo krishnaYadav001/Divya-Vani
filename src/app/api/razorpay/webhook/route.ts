@@ -13,6 +13,9 @@ import {
   fetchMemory,
   saveMemory,
   touchActivity,
+  updateSubscriptionStatus,
+  resetSubscriptionCycleUsage,
+  type SubscriptionStatus,
 } from "@/lib/supabase";
 
 interface RazorpayPaymentEntity {
@@ -26,12 +29,29 @@ interface RazorpayRefundEntity {
   amount?: number;
 }
 
+interface RazorpaySubscriptionEntity {
+  id?: string;
+  status?: string;
+  current_start?: number | null;
+  current_end?: number | null;
+  customer_id?: string | null;
+  ended_at?: number | null;
+}
+
 interface RazorpayWebhookEvent {
   event?: unknown;
   payload?: {
     payment?: { entity?: RazorpayPaymentEntity };
     refund?: { entity?: RazorpayRefundEntity };
+    subscription?: { entity?: RazorpaySubscriptionEntity };
   };
+}
+
+// Razorpay timestamps are Unix SECONDS; our columns are timestamptz. Null/0 → null.
+function unixToIso(sec?: number | null): string | null {
+  return typeof sec === "number" && sec > 0
+    ? new Date(sec * 1000).toISOString()
+    : null;
 }
 
 export async function POST(req: Request) {
@@ -278,6 +298,88 @@ export async function POST(req: Request) {
             },
           );
         }
+        break;
+      }
+      // ── Phase 9 subscription lifecycle ──────────────────────────────────
+      // Razorpay drives the row: authenticated → active → (charged resets the
+      // cycle) → cancelled / halted / completed. We resolve the row by
+      // razorpay_subscription_id (set at create time) and mirror the status;
+      // only 'active' grants entitlements, so halted/pending/completed/cancelled
+      // all pause access without extra logic. The hasProcessedEvent guard above
+      // makes each of these run at most once per delivery.
+      case "subscription.authenticated": {
+        const sub = event.payload?.subscription?.entity;
+        if (!sub?.id) {
+          console.error("[razorpay/webhook] subscription.authenticated: missing id");
+          break;
+        }
+        await updateSubscriptionStatus(sub.id, {
+          status: "authenticated",
+          razorpay_customer_id: sub.customer_id ?? undefined,
+        });
+        console.log("[razorpay/webhook] subscription authenticated:", sub.id);
+        break;
+      }
+      case "subscription.activated": {
+        const sub = event.payload?.subscription?.entity;
+        if (!sub?.id) {
+          console.error("[razorpay/webhook] subscription.activated: missing id");
+          break;
+        }
+        await updateSubscriptionStatus(sub.id, {
+          status: "active",
+          razorpay_customer_id: sub.customer_id ?? undefined,
+          current_period_start: unixToIso(sub.current_start),
+          current_period_end: unixToIso(sub.current_end),
+        });
+        console.log("[razorpay/webhook] subscription activated:", sub.id);
+        break;
+      }
+      case "subscription.charged": {
+        // Each successful charge (incl. renewals): zero per-cycle usage and roll
+        // the billing window forward. Re-asserts 'active' so a sub that recovered
+        // from a failed charge is usable again. First-cycle charge is a no-op
+        // reset (counters already 0).
+        const sub = event.payload?.subscription?.entity;
+        if (!sub?.id) {
+          console.error("[razorpay/webhook] subscription.charged: missing id");
+          break;
+        }
+        await resetSubscriptionCycleUsage(sub.id, {
+          current_period_start: unixToIso(sub.current_start),
+          current_period_end: unixToIso(sub.current_end),
+        });
+        console.log("[razorpay/webhook] subscription charged — cycle reset:", sub.id);
+        break;
+      }
+      case "subscription.pending":
+      case "subscription.halted":
+      case "subscription.completed": {
+        // pending = a charge failed and Razorpay is retrying (access pauses
+        // until it recovers via .charged); halted = retries exhausted;
+        // completed = ran all billing cycles. Mirror the status; gating treats
+        // only 'active' as entitled.
+        const sub = event.payload?.subscription?.entity;
+        if (!sub?.id) {
+          console.error(`[razorpay/webhook] ${eventType}: missing id`);
+          break;
+        }
+        const status = eventType.split(".")[1] as SubscriptionStatus;
+        await updateSubscriptionStatus(sub.id, { status });
+        console.log(`[razorpay/webhook] subscription ${status}:`, sub.id);
+        break;
+      }
+      case "subscription.cancelled": {
+        const sub = event.payload?.subscription?.entity;
+        if (!sub?.id) {
+          console.error("[razorpay/webhook] subscription.cancelled: missing id");
+          break;
+        }
+        await updateSubscriptionStatus(sub.id, {
+          status: "cancelled",
+          cancelled_at: unixToIso(sub.ended_at) ?? new Date().toISOString(),
+        });
+        console.log("[razorpay/webhook] subscription cancelled:", sub.id);
         break;
       }
       default:
