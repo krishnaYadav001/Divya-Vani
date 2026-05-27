@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
+import SubscribeButton from "../components/SubscribeButton";
 import { BRAND } from "@/lib/brand";
 import { getTiersInOrder } from "@/lib/seva";
+import { getPlansInOrder, getOffer } from "@/lib/subscriptions";
 
 // Phase 12 — public Pricing page. Required by Razorpay's website crawl +
 // Google Ads (transparent pricing on a linkable page). Reads the live
@@ -24,6 +26,7 @@ const LAST_UPDATED = "2026-05-25";
 
 export default function PricingPage() {
   const tiers = getTiersInOrder();
+  const plans = getPlansInOrder();
 
   return (
     <main className="relative flex flex-1 overflow-y-auto">
@@ -47,8 +50,8 @@ Pricing
             <p>
               Start free. When you want to keep talking, offer a{" "}
               <em>seva</em> — a one-time contribution that unlocks more
-              messages. There is no subscription and no auto-renewal in the
-              current version.
+              messages — or choose a monthly subscription for ongoing text and
+              voice with Krishna.
             </p>
           </section>
 
@@ -90,23 +93,66 @@ Pricing
           </section>
 
           <section>
+            <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
+              Monthly subscriptions
+            </h2>
+            <p className="mb-4 text-sm text-brass-dark">
+              Ongoing access with a pool of messages and voice minutes each
+              cycle. Indian customers are billed monthly in INR; international
+              customers are billed annually in USD.
+            </p>
+            <ul className="space-y-3">
+              {plans.map((plan) => {
+                const inr = getOffer(plan.key, "INR", "monthly");
+                const usd = getOffer(plan.key, "USD", "annual");
+                return (
+                  <li
+                    key={plan.key}
+                    className="flex items-baseline justify-between gap-4 border-b border-brass/20 pb-3"
+                  >
+                    <span>
+                      <strong>{plan.displayName}</strong>
+                      <span className="block text-sm text-brass-dark">
+                        {plan.entitlement.messagePool} messages +{" "}
+                        {plan.entitlement.voiceMinutes} voice min / cycle
+                      </span>
+                    </span>
+                    <span className="whitespace-nowrap font-[family-name:var(--font-display)] text-gold">
+                      {inr.display}
+                      <span className="text-brass-dark">/mo</span>
+                      <span className="mx-1 text-brass-dark">·</span>
+                      {usd.display}
+                      <span className="text-brass-dark">/yr</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-6 max-w-xs">
+              <SubscribeButton label="See subscription plans" variant="solid" />
+            </div>
+          </section>
+
+          <section>
             <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
               Billing &amp; Currency
             </h2>
             <ul className="ml-5 list-disc space-y-2">
               <li>
-                All seva contributions are <strong>one-time</strong> and
-                non-recurring. There is no subscription billing in the
-                current version.
+                Seva contributions are <strong>one-time</strong> and
+                non-recurring. Subscriptions renew automatically each cycle
+                until cancelled — cancel anytime and access continues to the
+                end of the paid period.
               </li>
               <li>
                 Payments are processed securely by Razorpay. We never store
                 your card or bank details.
               </li>
               <li>
-                Indian customers are billed in Indian Rupees (INR).
-                International customers may be billed in their local
-                currency where supported.
+                Indian customers are billed in Indian Rupees (INR), with
+                monthly subscription renewals via UPI AutoPay / e-mandate.
+                International customers are billed in US Dollars (USD) on an
+                annual subscription.
               </li>
               <li>Prices are inclusive of applicable taxes per law.</li>
             </ul>

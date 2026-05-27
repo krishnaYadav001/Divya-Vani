@@ -7,6 +7,9 @@ import { getTiersInOrder } from "@/lib/seva";
 import { BRAND } from "@/lib/brand";
 import { useLanguage } from "../providers/LanguageProvider";
 import SevaTierPicker from "../components/SevaTierPicker";
+import SubscriptionManager, {
+  type SubscriptionSummary,
+} from "../components/SubscriptionManager";
 
 // Seva tiers for the in-settings payment section (payment moved here from
 // the chat header, founder 2026-05-24, so it no longer crowds the mobile
@@ -107,10 +110,12 @@ export default function SettingsClient({
   initialOptOut,
   sevaBalance: initialSevaBalance,
   userName,
+  initialSubscription,
 }: {
   initialOptOut: boolean;
   sevaBalance: number;
   userName: string | null;
+  initialSubscription: SubscriptionSummary | null;
 }) {
   const [optOut, setOptOut] = useState<boolean>(initialOptOut);
   // Seva balance is stateful so a purchase in the in-settings seva section
@@ -214,6 +219,7 @@ export default function SettingsClient({
   const navItems = [
     { label: tt.nav.identity, href: "#identity" },
     { label: tt.nav.language, href: "#language" },
+    { label: t.subscribe.manageTitle, href: "#subscription" },
     { label: tt.nav.seva, href: "#seva" },
     { label: tt.nav.examples, href: "#examples" },
     { label: tt.nav.about, href: "#about" },
@@ -378,6 +384,17 @@ export default function SettingsClient({
             <p className={`mt-4 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
               {tt.language.note}
             </p>
+          </section>
+
+          {/* Subscription — recurring plan management (Phase 9). Shows the
+              active plan + per-cycle usage + cancel, or the plans picker when
+              there's none. Sits above seva (the bigger, recurring commitment). */}
+          <section
+            id="subscription"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:142ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title={t.subscribe.manageTitle} />
+            <SubscriptionManager initial={initialSubscription} />
           </section>
 
           {/* Seva — add messages. Payment moved here from the chat header

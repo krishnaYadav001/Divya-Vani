@@ -16,6 +16,7 @@ import { BRAND } from "@/lib/brand";
 // non-first words sharing the second color).
 const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import SevaPaywall from "./SevaPaywall";
+import SubscribeButton from "./SubscribeButton";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
 import Bansuri from "./motifs/Bansuri";
@@ -1132,6 +1133,18 @@ export default function ChatUI() {
                 <line x1="20" y1="10" x2="20" y2="14" />
               </svg>
             </Link>
+            {/* Phase 9 — recurring-plans entry point. Opens the subscription
+                modal overlay (SubscribeButton owns its own state). Compact pill
+                so the icon cluster stays uncrowded on mobile. */}
+            <SubscribeButton
+              label={t.subscribe.upgrade}
+              variant="pill"
+              fontClassName={
+                lang === "hi"
+                  ? "font-devanagari"
+                  : "font-[family-name:var(--font-display)] tracking-[0.04em]"
+              }
+            />
             {/* /demo "examples" affordance moved into /settings (founder
                 2026-05-25) to declutter the header — it lives there as the
                 "See examples" section now. */}

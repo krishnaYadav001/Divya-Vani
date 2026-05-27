@@ -219,6 +219,43 @@ export type Messages = {
       error: string;
     };
   };
+  // Phase 9 — recurring subscription picker + the Settings management panel.
+  // Tier NAMES come from src/lib/subscriptions.ts (displayName / displayNameHi);
+  // only the surrounding chrome is keyed here.
+  subscribe: {
+    heading: string;
+    tagline: string;
+    currencyINR: string; // "India (₹)"
+    currencyUSD: string; // "International ($)"
+    perMonth: string; // "/month"
+    perYear: string; // "/year"
+    messagesUnit: string; // "{n} messages" per cycle
+    voiceUnit: string; // "{n} voice min"
+    cta: string; // "Subscribe"
+    popular: string; // most-chosen flag
+    activating: string; // post-checkout async-activation note
+    errorStart: string; // generic create/checkout failure
+    alreadyActive: string; // 409 already-subscribed
+    ariaClose: string;
+    upgrade: string; // chat-header button label
+    // Settings management panel.
+    manageTitle: string;
+    planLabel: string; // "Your plan"
+    statusActive: string;
+    statusCancelling: string; // "Cancels on {date}"
+    renewsOn: string; // "Renews on {date}"
+    msgUsage: string; // "Messages: {used} of {pool}"
+    voiceUsage: string; // "Voice: {used} of {pool} min"
+    cancelButton: string;
+    cancelConfirm: string; // "Stop renewal? You keep access until {date}."
+    cancelYes: string;
+    cancelNo: string;
+    cancelling: string;
+    cancelDone: string; // confirmation after cancel
+    cancelError: string;
+    noActive: string; // no subscription yet
+    seePlans: string; // CTA to open the picker
+  };
 };
 
 export const UI_MESSAGES: Record<Lang, Messages> = {
@@ -416,6 +453,41 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
         error: "Something went wrong, please try again.",
       },
     },
+    subscribe: {
+      heading: "Stay with Krishna",
+      tagline:
+        "A monthly path — text every day, and his voice when you need it.",
+      currencyINR: "India (₹)",
+      currencyUSD: "International ($)",
+      perMonth: "/month",
+      perYear: "/year",
+      messagesUnit: "{n} messages",
+      voiceUnit: "{n} voice min",
+      cta: "Subscribe",
+      popular: "Most chosen",
+      activating:
+        "Payment received — your subscription is being activated. This takes a few seconds.",
+      errorStart: "Could not start checkout. Please try again.",
+      alreadyActive: "You already have an active subscription.",
+      ariaClose: "Close",
+      upgrade: "Plans",
+      manageTitle: "Subscription",
+      planLabel: "Your plan",
+      statusActive: "Active",
+      statusCancelling: "Cancels on {date}",
+      renewsOn: "Renews on {date}",
+      msgUsage: "Messages: {used} of {pool}",
+      voiceUsage: "Voice: {used} of {pool} min",
+      cancelButton: "Cancel subscription",
+      cancelConfirm: "Stop renewal? You keep full access until {date}.",
+      cancelYes: "Yes, stop renewal",
+      cancelNo: "Keep it",
+      cancelling: "Cancelling…",
+      cancelDone: "Your subscription will not renew. Access continues to the end of this period.",
+      cancelError: "Could not cancel. Please try again.",
+      noActive: "You don't have a subscription yet.",
+      seePlans: "See plans",
+    },
   },
   hi: {
     footer: {
@@ -607,6 +679,41 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
         cancel: "रद्द करें",
         error: "कुछ गड़बड़ हुई, कृपया फिर से कोशिश करें।",
       },
+    },
+    subscribe: {
+      heading: "कृष्ण के साथ बने रहो",
+      tagline: "एक मासिक राह — हर दिन बातचीत, और ज़रूरत हो तो उनकी आवाज़।",
+      currencyINR: "भारत (₹)",
+      currencyUSD: "विदेश ($)",
+      perMonth: "/माह",
+      perYear: "/वर्ष",
+      messagesUnit: "{n} संदेश",
+      voiceUnit: "{n} वॉइस मिनट",
+      cta: "सदस्यता लें",
+      popular: "सबसे लोकप्रिय",
+      activating:
+        "भुगतान मिल गया — आपकी सदस्यता सक्रिय की जा रही है। इसमें कुछ क्षण लगते हैं।",
+      errorStart: "चेकआउट शुरू नहीं हो सका। कृपया फिर से कोशिश करें।",
+      alreadyActive: "आपके पास पहले से एक सक्रिय सदस्यता है।",
+      ariaClose: "बंद करें",
+      upgrade: "योजनाएँ",
+      manageTitle: "सदस्यता",
+      planLabel: "आपकी योजना",
+      statusActive: "सक्रिय",
+      statusCancelling: "{date} को समाप्त होगी",
+      renewsOn: "{date} को नवीनीकरण",
+      msgUsage: "संदेश: {pool} में से {used}",
+      voiceUsage: "वॉइस: {pool} में से {used} मिनट",
+      cancelButton: "सदस्यता रद्द करें",
+      cancelConfirm: "नवीनीकरण रोकें? {date} तक पूरी पहुँच बनी रहेगी।",
+      cancelYes: "हाँ, नवीनीकरण रोकें",
+      cancelNo: "रहने दें",
+      cancelling: "रद्द हो रही है…",
+      cancelDone:
+        "आपकी सदस्यता नवीनीकृत नहीं होगी। इस अवधि के अंत तक पहुँच बनी रहेगी।",
+      cancelError: "रद्द नहीं हो सकी। कृपया फिर से कोशिश करें।",
+      noActive: "आपके पास अभी कोई सदस्यता नहीं है।",
+      seePlans: "योजनाएँ देखें",
     },
   },
 };

@@ -2,6 +2,7 @@
 
 import type { TierConfig } from "@/lib/seva";
 import SevaTierPicker from "./SevaTierPicker";
+import SubscribeButton from "./SubscribeButton";
 import { useLanguage } from "../providers/LanguageProvider";
 
 interface SevaPaywallProps {
@@ -32,6 +33,19 @@ export default function SevaPaywall({ tiers, onSuccess }: SevaPaywallProps) {
 
       <div className="mt-5">
         <SevaTierPicker tiers={tiers} onSuccess={onSuccess} />
+      </div>
+
+      {/* Recurring-plan upsell — one-time seva above, ongoing access here. */}
+      <div className="mt-5 border-t border-gold/15 pt-4 text-center">
+        <SubscribeButton
+          label={`${t.subscribe.heading} →`}
+          variant="link"
+          fontClassName={
+            lang === "hi"
+              ? "font-devanagari"
+              : "font-serif italic"
+          }
+        />
       </div>
     </div>
   );
