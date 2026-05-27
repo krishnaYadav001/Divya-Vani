@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { getTier } from "@/lib/seva";
+import { getWalletPack } from "@/lib/subscriptions";
 import {
   findPaymentByOrderId,
   findPaymentByPaymentId,
@@ -8,6 +9,7 @@ import {
   markPaymentFailed,
   markPaymentRefunded,
   creditSevaBalance,
+  creditVoiceSeconds,
   hasProcessedEvent,
   recordEvent,
   fetchMemory,
@@ -159,6 +161,42 @@ export async function POST(req: Request) {
             );
             break;
           }
+          // Voice-first payers have no users_memory row yet and the credit RPCs
+          // need one; touchActivity is an idempotent upsert (never clobbers an
+          // existing balance) so the recovery credits instead of dropping the
+          // purchase.
+          await touchActivity(updated.user_id);
+
+          // A wallet top-up (Phase 9) stores its pack id as the tier → credit
+          // voice seconds. Otherwise it's a seva tier → credit messages.
+          let walletPack = null;
+          try {
+            walletPack = getWalletPack(updated.tier);
+          } catch {
+            /* not a wallet pack — fall through to the seva path */
+          }
+          if (walletPack) {
+            const newSeconds = await creditVoiceSeconds(
+              updated.user_id,
+              walletPack.minutes * 60,
+            );
+            if (newSeconds === null) {
+              console.error(
+                "[razorpay/webhook] creditVoiceSeconds failed for recovered wallet order:",
+                orderId,
+              );
+              break;
+            }
+            console.log("[razorpay/webhook] recovered + credited voice wallet:", {
+              orderId,
+              paymentId,
+              pack: walletPack.id,
+              creditedMinutes: walletPack.minutes,
+              newSeconds,
+            });
+            break;
+          }
+
           let tier;
           try {
             tier = getTier(updated.tier);
@@ -169,11 +207,6 @@ export async function POST(req: Request) {
             );
             break;
           }
-          // Voice-first payers have no users_memory row yet and
-          // credit_seva_balance is UPDATE-only; ensure the row exists so the
-          // recovery path credits instead of silently dropping the purchase.
-          // Idempotent upsert — never clobbers an existing row's seva_balance.
-          await touchActivity(updated.user_id);
           const newBalance = await creditSevaBalance(
             updated.user_id,
             tier.messages,

@@ -259,6 +259,12 @@ export type Messages = {
     hubTitle: string;
     tabPlans: string;
     tabSeva: string;
+    // Voice-minute wallet tab.
+    tabWallet: string;
+    walletDesc: string;
+    walletMinutes: string; // "{n} minutes"
+    walletBuy: string;
+    walletAdded: string; // "{n} voice minutes added"
   };
 };
 
@@ -494,6 +500,11 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       hubTitle: "Plans & Seva",
       tabPlans: "Plans",
       tabSeva: "Seva",
+      tabWallet: "Voice minutes",
+      walletDesc: "Top up voice minutes — one-time, and they never expire.",
+      walletMinutes: "{n} minutes",
+      walletBuy: "Add",
+      walletAdded: "{n} voice minutes added.",
     },
   },
   hi: {
@@ -724,6 +735,11 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       hubTitle: "योजनाएँ और सेवा",
       tabPlans: "योजनाएँ",
       tabSeva: "सेवा",
+      tabWallet: "वॉइस मिनट",
+      walletDesc: "वॉइस मिनट जोड़ें — एक बार का भुगतान, कभी समाप्त नहीं होते।",
+      walletMinutes: "{n} मिनट",
+      walletBuy: "जोड़ें",
+      walletAdded: "{n} वॉइस मिनट जुड़ गए।",
     },
   },
 };

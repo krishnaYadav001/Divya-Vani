@@ -10,6 +10,7 @@ import SubscriptionManager, {
   type SubscriptionSummary,
 } from "./SubscriptionManager";
 import SevaTierPicker from "./SevaTierPicker";
+import WalletPicker from "./WalletPicker";
 
 // Phase 9 — the single monetization hub, opened from the header diya icon.
 // Bottom-sheet on mobile / centered dialog on desktop, HEIGHT-CONSTRAINED with
@@ -22,7 +23,7 @@ import SevaTierPicker from "./SevaTierPicker";
 
 const TIERS = getTiersInOrder();
 
-type Tab = "plans" | "seva";
+type Tab = "plans" | "seva" | "wallet";
 
 interface SevaHubModalProps {
   open: boolean;
@@ -156,6 +157,7 @@ export default function SevaHubModal({
           {/* Segmented tabs */}
           <div className="mt-3 flex rounded-full border border-[oklch(86%_0.04_70)] bg-white/55 p-1">
             {tabBtn("seva", tt.tabSeva)}
+            {tabBtn("wallet", tt.tabWallet)}
             {tabBtn("plans", tt.tabPlans)}
           </div>
         </header>
@@ -176,6 +178,8 @@ export default function SevaHubModal({
             ) : (
               <SubscriptionPicker defaultCurrency={defaultCurrency} />
             )
+          ) : tab === "wallet" ? (
+            <WalletPicker defaultCurrency={defaultCurrency} />
           ) : (
             <SevaTierPicker tiers={TIERS} onSuccess={() => {}} />
           )}

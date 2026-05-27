@@ -103,8 +103,37 @@ BEGIN
 END;
 $$;
 
+-- credit_voice_seconds — add purchased wallet minutes (as seconds) to a user's
+-- one-time balance. Used by /api/wallet/verify + the payment.captured webhook
+-- recovery path. Atomic + handles a voice-first buyer who has no users_memory
+-- row yet (INSERT ... ON CONFLICT increments). Returns the new balance.
+CREATE OR REPLACE FUNCTION credit_voice_seconds(p_user_id text, p_seconds int)
+RETURNS int
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  new_balance int;
+BEGIN
+  IF p_seconds IS NULL OR p_seconds <= 0 THEN
+    SELECT voice_seconds_balance INTO new_balance
+      FROM users_memory WHERE user_id = p_user_id;
+    RETURN COALESCE(new_balance, 0);
+  END IF;
+
+  INSERT INTO users_memory (user_id, voice_seconds_balance)
+  VALUES (p_user_id, p_seconds)
+  ON CONFLICT (user_id) DO UPDATE
+    SET voice_seconds_balance =
+          users_memory.voice_seconds_balance + EXCLUDED.voice_seconds_balance,
+        updated_at = now()
+  RETURNING voice_seconds_balance INTO new_balance;
+
+  RETURN new_balance;
+END;
+$$;
+
 -- =============================================================================
--- Done. Confirm both functions exist:
---   SELECT proname FROM pg_proc
---    WHERE proname IN ('increment_subscription_messages','consume_voice_seconds');
+-- Done. Confirm all three functions exist:
+--   SELECT proname FROM pg_proc WHERE proname IN
+--    ('increment_subscription_messages','consume_voice_seconds','credit_voice_seconds');
 -- =============================================================================

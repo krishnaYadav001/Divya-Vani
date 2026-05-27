@@ -1094,6 +1094,34 @@ export async function consumeVoiceSeconds(
 }
 
 /**
+ * Atomic credit of purchased wallet minutes (as seconds) to a user's one-time
+ * voice balance. Returns the new balance, or null on error. Handles a voice-
+ * first buyer with no users_memory row yet (the RPC upserts). Mirrors
+ * creditSevaBalance; see credit_voice_seconds in docs/subscriptions-rpcs.sql.
+ */
+export async function creditVoiceSeconds(
+  userId: string,
+  seconds: number,
+): Promise<number | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("credit_voice_seconds", {
+      p_user_id: userId,
+      p_seconds: Math.round(seconds),
+    });
+    if (error) {
+      console.error("[supabase] creditVoiceSeconds error:", error);
+      return null;
+    }
+    return typeof data === "number" ? data : null;
+  } catch (e) {
+    console.error("[supabase] creditVoiceSeconds threw:", e);
+    return null;
+  }
+}
+
+/**
  * Read the voice-minute wallet balance (seconds) for a user, or 0. Used by the
  * voice-access gate. Defensive: a missing voice_seconds_balance column (pre-
  * migration env) returns 0 rather than throwing.
