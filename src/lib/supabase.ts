@@ -1057,3 +1057,65 @@ export async function incrementSubscriptionMessagesUsed(
     return null;
   }
 }
+
+export interface VoiceConsumeResult {
+  from_pool: number;
+  from_wallet: number;
+  shortfall: number;
+}
+
+/**
+ * Meter a finished voice session: debit the active subscription's voice pool
+ * first, then the one-time wallet (users_memory.voice_seconds_balance). Returns
+ * the breakdown, or null on error. Row-locked + floored in SQL — see
+ * consume_voice_seconds in docs/subscriptions-rpcs.sql (manual paste). Silent-
+ * fail per ops invariant: a metering miss must never block the voice flow.
+ */
+export async function consumeVoiceSeconds(
+  userId: string,
+  seconds: number,
+): Promise<VoiceConsumeResult | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("consume_voice_seconds", {
+      p_user_id: userId,
+      p_seconds: Math.round(seconds),
+    });
+    if (error) {
+      console.error("[supabase] consumeVoiceSeconds error:", error);
+      return null;
+    }
+    return (data as VoiceConsumeResult | null) ?? null;
+  } catch (e) {
+    console.error("[supabase] consumeVoiceSeconds threw:", e);
+    return null;
+  }
+}
+
+/**
+ * Read the voice-minute wallet balance (seconds) for a user, or 0. Used by the
+ * voice-access gate. Defensive: a missing voice_seconds_balance column (pre-
+ * migration env) returns 0 rather than throwing.
+ */
+export async function fetchVoiceSecondsBalance(userId: string): Promise<number> {
+  try {
+    const client = getClient();
+    if (!client) return 0;
+    const { data, error } = await client
+      .from("users_memory")
+      .select("voice_seconds_balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] fetchVoiceSecondsBalance error:", error);
+      return 0;
+    }
+    const bal = (data as { voice_seconds_balance?: number } | null)
+      ?.voice_seconds_balance;
+    return typeof bal === "number" && bal > 0 ? bal : 0;
+  } catch (e) {
+    console.error("[supabase] fetchVoiceSecondsBalance threw:", e);
+    return 0;
+  }
+}

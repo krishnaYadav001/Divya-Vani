@@ -226,14 +226,35 @@ function VoiceInner() {
     setHelpline({ flag, userLang });
   }, []);
 
+  // Phase 9 voice metering — wall-clock start of the live session, set on
+  // connect and read once on disconnect to bill elapsed seconds (pool → wallet).
+  const voiceSessionStartRef = useRef<number | null>(null);
+
   // ── SDK conversation ──────────────────────────────────────────────────────
   const conversation = useConversation({
     onConnect: () => {
+      voiceSessionStartRef.current = Date.now();
       setHasConnected(true);
       setError(null);
       setUserTurnEnded(false);
     },
     onDisconnect: (details) => {
+      // Meter the finished session (fire-and-forget; keepalive so it survives a
+      // tab close). Debits the subscription voice pool then the wallet server-
+      // side. A metering miss is acceptable; entry was already gated.
+      const startedAt = voiceSessionStartRef.current;
+      voiceSessionStartRef.current = null;
+      if (startedAt) {
+        const seconds = Math.round((Date.now() - startedAt) / 1000);
+        if (seconds > 0) {
+          void fetch("/api/voice/usage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seconds }),
+            keepalive: true,
+          }).catch(() => {});
+        }
+      }
       console.warn("[voice] disconnected:", details);
       if (details?.reason === "error") {
         setError(mapError(details.message ?? ""));

@@ -33,7 +33,78 @@ BEGIN
 END;
 $$;
 
+-- consume_voice_seconds — meter a finished voice session. Spends from the
+-- active subscription's voice pool FIRST, then overflows to the one-time wallet
+-- (users_memory.voice_seconds_balance), flooring each at 0. Both mutations are
+-- row-locked (FOR UPDATE) so concurrent calls can't double-spend. Returns a
+-- jsonb breakdown { from_pool, from_wallet, shortfall } — shortfall is seconds
+-- that exceeded both balances (overage we couldn't charge; telemetry only, the
+-- session already happened). Voice ENTRY is gated separately by hasVoiceAccess;
+-- this just debits after the fact.
+CREATE OR REPLACE FUNCTION consume_voice_seconds(p_user_id text, p_seconds int)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_used          int;
+  v_pool          int;
+  v_pool_remaining int := 0;
+  v_from_pool     int := 0;
+  v_remainder     int := 0;
+  v_wallet        int;
+  v_from_wallet   int := 0;
+BEGIN
+  IF p_seconds IS NULL OR p_seconds <= 0 THEN
+    RETURN jsonb_build_object('from_pool', 0, 'from_wallet', 0, 'shortfall', 0);
+  END IF;
+
+  -- 1) Subscription pool first.
+  SELECT voice_seconds_used, voice_minutes_pool * 60
+    INTO v_used, v_pool
+    FROM subscriptions
+   WHERE user_id = p_user_id AND status = 'active'
+   FOR UPDATE;
+
+  IF FOUND THEN
+    v_pool_remaining := GREATEST(v_pool - v_used, 0);
+    v_from_pool := LEAST(p_seconds, v_pool_remaining);
+    IF v_from_pool > 0 THEN
+      UPDATE subscriptions
+         SET voice_seconds_used = voice_seconds_used + v_from_pool,
+             updated_at = now()
+       WHERE user_id = p_user_id AND status = 'active';
+    END IF;
+  END IF;
+
+  -- 2) Wallet overflow for whatever the pool didn't cover.
+  v_remainder := p_seconds - v_from_pool;
+  IF v_remainder > 0 THEN
+    SELECT voice_seconds_balance
+      INTO v_wallet
+      FROM users_memory
+     WHERE user_id = p_user_id
+     FOR UPDATE;
+    IF FOUND THEN
+      v_from_wallet := LEAST(v_remainder, GREATEST(v_wallet, 0));
+      IF v_from_wallet > 0 THEN
+        UPDATE users_memory
+           SET voice_seconds_balance = voice_seconds_balance - v_from_wallet,
+               updated_at = now()
+         WHERE user_id = p_user_id;
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'from_pool',   v_from_pool,
+    'from_wallet', v_from_wallet,
+    'shortfall',   v_remainder - v_from_wallet
+  );
+END;
+$$;
+
 -- =============================================================================
--- Done. The voice-metering RPC (consume_voice_seconds) is added in a later
--- increment and will be appended to this file for a single re-paste.
+-- Done. Confirm both functions exist:
+--   SELECT proname FROM pg_proc
+--    WHERE proname IN ('increment_subscription_messages','consume_voice_seconds');
 -- =============================================================================
