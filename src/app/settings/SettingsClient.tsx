@@ -3,18 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getTiersInOrder } from "@/lib/seva";
 import { BRAND } from "@/lib/brand";
 import { useLanguage } from "../providers/LanguageProvider";
-import SevaTierPicker from "../components/SevaTierPicker";
-import SubscriptionManager, {
-  type SubscriptionSummary,
-} from "../components/SubscriptionManager";
-
-// Seva tiers for the in-settings payment section (payment moved here from
-// the chat header, founder 2026-05-24, so it no longer crowds the mobile
-// header). Frozen list computed once at module load.
-const TIERS = getTiersInOrder();
 
 // Dawn Aarti redesign (2026-05-18) — Settings client island.
 // Visual rebuild to the handoff mock (desktop two-column aside +
@@ -108,19 +98,14 @@ function DawnToggle({
 
 export default function SettingsClient({
   initialOptOut,
-  sevaBalance: initialSevaBalance,
+  sevaBalance,
   userName,
-  initialSubscription,
 }: {
   initialOptOut: boolean;
   sevaBalance: number;
   userName: string | null;
-  initialSubscription: SubscriptionSummary | null;
 }) {
   const [optOut, setOptOut] = useState<boolean>(initialOptOut);
-  // Seva balance is stateful so a purchase in the in-settings seva section
-  // updates the balance card + progress bar without a reload.
-  const [sevaBalance, setSevaBalance] = useState<number>(initialSevaBalance);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -149,9 +134,6 @@ export default function SettingsClient({
     dev
       ? "font-[family-name:var(--font-devanagari)]"
       : `font-[family-name:var(--font-display)] uppercase ${extra}`;
-  const fLabel = dev
-    ? "font-[family-name:var(--font-devanagari)]"
-    : "font-[family-name:var(--font-display)]";
 
   const reviewAllowed = !optOut;
 
@@ -219,8 +201,6 @@ export default function SettingsClient({
   const navItems = [
     { label: tt.nav.identity, href: "#identity" },
     { label: tt.nav.language, href: "#language" },
-    { label: t.subscribe.manageTitle, href: "#subscription" },
-    { label: tt.nav.seva, href: "#seva" },
     { label: tt.nav.examples, href: "#examples" },
     { label: tt.nav.about, href: "#about" },
     { label: tt.nav.privacy, href: "#privacy" },
@@ -305,14 +285,17 @@ export default function SettingsClient({
                 }}
               />
             </div>
-            <a
-              href="#seva"
+            {/* Payments now live only in the chat seva/plans hub (founder
+                2026-05-27); this CTA routes there rather than to an in-settings
+                section. */}
+            <Link
+              href="/chat"
               className={`mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-[11px] text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${fEyebrow(
                 "tracking-[0.2em]",
               )}`}
             >
               {tt.lightDiya}
-            </a>
+            </Link>
           </div>
         </aside>
 
@@ -386,65 +369,9 @@ export default function SettingsClient({
             </p>
           </section>
 
-          {/* Subscription — recurring plan management (Phase 9). Shows the
-              active plan + per-cycle usage + cancel, or the plans picker when
-              there's none. Sits above seva (the bigger, recurring commitment). */}
-          <section
-            id="subscription"
-            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:142ms] [animation-fill-mode:backwards]`}
-          >
-            <CardHeader title={t.subscribe.manageTitle} />
-            <SubscriptionManager initial={initialSubscription} />
-          </section>
-
-          {/* Seva — add messages. Payment moved here from the chat header
-              (founder 2026-05-24) so it no longer crowds the mobile header.
-              One-time Razorpay UPI; the in-chat SevaPaywall still handles the
-              free-exhausted case independently. */}
-          <section
-            id="seva"
-            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:150ms] [animation-fill-mode:backwards]`}
-          >
-            <CardHeader title={tt.sevaSection.title} />
-            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
-              {tt.sevaSection.desc}
-            </p>
-
-            <div className="mt-6 max-w-[440px]">
-              <SevaTierPicker
-                tiers={TIERS}
-                onSuccess={(newBalance) => setSevaBalance(newBalance)}
-              />
-
-              {/* Secured-by-Razorpay trust badge — payment runs through
-                  Razorpay UPI (Locked Decision #11). Inline SVG padlock; no
-                  trademarked image asset. */}
-              <div className="mt-4 flex items-center justify-center gap-1.5 text-brass-dark">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <rect x="5" y="11" width="14" height="9" rx="2" />
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                </svg>
-                <span className={`text-[10px] ${fEyebrow("tracking-[0.18em]")}`}>
-                  {tt.sevaSection.securedBy}
-                </span>
-                <span aria-hidden className="text-brass/60">
-                  ·
-                </span>
-                <span className="font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.18em]">
-                  UPI
-                </span>
-              </div>
-            </div>
-          </section>
+          {/* Payments (subscriptions + seva) moved OUT of Settings into the
+              chat seva/plans hub (founder 2026-05-27) — this page is now
+              account/preferences only. */}
 
           {/* Examples — the /demo "see real conversations" surface, moved
               here from the chat header (founder 2026-05-25) so the header

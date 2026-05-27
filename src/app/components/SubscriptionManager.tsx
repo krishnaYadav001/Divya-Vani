@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { getPlan } from "@/lib/subscriptions";
 import { useLanguage } from "../providers/LanguageProvider";
 import SubscribeButton from "./SubscribeButton";
@@ -56,24 +56,6 @@ export default function SubscriptionManager({
     : "font-[family-name:var(--font-serif)] italic";
   const fFaint = fBody;
 
-  // Re-poll status after a checkout (activation lands via webhook ~seconds later).
-  const refresh = useCallback(async () => {
-    for (const delay of [1500, 3500, 6000]) {
-      await new Promise((r) => setTimeout(r, delay));
-      try {
-        const res = await fetch("/api/subscriptions/status");
-        if (!res.ok) continue;
-        const data = await res.json();
-        if (data.active && data.subscription) {
-          setSub(data.subscription as SubscriptionSummary);
-          return;
-        }
-      } catch {
-        /* keep trying */
-      }
-    }
-  }, []);
-
   async function handleCancel() {
     if (!confirmOpen) {
       setConfirmOpen(true);
@@ -104,11 +86,7 @@ export default function SubscriptionManager({
           {tt.noActive}
         </p>
         <div className="mt-5 max-w-[300px]">
-          <SubscribeButton
-            label={tt.seePlans}
-            variant="solid"
-            onSuccess={refresh}
-          />
+          <SubscribeButton label={tt.seePlans} variant="solid" />
         </div>
       </div>
     );

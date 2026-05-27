@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import type { Currency } from "@/lib/subscriptions";
-import SubscriptionModal from "./SubscriptionModal";
+import SevaHubModal from "./SevaHubModal";
 
 // Phase 9 — self-contained trigger: a styled button that owns its own
-// SubscriptionModal open state. Dropped into the chat header, the in-chat
-// paywall, the pricing page, and the empty-state of the Settings panel, so
-// every entry point opens the identical modal without lifting state.
+// SevaHubModal open state. Used by the in-chat paywall and the pricing page so
+// each opens the same unified hub (Plans tab) without lifting state.
 
 type Variant = "pill" | "ghost" | "solid" | "link";
 
@@ -30,8 +29,6 @@ interface SubscribeButtonProps {
   className?: string;
   fontClassName?: string;
   defaultCurrency?: Currency;
-  /** Called after Checkout completes (e.g. to refresh the Settings panel). */
-  onSuccess?: () => void;
 }
 
 export default function SubscribeButton({
@@ -40,7 +37,6 @@ export default function SubscribeButton({
   className = "",
   fontClassName = "font-[family-name:var(--font-display)] tracking-[0.06em]",
   defaultCurrency,
-  onSuccess,
 }: SubscribeButtonProps) {
   const [open, setOpen] = useState(false);
   return (
@@ -52,11 +48,11 @@ export default function SubscribeButton({
       >
         {label}
       </button>
-      <SubscriptionModal
+      <SevaHubModal
         open={open}
         onClose={() => setOpen(false)}
+        initialTab="plans"
         defaultCurrency={defaultCurrency}
-        onSuccess={onSuccess}
       />
     </>
   );

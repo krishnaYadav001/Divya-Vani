@@ -3,8 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import Atmosphere from "../components/Atmosphere";
 import { BRAND } from "@/lib/brand";
-import { fetchMemory, fetchActiveSubscription } from "@/lib/supabase";
-import type { SubscriptionSummary } from "../components/SubscriptionManager";
+import { fetchMemory } from "@/lib/supabase";
 import SettingsClient from "./SettingsClient";
 
 const USER_COOKIE = "god_messenger_uid";
@@ -30,29 +29,11 @@ export default async function SettingsPage() {
     return <NoSessionState />;
   }
 
-  const [memory, activeSub] = await Promise.all([
-    fetchMemory(userId),
-    fetchActiveSubscription(userId),
-  ]);
+  const memory = await fetchMemory(userId);
   const trainingOptOut = memory?.training_opt_out === true;
   const sevaBalance =
     typeof memory?.seva_balance === "number" ? memory.seva_balance : 0;
   const userName = memory?.user_name ?? null;
-
-  const subscription: SubscriptionSummary | null = activeSub
-    ? {
-        plan_key: activeSub.plan_key,
-        currency: activeSub.currency,
-        billing_period: activeSub.billing_period,
-        status: activeSub.status,
-        message_pool: activeSub.message_pool,
-        messages_used: activeSub.messages_used,
-        voice_minutes_pool: activeSub.voice_minutes_pool,
-        voice_seconds_used: activeSub.voice_seconds_used,
-        current_period_end: activeSub.current_period_end ?? null,
-        cancel_at_period_end: activeSub.cancel_at_period_end,
-      }
-    : null;
 
   return (
     <main className="dv-scroll relative flex-1 overflow-y-auto overflow-x-hidden">
@@ -61,7 +42,6 @@ export default async function SettingsPage() {
         initialOptOut={trainingOptOut}
         sevaBalance={sevaBalance}
         userName={userName}
-        initialSubscription={subscription}
       />
     </main>
   );

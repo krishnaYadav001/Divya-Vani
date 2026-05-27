@@ -255,6 +255,10 @@ export type Messages = {
     cancelError: string;
     noActive: string; // no subscription yet
     seePlans: string; // CTA to open the picker
+    // Unified seva hub (opened from the header diya icon).
+    hubTitle: string;
+    tabPlans: string;
+    tabSeva: string;
   };
 };
 
@@ -487,6 +491,9 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       cancelError: "Could not cancel. Please try again.",
       noActive: "You don't have a subscription yet.",
       seePlans: "See plans",
+      hubTitle: "Plans & Seva",
+      tabPlans: "Plans",
+      tabSeva: "Seva",
     },
   },
   hi: {
@@ -714,6 +721,9 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       cancelError: "रद्द नहीं हो सकी। कृपया फिर से कोशिश करें।",
       noActive: "आपके पास अभी कोई सदस्यता नहीं है।",
       seePlans: "योजनाएँ देखें",
+      hubTitle: "योजनाएँ और सेवा",
+      tabPlans: "योजनाएँ",
+      tabSeva: "सेवा",
     },
   },
 };

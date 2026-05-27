@@ -16,7 +16,7 @@ import { BRAND } from "@/lib/brand";
 // non-first words sharing the second color).
 const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import SevaPaywall from "./SevaPaywall";
-import SubscribeButton from "./SubscribeButton";
+import SevaHubModal from "./SevaHubModal";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
 import Bansuri from "./motifs/Bansuri";
@@ -117,6 +117,8 @@ export default function ChatUI() {
   // is satisfied by the chip — the disclaimer surface stays present, just
   // compacted; tap surfaces the full text in the same position.
   const [disclaimerExpanded, setDisclaimerExpanded] = useState(true);
+  // Phase 9 — the seva/plans hub modal (opened from the header diya icon).
+  const [hubOpen, setHubOpen] = useState(false);
   // Phase 6.8 — userId comes from /api/me on mount and scopes the
   // localStorage chat-history key. The god_messenger_uid cookie itself
   // is HttpOnly so the value has to round-trip through the server to
@@ -1133,18 +1135,6 @@ export default function ChatUI() {
                 <line x1="20" y1="10" x2="20" y2="14" />
               </svg>
             </Link>
-            {/* Phase 9 — recurring-plans entry point. Opens the subscription
-                modal overlay (SubscribeButton owns its own state). Compact pill
-                so the icon cluster stays uncrowded on mobile. */}
-            <SubscribeButton
-              label={t.subscribe.upgrade}
-              variant="pill"
-              fontClassName={
-                lang === "hi"
-                  ? "font-devanagari"
-                  : "font-[family-name:var(--font-display)] tracking-[0.04em]"
-              }
-            />
             {/* /demo "examples" affordance moved into /settings (founder
                 2026-05-25) to declutter the header — it lives there as the
                 "See examples" section now. */}
@@ -1155,21 +1145,29 @@ export default function ChatUI() {
             >
               <SettingsIcon className="h-6 w-6" />
             </Link>
-            {/* Seva (subscription) — the one monetization affordance kept in
-                the header on every breakpoint (founder 2026-05-25). Links to
-                the in-settings seva section; payment runs there. The in-chat
-                SevaPaywall (when free messages run out) is unchanged. */}
-            <Link
-              href="/settings#seva"
+            {/* Seva / Plans — the single monetization hub (Phase 9, founder
+                2026-05-27). Opens the SevaHubModal (Plans + Seva tabs); all
+                payment lives here now, not in Settings. The in-chat SevaPaywall
+                (free pool exhausted) is unchanged. */}
+            <button
+              type="button"
+              onClick={() => setHubOpen(true)}
               aria-label={t.chat.ariaSeva}
               title={t.chat.ariaSeva}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
             >
               <DiyaIcon className="h-6 w-6" />
-            </Link>
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Phase 9 — seva/plans hub (portals to body; open state above). */}
+      <SevaHubModal
+        open={hubOpen}
+        onClose={() => setHubOpen(false)}
+        initialTab="plans"
+      />
 
       {/* Disclaimer — full bilingual bar auto-shows on every mount for
           5s (the legally load-bearing exposure — UNCHANGED), then the
