@@ -444,7 +444,7 @@ function extractVerseRange(para: string): {
   const endMatch = lastLine.match(VERSE_RANGE_END);
   if (endMatch) {
     let vStart = parseInt(endMatch[1], 10);
-    let vEnd = parseInt(endMatch[2], 10);
+    const vEnd = parseInt(endMatch[2], 10);
     const corr = ocrCorrectRange(vStart, vEnd);
     if (corr.corrected) {
       vStart = corr.vStart;
@@ -459,7 +459,7 @@ function extractVerseRange(para: string): {
   const inlineMatch = para.match(VERSE_RANGE_INLINE);
   if (inlineMatch) {
     let vStart = parseInt(inlineMatch[1], 10);
-    let vEnd = parseInt(inlineMatch[2], 10);
+    const vEnd = parseInt(inlineMatch[2], 10);
     const corr = ocrCorrectRange(vStart, vEnd);
     if (corr.corrected) {
       vStart = corr.vStart;

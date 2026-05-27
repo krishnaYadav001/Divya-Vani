@@ -50,6 +50,8 @@ export default function SevaHubModal({
   // Escape + focus + body-scroll lock while open.
   useEffect(() => {
     if (!open) return;
+    // Reset to the requested tab each time the hub opens (intentional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTab(initialTab);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -68,6 +70,8 @@ export default function SevaHubModal({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
+    // Show the loading state before the status fetch (intentional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSubLoading(true);
     fetch("/api/subscriptions/status")
       .then((r) => (r.ok ? r.json() : null))
@@ -151,8 +155,8 @@ export default function SevaHubModal({
           </div>
           {/* Segmented tabs */}
           <div className="mt-3 flex rounded-full border border-[oklch(86%_0.04_70)] bg-white/55 p-1">
-            {tabBtn("plans", tt.tabPlans)}
             {tabBtn("seva", tt.tabSeva)}
+            {tabBtn("plans", tt.tabPlans)}
           </div>
         </header>
 

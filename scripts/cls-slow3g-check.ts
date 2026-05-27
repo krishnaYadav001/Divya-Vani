@@ -45,7 +45,7 @@ async function main() {
           // Layout-shift entries with hadRecentInput=true are
           // user-initiated (scroll, click) and excluded from CLS
           // by the Web Vitals spec. We mirror that.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           const e = entry as any;
           if (!e.hadRecentInput) {
             (window as unknown as { __cls: number }).__cls += e.value ?? 0;

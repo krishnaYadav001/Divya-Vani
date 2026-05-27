@@ -157,7 +157,7 @@ function main() {
   // ===== Pass 1: footnote strip (defensive; expected 0 in Sanyal source) =====
   const footnoteStrips: FootnoteStrip[] = [];
   for (const c of data) {
-    let before = c.hindi;
+    const before = c.hindi;
     if (FOOTNOTE_RE_ASCII.test(c.hindi)) {
       c.hindi = c.hindi.replace(FOOTNOTE_RE_ASCII, "").trimEnd();
       footnoteStrips.push({ ref: c.reference, before, after: c.hindi, flavor: "ascii" });

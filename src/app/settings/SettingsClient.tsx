@@ -107,7 +107,9 @@ export default function SettingsClient({
 }) {
   const [optOut, setOptOut] = useState<boolean>(initialOptOut);
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  // "Saved" confirmation flag (boolean, not a timestamp computed in render —
+  // keeps render pure). Set true on a successful save, auto-cleared after 3s.
+  const [justSaved, setJustSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -142,7 +144,7 @@ export default function SettingsClient({
     const nextOptOut = !optOut;
     setOptOut(nextOptOut);
     setSaving(true);
-    setSavedAt(null);
+    setJustSaved(false);
     try {
       const res = await fetch("/api/settings", {
         method: "POST",
@@ -150,7 +152,8 @@ export default function SettingsClient({
         body: JSON.stringify({ training_opt_out: nextOptOut }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setSavedAt(Date.now());
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 3000);
     } catch (e) {
       console.error("[settings] toggle save failed:", e);
       setOptOut(!nextOptOut); // revert optimistic flip
@@ -202,10 +205,10 @@ export default function SettingsClient({
     { label: tt.nav.identity, href: "#identity" },
     { label: tt.nav.language, href: "#language" },
     { label: tt.nav.examples, href: "#examples" },
-    { label: tt.nav.about, href: "#about" },
     { label: tt.nav.privacy, href: "#privacy" },
     { label: tt.nav.feedback, href: "#feedback" },
     { label: tt.nav.delete, href: "#delete" },
+    { label: tt.nav.about, href: "#about" },
   ];
 
   return (
@@ -398,63 +401,6 @@ export default function SettingsClient({
             </div>
           </section>
 
-          {/* About us — who/what Divya Vani is, the AI-identity note, and the
-              business details most companies surface (operator, registered
-              office, India). Real data only, read from BRAND.contact so it
-              stays in sync with /contact + the footer. (founder 2026-05-25) */}
-          <section
-            id="about"
-            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:172ms] [animation-fill-mode:backwards]`}
-          >
-            <CardHeader title={tt.about.title} />
-            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
-              {tt.about.body.replace("{brand}", BRAND.name[lang])}
-            </p>
-
-            <p className={`mt-4 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
-              {BRAND.disclaimer[lang]} {tt.about.notSubstitute}
-            </p>
-
-            <dl className="mt-5 space-y-3 border-t border-[var(--color-ink-line)] pt-5">
-              <div>
-                <dt className={`text-[11px] text-ink-faint ${fEyebrow("tracking-[0.28em]")}`}>
-                  {tt.about.operatedBy}
-                </dt>
-                <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic text-ink">
-                  {BRAND.contact.founder} — {tt.about.soleProprietorship}
-                </dd>
-              </div>
-              <div>
-                <dt className={`text-[11px] text-ink-faint ${fEyebrow("tracking-[0.28em]")}`}>
-                  {tt.about.registeredOffice}
-                </dt>
-                <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
-                  {BRAND.contact.address}
-                </dd>
-              </div>
-            </dl>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              {[
-                { href: "/contact", label: t.footer.contact },
-                { href: "/terms", label: t.footer.terms },
-                { href: "/privacy", label: t.footer.privacy },
-              ].map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className={`inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-xs text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
-                    dev
-                      ? "font-[family-name:var(--font-devanagari)]"
-                      : "font-[family-name:var(--font-display)] tracking-[0.1em]"
-                  }`}
-                >
-                  {l.label} →
-                </Link>
-              ))}
-            </div>
-          </section>
-
           {/* Contact & Grievance Officer (DPDP discoverability) */}
           <section
             className={`fade-up ${CARD} [animation-delay:180ms] [animation-fill-mode:backwards]`}
@@ -500,9 +446,7 @@ export default function SettingsClient({
               role="status"
               aria-live="polite"
               className={`mt-3 text-xs text-[oklch(52%_0.13_205)] transition-opacity duration-500 ${fFaint} ${
-                savedAt && Date.now() - savedAt < 3000
-                  ? "opacity-100"
-                  : "opacity-0"
+                justSaved ? "opacity-100" : "opacity-0"
               }`}
             >
               {tt.privacy.saved}
@@ -606,6 +550,64 @@ export default function SettingsClient({
                 )}
               </div>
             )}
+          </section>
+
+          {/* About us — moved to the bottom (founder 2026-05-27). Who/what
+              Divya Vani is, the AI-identity note, and the business details most
+              companies surface (operator, registered office, India). Real data
+              only, read from BRAND.contact so it stays in sync with /contact +
+              the footer. */}
+          <section
+            id="about"
+            className={`fade-up scroll-mt-20 ${CARD} [animation-delay:380ms] [animation-fill-mode:backwards]`}
+          >
+            <CardHeader title={tt.about.title} />
+            <p className={`text-base leading-relaxed text-ink ${fBody}`}>
+              {tt.about.body.replace("{brand}", BRAND.name[lang])}
+            </p>
+
+            <p className={`mt-4 text-sm leading-relaxed text-ink-faint ${fFaint}`}>
+              {BRAND.disclaimer[lang]} {tt.about.notSubstitute}
+            </p>
+
+            <dl className="mt-5 space-y-3 border-t border-[var(--color-ink-line)] pt-5">
+              <div>
+                <dt className={`text-[11px] text-ink-faint ${fEyebrow("tracking-[0.28em]")}`}>
+                  {tt.about.operatedBy}
+                </dt>
+                <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic text-ink">
+                  {BRAND.contact.founder} — {tt.about.soleProprietorship}
+                </dd>
+              </div>
+              <div>
+                <dt className={`text-[11px] text-ink-faint ${fEyebrow("tracking-[0.28em]")}`}>
+                  {tt.about.registeredOffice}
+                </dt>
+                <dd className="mt-0.5 font-[family-name:var(--font-serif)] text-base italic leading-relaxed text-ink">
+                  {BRAND.contact.address}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                { href: "/contact", label: t.footer.contact },
+                { href: "/terms", label: t.footer.terms },
+                { href: "/privacy", label: t.footer.privacy },
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`inline-flex min-h-11 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-2 text-xs text-ink-soft backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                    dev
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-display)] tracking-[0.1em]"
+                  }`}
+                >
+                  {l.label} →
+                </Link>
+              ))}
+            </div>
           </section>
 
           <p className="pt-2 text-center font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.3em] text-ink-faint">

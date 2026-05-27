@@ -59,7 +59,7 @@ async function main() {
     try {
       // SDK v0.24 types don't include outputDimensionality on EmbedContentRequest,
       // but the v1beta API accepts it. Cast bypasses the stale type.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const r = await embedModel.embedContent({
         content: { role: 'user', parts: [{ text }] },
         taskType: TaskType.RETRIEVAL_DOCUMENT,

@@ -128,13 +128,13 @@ export async function fetchCandidates(query: string, k: number): Promise<VerseHi
   if (!trimmed) return [];
 
   // SDK v0.24 types don't include outputDimensionality on EmbedContentRequest,
-  // but the v1beta API accepts it. Cast bypasses the stale type.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // but the v1beta API accepts it. Cast through unknown to the real param type
+  // bypasses the stale type without `any`.
   const r = await embedModel.embedContent({
     content: { role: 'user', parts: [{ text: trimmed }] },
     taskType: TaskType.RETRIEVAL_QUERY,
     outputDimensionality: EMBED_DIM,
-  } as any);
+  } as unknown as Parameters<typeof embedModel.embedContent>[0]);
 
   const { data, error } = await supabase.rpc('match_verses', {
     query_embedding: r.embedding.values,

@@ -154,7 +154,7 @@ export default function VoiceClient() {
       void voice.endSession();
       voice.disposeAudio();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // When the seva panel reflects a fresh purchase, an error("paywall") clears

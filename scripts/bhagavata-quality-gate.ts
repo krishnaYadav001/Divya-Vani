@@ -61,7 +61,7 @@ function sourceFromRef(ref: string): "gita" | "mahabharata" | "bhagavata" | "unk
 }
 
 async function search(query: string, k = 5) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const r = await embedModel.embedContent({
     content: { role: "user", parts: [{ text: query }] },
     taskType: TaskType.RETRIEVAL_QUERY,

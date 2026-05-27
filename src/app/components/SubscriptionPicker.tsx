@@ -83,8 +83,11 @@ export default function SubscriptionPicker({
   const { lang, t } = useLanguage();
   const tt = t.subscribe;
   const dev = lang === "hi";
-  // SSR-safe: first render is INR (matches the server) unless the caller forced
-  // a currency; the effect below flips to USD for non-India regions on mount.
+  // Currency is decided by REGION, not a user toggle (founder 2026-05-27):
+  // India → INR (domestic monthly), everywhere else → USD (international annual).
+  // There is no manual switch — Indian users never see the international page,
+  // and foreign cards can't run INR e-mandate anyway. SSR-safe: first render is
+  // INR (matches the server); the effect flips to USD off-India on mount.
   const [currency, setCurrency] = useState<Currency>(defaultCurrency ?? "INR");
 
   useEffect(() => {
@@ -92,6 +95,7 @@ export default function SubscriptionPicker({
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
       const india = tz === "Asia/Kolkata" || tz === "Asia/Calcutta";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (!india) setCurrency("USD");
     } catch {
       /* detection unavailable — keep INR default */
@@ -194,37 +198,6 @@ export default function SubscriptionPicker({
 
   return (
     <div>
-      {/* Currency toggle — India (₹) monthly vs International ($) annual. */}
-      <div
-        role="group"
-        aria-label="Currency"
-        className="mx-auto mb-5 inline-flex w-full max-w-xs rounded-full border border-[oklch(86%_0.04_70)] bg-white/55 p-1"
-      >
-        {(["INR", "USD"] as const).map((c) => {
-          const active = currency === c;
-          return (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCurrency(c)}
-              aria-pressed={active}
-              disabled={pendingKey !== null}
-              className={`min-h-10 flex-1 rounded-full px-4 py-1.5 text-[13px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] disabled:opacity-60 ${
-                active
-                  ? "bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset]"
-                  : "text-ink-soft hover:text-ink"
-              } ${
-                dev
-                  ? "font-[family-name:var(--font-devanagari)]"
-                  : "font-[family-name:var(--font-display)] tracking-[0.04em]"
-              }`}
-            >
-              {c === "INR" ? tt.currencyINR : tt.currencyUSD}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="flex flex-col gap-3">
         {plans.map((plan) => {
           const offer = plan.offers.find((o) => o.currency === currency);

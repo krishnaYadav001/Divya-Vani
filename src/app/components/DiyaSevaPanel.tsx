@@ -48,6 +48,8 @@ export default function DiyaSevaPanel({
 
   useEffect(() => {
     if (!isOpen) {
+      // Reset confirmation state when the panel closes (intentional).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfirmedCount(null);
       if (dismissTimerRef.current) {
         clearTimeout(dismissTimerRef.current);

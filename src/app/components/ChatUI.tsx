@@ -1162,11 +1162,13 @@ export default function ChatUI() {
         </div>
       </header>
 
-      {/* Phase 9 — seva/plans hub (portals to body; open state above). */}
+      {/* Phase 9 — seva/plans hub (portals to body; open state above). Opens
+          on the Seva tab by default (it's the diya/seva icon); the user can
+          switch to Plans inside. */}
       <SevaHubModal
         open={hubOpen}
         onClose={() => setHubOpen(false)}
-        initialTab="plans"
+        initialTab="seva"
       />
 
       {/* Disclaimer — full bilingual bar auto-shows on every mount for
@@ -1543,7 +1545,9 @@ function playStartTone() {
   if (typeof window === "undefined") return;
   try {
     const AudioCtx =
-      window.AudioContext || (window as any).webkitAudioContext;
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
     if (!AudioCtx) return;
     const ctx: AudioContext = new AudioCtx();
     const oscillator = ctx.createOscillator();

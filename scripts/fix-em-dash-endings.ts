@@ -131,7 +131,7 @@ function main() {
   // sees it. (Not observed in current corpus, but defensive per spec.)
   const footnoteStrips: FootnoteStrip[] = [];
   for (const c of data) {
-    let before = c.hindi;
+    const before = c.hindi;
     if (FOOTNOTE_RE_ASCII.test(c.hindi)) {
       c.hindi = c.hindi.replace(FOOTNOTE_RE_ASCII, "").trimEnd();
       footnoteStrips.push({ ref: c.reference, before, after: c.hindi, flavor: "ascii" });

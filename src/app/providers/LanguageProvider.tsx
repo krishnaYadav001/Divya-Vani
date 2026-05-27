@@ -48,6 +48,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem(LANG_STORAGE_KEY);
       if (saved === "hi" || saved === "en") {
+        // Intentional post-hydration sync from localStorage (see comment above).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLangState(saved);
         document.documentElement.lang = saved;
       }

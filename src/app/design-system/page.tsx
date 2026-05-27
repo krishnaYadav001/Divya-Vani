@@ -177,7 +177,7 @@ function TypographySamples() {
           <em className="not-italic font-serif italic tracking-[0.02em] text-sacred">
             yoga-sthaḥ kuru karmāṇi
           </em>{' '}
-          — established in yoga, perform action — Krishna's
+          — established in yoga, perform action — Krishna&apos;s
           summary of the entire chapter.
         </p>
       </SampleBlock>

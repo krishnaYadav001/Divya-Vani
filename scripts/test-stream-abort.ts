@@ -118,7 +118,7 @@ async function main() {
   await new Promise((r) => setTimeout(r, POST_ABORT_WAIT_MS));
 
   // ── Check (a): server log assertion ────────────────────────────
-  let logCheckRunnable = existsSync(LOG_FILE);
+  const logCheckRunnable = existsSync(LOG_FILE);
   let abortLogFound = false;
   let logCheckCaveat = "";
   if (!logCheckRunnable) {
@@ -161,7 +161,7 @@ async function main() {
   // is supporting evidence — pass if log file accessible AND log line
   // found, OR if log file inaccessible but memory check passed.
   let pass: boolean;
-  let verdictNotes: string[] = [];
+  const verdictNotes: string[] = [];
   if (logCheckRunnable && abortLogFound && memoryNotPersisted) {
     pass = true;
     verdictNotes.push("(a) log line found, (b) memory not persisted");
