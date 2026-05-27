@@ -25,6 +25,8 @@ import {
   saveMemory,
   touchActivity,
   decrementSevaBalance,
+  fetchActiveSubscription,
+  incrementSubscriptionMessagesUsed,
   logSafetyEvent,
   logChatTurn,
   fetchLastChatLanguage,
@@ -535,15 +537,34 @@ export async function POST(req: Request) {
 
   // 2. Fetch prior memory — needed for paywall check, returning-flag,
   //    onboarding-flag, extraction summary, and message_count increment.
-  const priorMemory = await fetchMemory(userId);
+  // Phase 9 — read prior memory + any active subscription in parallel (no
+  // added latency vs the prior single fetch).
+  const [priorMemory, activeSub] = await Promise.all([
+    fetchMemory(userId),
+    fetchActiveSubscription(userId),
+  ]);
   const priorCount = priorMemory?.message_count ?? 0;
   const sevaBalance = priorMemory?.seva_balance ?? 0;
   const isFirstTime = priorMemory?.is_first_time !== false;
 
-  // 3. Seva paywall guard: free pool spent AND no purchased credits → no AI
-  //    call, no count change. Return the paywall reply with the four tier
-  //    offers so the client can render the seva picker.
-  if (priorCount >= FREE_MESSAGE_LIMIT && sevaBalance <= 0) {
+  // Charge precedence (Phase 9): free pool → active subscription → seva.
+  //   • onFreePool: still inside the free allowance (bump message_count).
+  //   • chargingSub: free spent, an active sub has room (increment its pool).
+  //   • chargingSeva: free spent, no sub room, pay with seva credits.
+  // The paywall fires only when ALL three are unavailable. The RPC guard in
+  // increment_subscription_messages re-checks the pool, so the snapshot read
+  // here is just an optimization (same accepted race as the seva path).
+  const subHasRoom =
+    !!activeSub && activeSub.messages_used < activeSub.message_pool;
+  const onFreePool = priorCount < FREE_MESSAGE_LIMIT;
+  const chargingSub = !onFreePool && subHasRoom;
+  const chargingSeva = !onFreePool && !subHasRoom;
+
+  // 3. Paywall guard: free pool spent AND no subscription room AND no seva
+  //    credits → no AI call, no count change. Return the paywall reply with
+  //    the four seva tier offers so the client can render the picker (the
+  //    paywall also surfaces the recurring-plans upsell).
+  if (priorCount >= FREE_MESSAGE_LIMIT && !subHasRoom && sevaBalance <= 0) {
     await touchActivity(userId);
     return withCookie(
       NextResponse.json({
@@ -797,8 +818,9 @@ export async function POST(req: Request) {
         ? extracted.user_name
         : undefined;
 
-    const usingSevaCredit = priorCount >= FREE_MESSAGE_LIMIT;
-    const nextMessageCount = usingSevaCredit ? undefined : priorCount + 1;
+    // message_count bumps only while on the free pool; once paying (sub or
+    // seva) it stays capped at the limit.
+    const nextMessageCount = onFreePool ? priorCount + 1 : undefined;
 
     if (extracted) {
       await saveMemory(userId, {
@@ -819,7 +841,13 @@ export async function POST(req: Request) {
       });
     }
 
-    if (usingSevaCredit) {
+    // Prefer the subscription pool over seva (handoff: "prefer active sub
+    // before seva_balance fallback"). The RPC no-ops if the pool was just
+    // exhausted by a concurrent turn (returns null → message served free,
+    // user-favorable, same philosophy as the seva race).
+    if (chargingSub) {
+      await incrementSubscriptionMessagesUsed(userId);
+    } else if (chargingSeva) {
       await decrementSevaBalance(userId);
     }
 
@@ -954,11 +982,11 @@ export async function POST(req: Request) {
   // credits. In the streaming path persistTurnState fires-and-forgets
   // after these values are sent, so the response races slightly ahead
   // of the DB write (same accepted race documented above persistTurnState).
-  const usingSevaCreditForResponse = priorCount >= FREE_MESSAGE_LIMIT;
-  const responseMessageCount = usingSevaCreditForResponse
-    ? priorCount
-    : priorCount + 1;
-  const responseSevaBalance = usingSevaCreditForResponse
+  // Phase 9 — mirror the 3-way charge: free bumps the count; sub/seva keep it
+  // capped. seva_balance only drops when actually paying with seva (a turn
+  // charged to the subscription pool leaves seva untouched).
+  const responseMessageCount = onFreePool ? priorCount + 1 : priorCount;
+  const responseSevaBalance = chargingSeva
     ? Math.max(0, sevaBalance - 1)
     : sevaBalance;
 
