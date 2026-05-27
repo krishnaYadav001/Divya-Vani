@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   getPlansInOrder,
@@ -60,7 +60,12 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 interface SubscriptionPickerProps {
-  /** Initial currency; user can still flip the toggle. Defaults to INR. */
+  /**
+   * Force the initial currency. When omitted, the picker auto-detects: India
+   * timezone → INR (monthly), elsewhere → USD (annual; the NRI default). The
+   * user can always flip the toggle, and the create route validates the final
+   * (plan × currency) against the configured Razorpay plan ids.
+   */
   defaultCurrency?: Currency;
   /** Fired after the user completes Razorpay Checkout (activation is async). */
   onSuccess?: () => void;
@@ -71,14 +76,27 @@ interface SubscriptionPickerProps {
 const POPULAR: PlanKey = "voice";
 
 export default function SubscriptionPicker({
-  defaultCurrency = "INR",
+  defaultCurrency,
   onSuccess,
   onError,
 }: SubscriptionPickerProps) {
   const { lang, t } = useLanguage();
   const tt = t.subscribe;
   const dev = lang === "hi";
-  const [currency, setCurrency] = useState<Currency>(defaultCurrency);
+  // SSR-safe: first render is INR (matches the server) unless the caller forced
+  // a currency; the effect below flips to USD for non-India regions on mount.
+  const [currency, setCurrency] = useState<Currency>(defaultCurrency ?? "INR");
+
+  useEffect(() => {
+    if (defaultCurrency) return; // caller forced it — respect that
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const india = tz === "Asia/Kolkata" || tz === "Asia/Calcutta";
+      if (!india) setCurrency("USD");
+    } catch {
+      /* detection unavailable — keep INR default */
+    }
+  }, [defaultCurrency]);
   const [pendingKey, setPendingKey] = useState<PlanKey | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activating, setActivating] = useState(false);
