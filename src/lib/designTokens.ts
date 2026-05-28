@@ -136,18 +136,19 @@ export const SOURCE_BADGE_CLASSES: Record<
   'gita' | 'mahabharata' | 'bhagavata',
   string
 > = {
-  // Marigold tint + maroon text — warm/scriptural.
-  // Contrast text→bg: ~5.5:1 (sacred on devotional/15) — passes AA.
-  gita: 'bg-devotional/15 border-devotional/50 text-sacred',
-  // Maroon-on-deeper-maroon-tint. Step 2.5.8 R1: bg /10 → /20 +
-  // border /40 → /60 to stop MBh reading as a soft pink alongside
-  // Gita's warm marigold. MBh is the dignified/serious source —
-  // deeper saturation suits it.
-  mahabharata: 'bg-sacred/20 border-sacred/60 text-sacred',
-  // Indigo-on-indigo-tint — Krishna identity. Hue alone (cool vs
-  // the other two warms) carries the differentiation; no opacity
-  // bump needed.
-  bhagavata: 'bg-krishna/10 border-krishna/40 text-krishna',
+  // 2026-05-28 fix: under the Dawn Aarti remap, the sacred / krishna
+  // accents are pastels, so accent-on-tinted-accent dropped well below
+  // AA on the collapsed pills (text was barely legible). Switching the
+  // pill TEXT to text-ink (the project's standard dark body color) and
+  // bumping the bg/border alphas restores readability while keeping the
+  // per-source background hue identity intact.
+  // Marigold tint + ink text — warm/scriptural.
+  gita: 'bg-devotional/30 border-devotional/70 text-ink',
+  // Maroon-tint + ink text. Deeper saturation so MBh reads as the more
+  // serious source against Gita's warmer marigold.
+  mahabharata: 'bg-sacred/35 border-sacred/70 text-ink',
+  // Indigo-tint + ink text — Krishna identity, cool hue vs the warms.
+  bhagavata: 'bg-krishna/25 border-krishna/60 text-ink',
 };
 
 /**
