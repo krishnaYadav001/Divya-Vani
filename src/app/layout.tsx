@@ -10,6 +10,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import { BRAND } from "@/lib/brand";
 import SiteFooter from "./components/SiteFooter";
+import SupportWidget from "./components/SupportWidget";
 import { LanguageProvider } from "./providers/LanguageProvider";
 import "./globals.css";
 
@@ -144,6 +145,7 @@ export default function RootLayout({
         <LanguageProvider>
           {children}
           <SiteFooter />
+          <SupportWidget />
         </LanguageProvider>
         <Analytics />
         {/* Phase 8 — Plausible (privacy-friendly, cookieless) runs
