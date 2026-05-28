@@ -93,6 +93,9 @@ export type Messages = {
     messagesAdded: string; // "{n} messages added" — {n} substituted by caller
     ariaSevaPanel: string; // panel aria-label
     ariaClose: string; // close button aria-label
+    // Hub Seva tab — persistent balance header (mirrors voice wallet).
+    balance: string; // "Sevā balance: {n} messages"
+    balanceEmpty: string; // "Sevā balance: empty"
   };
   // Landing hero. Only the body prose, CTA labels, and free-messages line are
   // keyed. The Latin masthead bits (nav, "Mathurā Edition", the Sanskrit quote
@@ -334,6 +337,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       messagesAdded: "{n} messages added",
       ariaSevaPanel: "Seva",
       ariaClose: "Close",
+      balance: "Sevā balance: {n} messages",
+      balanceEmpty: "Sevā balance: empty",
     },
     landing: {
       body: "Krishna in a chat window. The same flute, a smaller room. Ask in Hindi or English; the verses follow you.",
@@ -573,6 +578,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       messagesAdded: "{n} बातचीत जुड़ गई",
       ariaSevaPanel: "सेवा",
       ariaClose: "बंद करें",
+      balance: "सेवा शेष: {n} संदेश",
+      balanceEmpty: "सेवा शेष: खाली",
     },
     landing: {
       body: "एक चैट खिड़की में कृष्ण। वही बाँसुरी, बस एक छोटा कमरा। हिंदी या अंग्रेज़ी में पूछो — श्लोक तुम्हारे साथ चलते हैं।",

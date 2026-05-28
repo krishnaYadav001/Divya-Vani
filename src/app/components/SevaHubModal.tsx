@@ -48,6 +48,10 @@ export default function SevaHubModal({
   const [subLoading, setSubLoading] = useState(true);
   const [activeSub, setActiveSub] = useState<SubscriptionSummary | null>(null);
 
+  // Persistent seva-balance header (mirrors the wallet's balance card). Null
+  // = not loaded yet; rendered as a dash until /api/seva/balance returns.
+  const [sevaBalance, setSevaBalance] = useState<number | null>(null);
+
   // Escape + focus + body-scroll lock while open.
   useEffect(() => {
     if (!open) return;
@@ -86,6 +90,23 @@ export default function SevaHubModal({
       .finally(() => {
         if (!cancelled) setSubLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  // Fetch the seva balance when the hub opens — same pattern as the wallet
+  // balance, so the Seva tab always shows the remaining purchased messages.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/seva/balance")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        if (typeof d.seva_balance === "number") setSevaBalance(d.seva_balance);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -181,7 +202,34 @@ export default function SevaHubModal({
           ) : tab === "wallet" ? (
             <WalletPicker defaultCurrency={defaultCurrency} />
           ) : (
-            <SevaTierPicker tiers={TIERS} onSuccess={() => {}} />
+            <>
+              {/* Persistent seva-balance header — mirrors the wallet balance
+                  card so the user always sees how many messages they have, both
+                  before and after a top-up (SevaTierPicker.onSuccess updates it). */}
+              <div
+                className="mb-3 rounded-2xl border border-[oklch(86%_0.03_60)] bg-[oklch(96%_0.025_80)] px-4 py-3"
+                role="status"
+                aria-live="polite"
+              >
+                <p
+                  className={`text-base text-ink ${
+                    dev
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-display)]"
+                  }`}
+                >
+                  {sevaBalance === null
+                    ? "…"
+                    : sevaBalance > 0
+                      ? t.seva.balance.replace("{n}", String(sevaBalance))
+                      : t.seva.balanceEmpty}
+                </p>
+              </div>
+              <SevaTierPicker
+                tiers={TIERS}
+                onSuccess={(newBalance) => setSevaBalance(newBalance)}
+              />
+            </>
           )}
         </div>
       </div>
