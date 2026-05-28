@@ -44,6 +44,9 @@ export default function WalletPicker({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [addedMinutes, setAddedMinutes] = useState<number | null>(null);
+  // Persistent voice-wallet balance (seconds). null = not loaded; the display
+  // shows a dash until /api/voice/balance returns.
+  const [walletSeconds, setWalletSeconds] = useState<number | null>(null);
 
   // Region → currency (India → INR, else → USD). SSR-safe (see SubscriptionPicker).
   useEffect(() => {
@@ -57,6 +60,23 @@ export default function WalletPicker({
       /* keep INR */
     }
   }, [defaultCurrency]);
+
+  // Fetch the current wallet balance on mount so the user always sees how many
+  // voice minutes they have, before and after any top-up.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/voice/balance")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (typeof d.voice_seconds === "number") setWalletSeconds(d.voice_seconds);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const packs = WALLET_PACKS.filter((p) => p.currency === currency);
 
@@ -117,11 +137,18 @@ export default function WalletPicker({
           if (!verifyRes.ok) throw new Error("verify failed");
           const data = await verifyRes.json();
           if (data.ok) {
-            setAddedMinutes(
+            const credited =
               typeof data.credited_minutes === "number"
                 ? data.credited_minutes
-                : order.minutes,
-            );
+                : order.minutes;
+            setAddedMinutes(credited);
+            if (typeof data.voice_seconds_balance === "number") {
+              setWalletSeconds(data.voice_seconds_balance);
+            } else if (walletSeconds !== null) {
+              // Fall back to incrementing the cached value if the server didn't
+              // echo a balance (older verify responses).
+              setWalletSeconds(walletSeconds + credited * 60);
+            }
           } else {
             setErrorMessage(tt.errorStart);
           }
@@ -136,24 +163,44 @@ export default function WalletPicker({
     rzp.open();
   }
 
-  if (addedMinutes !== null) {
-    return (
-      <p
-        role="status"
-        aria-live="polite"
-        className={`rounded-2xl border border-[oklch(86%_0.03_60)] bg-white/60 px-5 py-6 text-center text-sm leading-relaxed text-ink ${
-          dev
-            ? "font-[family-name:var(--font-devanagari)]"
-            : "font-[family-name:var(--font-serif)] italic"
-        }`}
-      >
-        {tt.walletAdded.replace("{n}", String(addedMinutes))}
-      </p>
-    );
-  }
+  const walletMinutesDisplay =
+    walletSeconds === null ? null : Math.floor(walletSeconds / 60);
 
   return (
     <div>
+      {/* Persistent balance display — the single place the user can always see
+          how many voice minutes are in their wallet, before and after a top-up. */}
+      <div
+        className="mb-3 rounded-2xl border border-[oklch(86%_0.03_60)] bg-[oklch(96%_0.025_80)] px-4 py-3"
+        role="status"
+        aria-live="polite"
+      >
+        <p
+          className={`text-base text-ink ${
+            dev
+              ? "font-[family-name:var(--font-devanagari)]"
+              : "font-[family-name:var(--font-display)]"
+          }`}
+        >
+          {walletMinutesDisplay === null
+            ? "…"
+            : walletMinutesDisplay > 0
+              ? tt.walletBalance.replace("{n}", String(walletMinutesDisplay))
+              : tt.walletEmpty}
+        </p>
+        {addedMinutes !== null && (
+          <p
+            className={`mt-1 text-xs text-[oklch(52%_0.13_205)] ${
+              dev
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            +{tt.walletAdded.replace("{n}", String(addedMinutes))}
+          </p>
+        )}
+      </div>
+
       <p
         className={`mb-4 text-sm leading-relaxed text-ink-soft ${
           dev

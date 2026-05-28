@@ -265,6 +265,8 @@ export type Messages = {
     walletMinutes: string; // "{n} minutes"
     walletBuy: string;
     walletAdded: string; // "{n} voice minutes added"
+    walletBalance: string; // "Voice wallet: {n} minutes"
+    walletEmpty: string;   // "Voice wallet: empty"
   };
 };
 
@@ -505,6 +507,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       walletMinutes: "{n} minutes",
       walletBuy: "Add",
       walletAdded: "{n} voice minutes added.",
+      walletBalance: "Voice wallet: {n} minutes",
+      walletEmpty: "Voice wallet: empty",
     },
   },
   hi: {
@@ -740,6 +744,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       walletMinutes: "{n} मिनट",
       walletBuy: "जोड़ें",
       walletAdded: "{n} वॉइस मिनट जुड़ गए।",
+      walletBalance: "वॉइस वॉलेट: {n} मिनट",
+      walletEmpty: "वॉइस वॉलेट: खाली",
     },
   },
 };
