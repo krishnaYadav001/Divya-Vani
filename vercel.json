@@ -5,5 +5,11 @@
     "src/app/api/agent-llm/chat/completions/route.ts": {
       "regions": ["sin1"]
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/morning-quote/send",
+      "schedule": "30 0 * * *"
+    }
+  ]
 }

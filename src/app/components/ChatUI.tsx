@@ -8,6 +8,7 @@ import { findBannedWord } from "@/lib/badWordFilter";
 import { detectLang } from "@/lib/detectLang";
 import { clearSession, loadSession, saveSession } from "@/lib/chatStorage";
 import { BRAND } from "@/lib/brand";
+import { track } from "@/lib/tracking";
 
 // Phase 6.9.1 — split-color brand spans derive their text from BRAND
 // rather than hardcoding "Divya" / "Vani". The brand name is a 2-word
@@ -17,6 +18,7 @@ import { BRAND } from "@/lib/brand";
 const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import SevaPaywall from "./SevaPaywall";
 import SevaHubModal from "./SevaHubModal";
+import MorningQuoteCard from "./MorningQuoteCard";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
 import Bansuri from "./motifs/Bansuri";
@@ -119,6 +121,10 @@ export default function ChatUI() {
   const [disclaimerExpanded, setDisclaimerExpanded] = useState(true);
   // Phase 9 — the seva/plans hub modal (opened from the header diya icon).
   const [hubOpen, setHubOpen] = useState(false);
+  // Morning-quote opt-in card. Shows after 5 messages to engaged users.
+  // mqEligible is set once from localStorage on mount; stays false if the
+  // user already subscribed or dismissed within the last 7 days.
+  const [mqEligible, setMqEligible] = useState(false);
   // Phase 6.8 — userId comes from /api/me on mount and scopes the
   // localStorage chat-history key. The god_messenger_uid cookie itself
   // is HttpOnly so the value has to round-trip through the server to
@@ -161,6 +167,39 @@ export default function ChatUI() {
     const t = setTimeout(() => setDisclaimerExpanded(false), 5000);
     return () => clearTimeout(t);
   }, [disclaimerExpanded]);
+
+  // Morning-quote card eligibility — checked once on mount from localStorage.
+  // Card suppressed if user already subscribed or dismissed < 7 days ago.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("dv_mq_subscribed") === "true") return;
+      const dismissedUntil = parseInt(
+        localStorage.getItem("dv_mq_dismissed_until") ?? "0",
+        10,
+      );
+      if (Date.now() < dismissedUntil) return;
+      setMqEligible(true);
+    } catch {
+      // localStorage unavailable (private browsing) — skip card silently
+    }
+  }, []);
+
+  function handleMqSubscribed() {
+    try {
+      localStorage.setItem("dv_mq_subscribed", "true");
+    } catch { /* ignore */ }
+    setMqEligible(false);
+  }
+
+  function handleMqDismiss() {
+    try {
+      localStorage.setItem(
+        "dv_mq_dismissed_until",
+        String(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      );
+    } catch { /* ignore */ }
+    setMqEligible(false);
+  }
 
   // Phase 8.0 voice-input — one-time check that the browser supports
   // the APIs VAD needs: getUserMedia for the mic, AudioWorklet for
@@ -286,6 +325,7 @@ export default function ChatUI() {
     const text = (textOverride ?? input).trim();
     if (!text || isSending) return;
     if (findBannedWord(text)) return; // defense in depth — submit is also disabled in UI
+    if (messages.length === 0) track("first_message_sent");
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -1301,6 +1341,12 @@ export default function ChatUI() {
                     <span className="dv-thinking-dot" />
                   </span>
                 </p>
+              )}
+              {mqEligible && messages.length >= 5 && (
+                <MorningQuoteCard
+                  onSubscribed={handleMqSubscribed}
+                  onDismiss={handleMqDismiss}
+                />
               )}
               <div ref={bottomRef} />
             </div>

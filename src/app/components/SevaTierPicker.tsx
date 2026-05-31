@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { TierId, TierConfig } from "@/lib/seva";
 import { BRAND } from "@/lib/brand";
+import { track } from "@/lib/tracking";
 import Diya from "./motifs/Diya";
 import { useLanguage } from "../providers/LanguageProvider";
 
@@ -174,6 +175,7 @@ export default function SevaTierPicker({
           if (data.ok) {
             const newBalance =
               typeof data.new_balance === "number" ? data.new_balance : 0;
+            track("payment_completed", { tier: tier.id, price: tier.priceInr });
             onSuccess(newBalance);
           } else {
             reportError("Payment did not complete. Please try again.");
@@ -190,6 +192,7 @@ export default function SevaTierPicker({
         },
       },
     });
+    track("payment_started", { tier: tier.id, price: tier.priceInr });
     rzp.open();
   }
 

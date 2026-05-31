@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import type { TierConfig } from "@/lib/seva";
+import { track } from "@/lib/tracking";
 import SevaTierPicker from "./SevaTierPicker";
 import SubscribeButton from "./SubscribeButton";
 import { useLanguage } from "../providers/LanguageProvider";
@@ -14,6 +16,11 @@ export default function SevaPaywall({ tiers, onSuccess }: SevaPaywallProps) {
   // Phase 12 — invitation line follows the UI language toggle (one line per
   // language, replacing the prior always-stacked Hindi+English pair).
   const { lang, t } = useLanguage();
+  useEffect(() => {
+    track("paywall_shown");
+    // Server-side InitiateCheckout event for Meta Conversions API
+    void fetch("/api/events/initiate-checkout", { method: "POST" });
+  }, []);
   return (
     <div className="mt-3 rounded-2xl border border-gold/20 bg-linear-to-b from-ink3/55 to-ink1/70 px-5 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm">
       <div className="text-center">

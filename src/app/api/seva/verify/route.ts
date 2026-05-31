@@ -1,7 +1,10 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { getTier } from "@/lib/seva";
+import { fireMetaEvent } from "@/lib/metaEvents";
+import { fireGoogleAdsConversion } from "@/lib/googleAdsEvents";
 import {
   findPaymentByOrderId,
   markPaymentVerifiedAtomic,
@@ -16,6 +19,10 @@ const USER_COOKIE = "god_messenger_uid";
 export async function POST(req: Request) {
   const jar = await cookies();
   const userId = jar.get(USER_COOKIE)?.value;
+  const gclid = jar.get("dv_gclid")?.value ?? null;
+  const headersList = await headers();
+  const clientIp = headersList.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const clientUserAgent = headersList.get("user-agent") ?? undefined;
   if (!userId) {
     return NextResponse.json(
       { error: "no user identity on this request" },
@@ -138,6 +145,45 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+
+  // Fire Purchase events + mark lead converted — non-blocking async IIFE so the
+  // response returns immediately without waiting for external API calls.
+  void (async () => {
+    const supabaseLocal = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+    const { data: leadRow } = await supabaseLocal
+      .from("journey_leads")
+      .select("email")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const leadEmail: string | undefined = leadRow?.email ?? undefined;
+    const valueRupees = payment.amount_paise / 100;
+    await Promise.allSettled([
+      fireMetaEvent(
+        "Purchase",
+        { email: leadEmail, clientIp, clientUserAgent },
+        { currency: "INR", value: valueRupees },
+        "https://divyavani.co.in/chat",
+      ),
+      fireGoogleAdsConversion({
+        conversionActionId: process.env.GOOGLE_ADS_CONVERSION_PURCHASE_ID,
+        gclid,
+        email: leadEmail,
+        valueRupees,
+      }),
+      leadEmail
+        ? supabaseLocal
+            .from("journey_leads")
+            .update({ converted_at: new Date().toISOString() })
+            .eq("user_id", userId)
+            .is("converted_at", null)
+        : Promise.resolve(),
+    ]);
+  })();
 
   return NextResponse.json({
     ok: true,

@@ -8,6 +8,7 @@ import {
   type PlanKey,
 } from "@/lib/subscriptions";
 import { BRAND } from "@/lib/brand";
+import { track } from "@/lib/tracking";
 import { useLanguage } from "../providers/LanguageProvider";
 
 // Phase 9 — recurring subscription picker (Plus / Voice / Premium). Sibling of
@@ -177,6 +178,7 @@ export default function SubscriptionPicker({
         ondismiss: () => setPendingKey(null),
       },
     });
+    track("subscription_started", { plan: planKey });
     rzp.open();
   }
 

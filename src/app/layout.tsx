@@ -162,6 +162,27 @@ export default function RootLayout({
         <Script id="plausible-init" strategy="afterInteractive">
           {`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}
         </Script>
+        {/* Microsoft Clarity — session recordings + heatmaps (free, no cookie
+            consent needed, IP anonymized by default). Sign up at
+            clarity.microsoft.com → New Project → copy the 10-char Project ID
+            and replace wy3cag5b9r below, then redeploy. */}
+        <Script id="clarity-init" strategy="afterInteractive">
+          {`(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","wy3cag5b9r");`}
+        </Script>
+        {/* Google Ads — global site tag + Enhanced Conversions.
+            Set NEXT_PUBLIC_GOOGLE_ADS_ID (e.g. "AW-1234567890") in Vercel
+            env vars to activate. No-op until set. */}
+        {process.env.NEXT_PUBLIC_GOOGLE_ADS_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GOOGLE_ADS_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-ads-init" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GOOGLE_ADS_ID}',{allow_enhanced_conversions:true});`}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );
