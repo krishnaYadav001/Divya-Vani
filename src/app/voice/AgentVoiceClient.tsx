@@ -614,19 +614,21 @@ function VoiceInner() {
             </h1>
           </div>
 
-          {/* exit (right) + seva panel anchor */}
-          <div className="relative flex shrink-0 items-center">
-            <button
-              type="button"
-              onClick={handleEnd}
-              aria-label={C.exit[lang]}
-              className="ivory-soft flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-vermillion/15 hover:text-[oklch(72%_0.16_28)] focus:outline-none focus:ring-2 focus:ring-vermillion/40 [filter:drop-shadow(0_1px_4px_oklch(8%_0.05_260/0.7))]"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                <line x1="6" y1="6" x2="18" y2="18" />
-                <line x1="18" y1="6" x2="6" y2="18" />
-              </svg>
-            </button>
+          {/* exit (right) + seva panel anchor — X only during an active call */}
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+            {isActive && (
+              <button
+                type="button"
+                onClick={handleEnd}
+                aria-label={C.exit[lang]}
+                className="ivory-soft flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-vermillion/15 hover:text-[oklch(72%_0.16_28)] focus:outline-none focus:ring-2 focus:ring-vermillion/40 [filter:drop-shadow(0_1px_4px_oklch(8%_0.05_260/0.7))]"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
+            )}
             <DiyaSevaPanel
               isOpen={isSevaOpen}
               onClose={() => setIsSevaOpen(false)}

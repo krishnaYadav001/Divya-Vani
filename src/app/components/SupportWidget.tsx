@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type SupportMessage = { role: "user" | "assistant"; content: string };
 
@@ -20,55 +19,87 @@ export default function SupportWidget() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pathname = usePathname();
 
-  // On /chat and /voice the bottom of the screen is occupied by the
-  // input bar / orb controls, so push the widget higher to avoid overlap.
-  const isImmersive = pathname === "/chat" || pathname === "/voice";
-  const btnBottom = isImmersive ? "bottom-24" : "bottom-6";
-  const panelBottom = isImmersive ? "bottom-40" : "bottom-20";
+  // Draggable position — right/bottom offset from viewport edges.
+  // Default sits above the chat input bar on all routes.
+  const [pos, setPos] = useState({ right: 16, bottom: 88 });
+  const dragRef = useRef<{
+    startPX: number;
+    startPY: number;
+    startRight: number;
+    startBottom: number;
+    moved: boolean;
+  } | null>(null);
 
   useEffect(() => {
-    if (open) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    if (open) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
   useEffect(() => {
-    if (open && messages.length === 0) {
-      textareaRef.current?.focus();
-    }
+    if (open && messages.length === 0) textareaRef.current?.focus();
   }, [open, messages.length]);
+
+  // Drag handlers — pointer capture ensures move/up fire even off the button.
+  // Click (open/close) is handled in onPointerUp when the pointer hasn't moved.
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (e.button !== 0 || open) return;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      dragRef.current = {
+        startPX: e.clientX,
+        startPY: e.clientY,
+        startRight: pos.right,
+        startBottom: pos.bottom,
+        moved: false,
+      };
+    },
+    [open, pos],
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const dx = e.clientX - d.startPX;
+      const dy = e.clientY - d.startPY;
+      if (!d.moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+      d.moved = true;
+      setPos({
+        right: Math.max(8, Math.min(window.innerWidth - 56, d.startRight - dx)),
+        bottom: Math.max(8, Math.min(window.innerHeight - 56, d.startBottom - dy)),
+      });
+    },
+    [],
+  );
+
+  const onPointerUp = useCallback(() => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d?.moved) setOpen((v) => !v);
+  }, []);
 
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
-
     setError(null);
     const userMsg: SupportMessage = { role: "user", content: trimmed };
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
-
     try {
       const res = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: trimmed,
-          history: messages.slice(-10),
-        }),
+        body: JSON.stringify({ message: trimmed, history: messages.slice(-10) }),
       });
-
       if (!res.ok) throw new Error("network");
       const data: { reply?: string; error?: string } = await res.json();
       if (!data.reply) throw new Error("empty");
-
       setMessages([...nextMessages, { role: "assistant", content: data.reply }]);
     } catch {
       setError(
-        "Something went wrong. Please email grievance@divyavani.co.in for help."
+        "Something went wrong. Please email grievance@divyavani.co.in for help.",
       );
     } finally {
       setLoading(false);
@@ -82,89 +113,94 @@ export default function SupportWidget() {
     }
   };
 
-  return (
-    <>
-      {/* Floating trigger button */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close support chat" : "Open support chat"}
-        className={`fixed z-50 ${btnBottom} right-4 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95`}
-        style={{ background: "oklch(52% 0.13 205)", color: "#fff" }}
-      >
-        {open ? (
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            <path
-              d="M3 3l12 12M15 3L3 15"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-            <path
-              d="M10 2C5.58 2 2 5.36 2 9.5c0 1.92.75 3.67 1.98 4.99L3 17l2.7-.86A8.1 8.1 0 0010 17c4.42 0 8-3.36 8-7.5S14.42 2 10 2z"
-              fill="currentColor"
-            />
-            <circle cx="7" cy="9.5" r="1" fill="white" />
-            <circle cx="10" cy="9.5" r="1" fill="white" />
-            <circle cx="13" cy="9.5" r="1" fill="white" />
-          </svg>
-        )}
-      </button>
+  // Panel width never overflows the left edge of the viewport.
+  const panelWidth = `min(320px, calc(100vw - ${pos.right}px - 1rem))`;
 
-      {/* Chat panel */}
+  return (
+    <div
+      className="fixed z-50"
+      style={{ right: pos.right, bottom: pos.bottom }}
+    >
+      {/* Chat panel — opens above the trigger button */}
       {open && (
         <div
           role="dialog"
           aria-label="Divya Vani support chat"
-          className={`fixed z-40 ${panelBottom} right-4 flex flex-col rounded-2xl shadow-xl overflow-hidden`}
+          className="absolute bottom-14 right-0 flex flex-col overflow-hidden rounded-2xl"
           style={{
-            width: "min(320px, calc(100vw - 2rem))",
+            width: panelWidth,
             maxHeight: "440px",
-            background: "oklch(98.5% 0.006 70)",
-            border: "1px solid oklch(80% 0.015 30)",
+            background: "var(--color-mist)",
+            border: "1px solid oklch(76% 0.12 80 / 0.4)",
+            boxShadow:
+              "0 12px 48px -12px oklch(40% 0.08 30 / 0.35), 0 2px 8px -2px oklch(40% 0.08 30 / 0.12)",
             animation: "fade-up 0.2s ease both",
           }}
         >
           {/* Header */}
           <div
-            className="flex items-center gap-2.5 px-4 py-2.5 shrink-0"
-            style={{ background: "oklch(52% 0.13 205)", color: "#fff" }}
+            className="flex shrink-0 items-center gap-2.5 px-4 py-2.5"
+            style={{
+              background:
+                "linear-gradient(180deg, var(--color-buttermilk) 0%, var(--color-peach) 100%)",
+              borderBottom: "1px solid oklch(76% 0.12 80 / 0.25)",
+            }}
           >
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
-              style={{ background: "rgba(255,255,255,0.2)" }}
-            >
-              DV
-            </div>
-            <div className="min-w-0">
+            <span aria-hidden className="shrink-0 text-base leading-none">
+              🪷
+            </span>
+            <div className="min-w-0 flex-1">
               <p
                 className="text-sm font-medium leading-tight"
-                style={{ fontFamily: "var(--font-marcellus)" }}
+                style={{
+                  fontFamily: "var(--font-display)",
+                  color: "var(--color-ink)",
+                }}
               >
                 Divya Vani Support
               </p>
-              <p className="text-xs opacity-75 leading-tight">
+              <p
+                className="text-xs leading-tight"
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  color: "var(--color-ink-soft)",
+                }}
+              >
                 Usually replies instantly
               </p>
             </div>
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close support chat"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-gold-leaf/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+                <path
+                  d="M1 1l10 10M11 1L1 11"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
           </div>
 
-          {/* Messages */}
+          {/* Messages area */}
           <div
-            className="flex-1 overflow-y-auto px-3 py-3 space-y-2"
+            className="flex-1 space-y-2 overflow-y-auto px-3 py-3"
             style={{ minHeight: "160px" }}
           >
             {/* Empty state — quick-action pills */}
             {messages.length === 0 && (
               <div>
                 <p
-                  className="text-xs mb-3 leading-relaxed"
+                  className="mb-3 text-xs leading-relaxed"
                   style={{
-                    color: "oklch(45% 0.025 30)",
-                    fontFamily: "var(--font-cormorant)",
+                    fontFamily: "var(--font-serif)",
                     fontStyle: "italic",
+                    color: "var(--color-ink-soft)",
                   }}
                 >
                   नमस्ते! How can I help you today?
@@ -174,12 +210,12 @@ export default function SupportWidget() {
                     <button
                       key={label}
                       onClick={() => send(label)}
-                      className="text-xs px-2.5 py-1.5 rounded-full border transition-colors hover:opacity-80"
+                      className="rounded-full border px-2.5 py-1.5 text-xs transition-colors hover:opacity-80"
                       style={{
-                        background: "oklch(93% 0.018 50)",
-                        borderColor: "oklch(80% 0.015 30)",
-                        color: "oklch(28% 0.035 30)",
-                        fontFamily: "var(--font-geist-sans)",
+                        background: "var(--color-buttermilk)",
+                        borderColor: "oklch(76% 0.12 80 / 0.35)",
+                        color: "var(--color-ink)",
+                        fontFamily: "var(--font-sans)",
                       }}
                     >
                       {label}
@@ -189,25 +225,25 @@ export default function SupportWidget() {
               </div>
             )}
 
-            {/* Conversation messages */}
+            {/* Conversation */}
             {messages.map((m, i) => (
               <div
                 key={i}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className="max-w-[85%] text-xs px-3 py-2 rounded-xl leading-relaxed whitespace-pre-wrap"
+                  className="max-w-[85%] whitespace-pre-wrap rounded-xl px-3 py-2 text-xs leading-relaxed"
                   style={
                     m.role === "user"
                       ? {
-                          background: "oklch(52% 0.13 205)",
+                          background: "var(--color-peacock)",
                           color: "#fff",
-                          fontFamily: "var(--font-geist-sans)",
+                          fontFamily: "var(--font-sans)",
                         }
                       : {
-                          background: "oklch(93% 0.018 50)",
-                          color: "oklch(28% 0.035 30)",
-                          fontFamily: "var(--font-geist-sans)",
+                          background: "var(--color-mist-3)",
+                          color: "var(--color-ink)",
+                          fontFamily: "var(--font-sans)",
                         }
                   }
                 >
@@ -216,15 +252,14 @@ export default function SupportWidget() {
               </div>
             ))}
 
-            {/* Loading indicator */}
             {loading && (
               <div className="flex justify-start">
                 <div
-                  className="text-xs px-3 py-2 rounded-xl"
+                  className="rounded-xl px-3 py-2 text-xs"
                   style={{
-                    background: "oklch(93% 0.018 50)",
-                    color: "oklch(62% 0.02 30)",
-                    fontFamily: "var(--font-geist-sans)",
+                    background: "var(--color-mist-3)",
+                    color: "var(--color-ink-faint)",
+                    fontFamily: "var(--font-sans)",
                   }}
                 >
                   Typing…
@@ -232,14 +267,13 @@ export default function SupportWidget() {
               </div>
             )}
 
-            {/* Error banner */}
             {error && (
               <div
-                className="text-xs px-3 py-2 rounded-xl"
+                className="rounded-xl px-3 py-2 text-xs"
                 style={{
                   background: "oklch(95% 0.03 28)",
-                  color: "oklch(53% 0.19 28)",
-                  fontFamily: "var(--font-geist-sans)",
+                  color: "var(--color-vermillion)",
+                  fontFamily: "var(--font-sans)",
                 }}
               >
                 {error}
@@ -251,8 +285,8 @@ export default function SupportWidget() {
 
           {/* Input row */}
           <div
-            className="px-3 pb-3 pt-2 flex gap-2 items-end shrink-0"
-            style={{ borderTop: "1px solid oklch(80% 0.015 30)" }}
+            className="flex shrink-0 items-end gap-2 px-3 pb-3 pt-2"
+            style={{ borderTop: "1px solid oklch(76% 0.12 80 / 0.2)" }}
           >
             <textarea
               ref={textareaRef}
@@ -264,12 +298,12 @@ export default function SupportWidget() {
               onKeyDown={handleKeyDown}
               placeholder="Type your question…"
               rows={1}
-              className="flex-1 resize-none text-xs rounded-lg px-3 py-2 outline-none"
+              className="flex-1 resize-none rounded-lg px-3 py-2 text-xs outline-none"
               style={{
-                background: "oklch(96.5% 0.012 60)",
-                border: "1px solid oklch(80% 0.015 30)",
-                color: "oklch(28% 0.035 30)",
-                fontFamily: "var(--font-geist-sans)",
+                background: "var(--color-mist-2)",
+                border: "1px solid var(--color-ink-line)",
+                color: "var(--color-ink)",
+                fontFamily: "var(--font-sans)",
                 lineHeight: "1.5",
                 maxHeight: "80px",
               }}
@@ -278,16 +312,10 @@ export default function SupportWidget() {
               onClick={() => send(input)}
               disabled={!input.trim() || loading}
               aria-label="Send"
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40 shrink-0"
-              style={{ background: "oklch(52% 0.13 205)", color: "#fff" }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-opacity disabled:opacity-40"
+              style={{ background: "var(--color-peacock)", color: "#fff" }}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
-                aria-hidden
-              >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
                 <path
                   d="M1 7h12M8 3l5 4-5 4"
                   stroke="currentColor"
@@ -300,6 +328,51 @@ export default function SupportWidget() {
           </div>
         </div>
       )}
-    </>
+
+      {/* Floating trigger button — draggable when panel is closed */}
+      <button
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        aria-label={open ? "Close support chat" : "Open support chat"}
+        className="relative flex h-12 w-12 items-center justify-center rounded-full shadow-[0_4px_20px_-4px_oklch(40%_0.08_30_/_0.4)] transition-transform hover:scale-105 active:scale-95"
+        style={{
+          cursor: open ? "pointer" : "grab",
+          background:
+            "linear-gradient(180deg, var(--color-buttermilk) 0%, var(--color-peach) 100%)",
+          border: "1px solid oklch(76% 0.12 80 / 0.5)",
+        }}
+      >
+        {open ? (
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path
+              d="M3 3l10 10M13 3L3 13"
+              stroke="var(--color-ink)"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+            />
+          </svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+            <path
+              d="M10 2C5.58 2 2 5.36 2 9.5c0 1.92.75 3.67 1.98 4.99L3 17l2.7-.86A8.1 8.1 0 0010 17c4.42 0 8-3.36 8-7.5S14.42 2 10 2z"
+              fill="var(--color-peacock)"
+            />
+            <circle cx="7" cy="9.5" r="1" fill="white" />
+            <circle cx="10" cy="9.5" r="1" fill="white" />
+            <circle cx="13" cy="9.5" r="1" fill="white" />
+          </svg>
+        )}
+        {/* Gold-leaf accent dot */}
+        <span
+          aria-hidden
+          className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full"
+          style={{
+            background: "var(--color-gold-leaf)",
+            boxShadow: "0 0 6px oklch(76% 0.12 80 / 0.55)",
+          }}
+        />
+      </button>
+    </div>
   );
 }
