@@ -86,6 +86,8 @@ Pricing
                   </span>
                   <span className="whitespace-nowrap font-[family-name:var(--font-display)] text-gold">
                     ₹{tier.priceInr}
+                    <span className="text-brass-dark"> · </span>
+                    {tier.priceUsdDisplay}
                   </span>
                 </li>
               ))}
@@ -146,13 +148,21 @@ Pricing
               </li>
               <li>
                 Payments are processed securely by Razorpay. We never store
-                your card or bank details.
+                your card or bank details. We accept UPI, Indian debit and
+                credit cards, net banking, and international Visa &amp;
+                Mastercard.
               </li>
               <li>
-                Indian customers are billed in Indian Rupees (INR), with
-                monthly subscription renewals via UPI AutoPay / e-mandate.
-                International customers are billed in US Dollars (USD) on an
-                annual subscription.
+                One-time <em>seva</em> is priced by region: Indian visitors are
+                charged in Indian Rupees (INR); international visitors are
+                charged in US Dollars (USD) — both prices are shown as
+                {" "}
+                <strong>₹ · $</strong> on each tier above.
+              </li>
+              <li>
+                For subscriptions, Indian customers are billed monthly in INR
+                (UPI AutoPay / e-mandate); international customers are billed
+                annually in US Dollars (USD).
               </li>
               <li>Prices are inclusive of applicable taxes per law.</li>
             </ul>

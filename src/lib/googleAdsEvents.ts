@@ -44,11 +44,15 @@ export async function fireGoogleAdsConversion({
   gclid,
   email,
   valueRupees,
+  currencyCode = "INR",
 }: {
   conversionActionId: string | undefined;
   gclid: string | null | undefined;
   email?: string;
+  /** Conversion value in the major unit of `currencyCode` (rupees or dollars). */
   valueRupees?: number;
+  /** ISO currency for the value; defaults to INR for India purchases. */
+  currencyCode?: string;
 }): Promise<void> {
   const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   const customerId = process.env.GOOGLE_ADS_CUSTOMER_ID;
@@ -66,7 +70,7 @@ export async function fireGoogleAdsConversion({
         conversionDateTime: toGoogleDateTime(new Date()),
         ...(valueRupees !== undefined && {
           conversionValue: valueRupees,
-          currencyCode: "INR",
+          currencyCode,
         }),
         ...(email && {
           userIdentifiers: [{ hashedEmail: sha256(email) }],

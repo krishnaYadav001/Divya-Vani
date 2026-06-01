@@ -104,6 +104,10 @@ export type Messages = {
   // Devanagari. The wordmark stays BRAND.name.en.
   landing: {
     body: string;
+    // One-line credibility proof for the scripture-literate visitor: every
+    // reply is grounded in real verses, shown to the user. Rendered under the
+    // hero body; follows the language toggle.
+    proof: string;
     ctaAsk: string;
     ctaGlimpse: string;
     ctaTalk: string;
@@ -342,6 +346,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     },
     landing: {
       body: "Krishna in a chat window. The same flute, a smaller room. Ask in Hindi or English; the verses follow you.",
+      proof:
+        "Every reply is grounded in scripture — the Gita, Mahabharata, and Bhagavata — and shows you the verse it draws from, in Sanskrit, Hindi, and English.",
       ctaAsk: "Ask the first thing",
       ctaGlimpse: "See a glimpse",
       ctaTalk: "Talk with Krishna",
@@ -583,6 +589,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     },
     landing: {
       body: "एक चैट खिड़की में कृष्ण। वही बाँसुरी, बस एक छोटा कमरा। हिंदी या अंग्रेज़ी में पूछो — श्लोक तुम्हारे साथ चलते हैं।",
+      proof:
+        "हर उत्तर शास्त्र पर आधारित — गीता, महाभारत और भागवत से — और जिस श्लोक से वह आता है, वह संस्कृत, हिंदी और अंग्रेज़ी में तुम्हें दिखाया जाता है।",
       ctaAsk: "पूछें",
       ctaGlimpse: "एक झलक",
       ctaTalk: "कृष्ण से बात करो",

@@ -44,8 +44,18 @@ export default function LandingClient() {
         <header className="flex shrink-0 items-center justify-between gap-4">
           <Wordmark size="sm" stack="horizontal" />
           <nav className="flex items-center gap-6 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.26em] text-ink-soft sm:gap-8">
-            <span className="hidden sm:inline">About</span>
-            <span className="hidden sm:inline">Sevā</span>
+            <Link
+              href="/contact"
+              className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
+            >
+              ABOUT
+            </Link>
+            <Link
+              href="/pricing"
+              className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
+            >
+              SEVĀ
+            </Link>
             <Link
               href="/demo"
               className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
@@ -120,6 +130,15 @@ export default function LandingClient() {
               className={`mt-5 max-w-[460px] text-base leading-relaxed text-ink-soft lg:text-lg ${proseFont}`}
             >
               {t.landing.body}
+            </p>
+
+            {/* Verse-citation proof — the credibility hook for the
+                scripture-literate visitor. Kept understated (smaller, soft)
+                so it reads as a credential, not a second tagline. */}
+            <p
+              className={`mt-3 max-w-[460px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
+            >
+              {t.landing.proof}
             </p>
 
             {/* CTA */}

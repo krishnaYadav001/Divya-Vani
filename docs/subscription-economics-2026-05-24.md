@@ -154,10 +154,16 @@ Costs in USD: text ~**$0.03/msg**, voice ~**$0.16/min**. US pricing gives far mo
 | **Voice Wallet (USD)** | $4.99=15 / $9.99=35 / $19.99=80 min | — | — | pay-as-you-go | **34–50% (always)** |
 
 Notes specific to NRI:
+- **⚠️ Doc-vs-code reconciliation (noted 2026-06-02):** the §7b table's *lean NRI* counts (Plus 90 msgs, Premium 70 min) were **NOT** adopted in code. Shipped `src/lib/subscriptions.ts` uses **unified entitlements** — the *same* messages + voice minutes per tier in every currency (Plus 100/5, Voice 100/30, Premium 200/100), with **only the price differing by market**. The USD *prices* below ($9.99/$24.99/$49.99 monthly, $99/$249/$499 annual) DO match the shipped USD offers. Treat `subscriptions.ts` as the source of truth for entitlements; the lean-NRI counts here are an un-adopted earlier recommendation. (Unified entitlements give NRI an even *higher* absolute margin than this table's lean version, since the price is ~2× India for the same product.)
 - **Annual is the hero** — US consumers prefer it; better retention + cash flow + lower processor-fee drag. Both monthly and annual profit at full use, so neither can lose money.
 - **Same product as India, ~2× the margin.** NRI Plus earns ~$6/mo vs India Plus ~₹127 (~$1.3) — roughly 4–7× the *absolute* profit per subscriber, and now a higher margin % too.
 - Bundled minutes are deliberately conservative *because the word cap is gone* (longer replies eat minutes faster); overage flows to the wallet.
-- **Razorpay International caveats — VERIFY before launch (could not web-search this session):** (a) international-card fees are higher, ~**3–3.5% + GST** vs ~2% domestic — bake into margins; (b) **recurring/e-mandate on international cards** is not the same as UPI AutoPay — confirm Razorpay supports auto-renew on foreign cards, else fall back to annual one-time or a second processor (Stripe/Paddle are common for USD recurring); (c) **GST treatment of digital services to recipients abroad** (export of service / zero-rated vs OIDAR) is a CA question — do not assume; (d) forex settlement markup on INR payout.
+- **Razorpay International — VERIFIED 2026-06-02** (founder confirmed International Transactions are *activated* on the account; web-verified against Razorpay docs — see Sources):
+  - **(a) Card fees — CONFIRMED.** International cards ≈ **3% + 18% GST on the fee** (≈ 3.5% effective) vs ~2% domestic. Already baked into the NRI margins above; no change needed.
+  - **(b) Recurring — CONFIRMED.** RBI e-mandate / UPI AutoPay is **India/INR-only** and does **not** cover foreign cards. Foreign-card recurring rides the card networks, which is why the USD ladder is deliberately **annual one-charge** (lowest foreign-recurring risk). This matches the shipped `src/lib/subscriptions.ts` design (INR → monthly, USD → annual). A second processor (Stripe/Paddle) is **not** needed for launch.
+  - **(b-bis) One-time seva by foreign card — CONFIRMED working.** The seva `create-order` route is INR-denominated; with International Transactions on, a foreign Visa/Mastercard pays the INR order directly (cardholder's bank converts). NRIs do **not** need a USD subscription to make a one-time purchase. No code change required.
+  - **(c) GST on export of services — STILL a CA question (do NOT self-assume).** Exporting digital services is *generally* zero-rated, but exports count as inter-state supply; a services-specific exemption (Notification 10/2017-IT) *may* keep a sub-₹20L sole proprietor out of compulsory registration. Confirm with a CA **before the first international rupee**, and before filing any LUT (RFD-11).
+  - **(d) Forex settlement markup** on the INR payout still applies — minor; confirm on the first international payout + grab the monthly FIRC from the dashboard.
 
 ---
 
@@ -218,3 +224,9 @@ Per the target audience ("mostly Indian-American / NRI"), the paid base skews NR
 - [Sarvam AI pricing](https://docs.sarvam.ai/api-reference-docs/pricing)
 - [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing)
 - Live code: `src/app/api/chat/route.ts`, `src/app/api/agent-llm/chat/completions/route.ts`, `src/lib/elevenlabs.ts`, `src/app/api/tts/route.ts`, `src/app/voice/AgentVoiceClient.tsx`, `src/lib/verses.ts`
+
+### Razorpay International — added 2026-06-02
+- [Razorpay — International Debit & Credit Cards (docs)](https://razorpay.com/docs/payments/international-payments/international-debit-credit-cards/) — Visa/Mastercard, 180+ countries, requires support-raised activation + KYC + policy pages.
+- [Razorpay — Requirements for accepting international payments](https://razorpay.com/learn/breaking-down-the-requirements-for-accepting-international-payments-through-razorpay/)
+- [Razorpay — Cross-border / international fees (~3% + GST on cards)](https://razorpay.com/blog/cross-border-fees-explained/)
+- [GST registration for export of services (2026)](https://www.registerkaro.in/post/gst-registration-for-export-of-services) · [LUT (RFD-11) filing for exporters](https://razorpay.com/blog/lut-in-gst/) — CA-question items in §7b(c).

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { TierId, TierConfig } from "@/lib/seva";
+import { getTierPriceDisplay, type TierId, type TierConfig } from "@/lib/seva";
+import type { Currency } from "@/lib/subscriptions";
 import { BRAND } from "@/lib/brand";
 import { track } from "@/lib/tracking";
 import Diya from "./motifs/Diya";
@@ -104,6 +105,21 @@ export default function SevaTierPicker({
   const { lang, t } = useLanguage();
   const [pendingTierId, setPendingTierId] = useState<TierId | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Region → currency (India → INR, everyone else → USD), matching
+  // WalletPicker / SubscriptionPicker. NRIs see the USD seva ladder + are
+  // charged in USD; there is no manual toggle. SSR-safe: starts INR, the effect
+  // flips to USD client-side off the browser timezone.
+  const [currency, setCurrency] = useState<Currency>("INR");
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const india = tz === "Asia/Kolkata" || tz === "Asia/Calcutta";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (!india) setCurrency("USD");
+    } catch {
+      /* keep INR */
+    }
+  }, []);
 
   function reportError(msg: string) {
     setErrorMessage(msg);
@@ -125,7 +141,7 @@ export default function SevaTierPicker({
       const orderRes = await fetch("/api/seva/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tier.id }),
+        body: JSON.stringify({ tier: tier.id, currency }),
       });
       if (!orderRes.ok) {
         const err = await orderRes.json().catch(() => ({}));
@@ -175,7 +191,11 @@ export default function SevaTierPicker({
           if (data.ok) {
             const newBalance =
               typeof data.new_balance === "number" ? data.new_balance : 0;
-            track("payment_completed", { tier: tier.id, price: tier.priceInr });
+            track("payment_completed", {
+              tier: tier.id,
+              price: currency === "USD" ? tier.priceUsd : tier.priceInr,
+              currency,
+            });
             onSuccess(newBalance);
           } else {
             reportError("Payment did not complete. Please try again.");
@@ -192,7 +212,11 @@ export default function SevaTierPicker({
         },
       },
     });
-    track("payment_started", { tier: tier.id, price: tier.priceInr });
+    track("payment_started", {
+      tier: tier.id,
+      price: currency === "USD" ? tier.priceUsd : tier.priceInr,
+      currency,
+    });
     rzp.open();
   }
 
@@ -251,7 +275,7 @@ export default function SevaTierPicker({
                 </span>
                 <span className="mt-0.5 flex items-baseline gap-1.5">
                   <span className="font-[family-name:var(--font-display)] text-lg tabular-nums leading-none text-ink">
-                    ₹{tier.priceInr}
+                    {getTierPriceDisplay(tier, currency)}
                   </span>
                   <span
                     className={`text-[11px] text-ink-soft ${

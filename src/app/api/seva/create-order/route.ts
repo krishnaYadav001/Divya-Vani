@@ -1,7 +1,8 @@
 import Razorpay from "razorpay";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getTier } from "@/lib/seva";
+import { getTier, getTierAmount } from "@/lib/seva";
+import type { Currency } from "@/lib/subscriptions";
 import { insertPayment } from "@/lib/supabase";
 
 const USER_COOKIE = "god_messenger_uid";
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { tier?: unknown };
+  let body: { tier?: unknown; currency?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -41,6 +42,10 @@ export async function POST(req: Request) {
   if (typeof body.tier !== "string" || !body.tier) {
     return NextResponse.json({ error: "tier required" }, { status: 400 });
   }
+  // Currency is region-decided client-side (India → INR, else → USD), mirroring
+  // the wallet/subscription flows. Default to INR if absent or unrecognized so
+  // an older client or a malformed request never breaks the (INR) happy path.
+  const currency: Currency = body.currency === "USD" ? "USD" : "INR";
 
   let tier;
   try {
@@ -48,6 +53,7 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "unknown tier" }, { status: 400 });
   }
+  const amount = getTierAmount(tier, currency);
 
   const rzp = getRazorpay();
   if (!rzp) {
@@ -60,10 +66,10 @@ export async function POST(req: Request) {
   let order;
   try {
     order = await rzp.orders.create({
-      amount: tier.amountPaise,
-      currency: "INR",
+      amount,
+      currency,
       receipt: `seva_${Date.now().toString(36)}`,
-      notes: { user_id: userId, tier: tier.id },
+      notes: { user_id: userId, tier: tier.id, currency },
     });
   } catch (e) {
     console.error("[seva/create-order] orders.create threw:", e);
@@ -84,7 +90,11 @@ export async function POST(req: Request) {
   const inserted = await insertPayment({
     user_id: userId,
     razorpay_order_id: order.id,
-    amount_paise: tier.amountPaise,
+    // Stored in the charged smallest unit: paise (INR) or cents (USD). The
+    // currency is recoverable from this amount via inferCurrencyFromAmount
+    // (INR-paise and USD-cents never collide for any tier) — matching the
+    // wallet flow, which likewise stores cents in this column for USD packs.
+    amount_paise: amount,
     tier: tier.id,
     status: "created",
   });
@@ -97,8 +107,8 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     order_id: order.id,
-    amount: tier.amountPaise,
-    currency: "INR",
+    amount,
+    currency,
     key_id: process.env.RAZORPAY_KEY_ID,
     tier_id: tier.id,
     messages: tier.messages,

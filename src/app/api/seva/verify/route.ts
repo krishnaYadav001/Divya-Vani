@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
-import { getTier } from "@/lib/seva";
+import { getTier, inferCurrencyFromAmount } from "@/lib/seva";
 import { fireMetaEvent } from "@/lib/metaEvents";
 import { fireGoogleAdsConversion } from "@/lib/googleAdsEvents";
 import {
@@ -161,19 +161,25 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle();
     const leadEmail: string | undefined = leadRow?.email ?? undefined;
-    const valueRupees = payment.amount_paise / 100;
+    // amount_paise holds the charged smallest unit (paise for INR, cents for
+    // USD); /100 gives the major-unit value in whichever currency was charged.
+    // Recover the currency from the stored amount so the Purchase event reports
+    // the right currency + value for an NRI (USD) vs India (INR) buyer.
+    const purchaseCurrency = inferCurrencyFromAmount(tier, payment.amount_paise);
+    const purchaseValue = payment.amount_paise / 100;
     await Promise.allSettled([
       fireMetaEvent(
         "Purchase",
         { email: leadEmail, clientIp, clientUserAgent },
-        { currency: "INR", value: valueRupees },
+        { currency: purchaseCurrency, value: purchaseValue },
         "https://divyavani.co.in/chat",
       ),
       fireGoogleAdsConversion({
         conversionActionId: process.env.GOOGLE_ADS_CONVERSION_PURCHASE_ID,
         gclid,
         email: leadEmail,
-        valueRupees,
+        valueRupees: purchaseValue,
+        currencyCode: purchaseCurrency,
       }),
       leadEmail
         ? supabaseLocal
