@@ -18,7 +18,7 @@ import { useLanguage } from "../providers/LanguageProvider";
 // not a label), while video/screenshot titles show the active language. The
 // page metadata stays in the server page.tsx.
 
-type Video = { id: string; title_hi: string; title_en: string };
+type Video = { id: string; title_hi: string; title_en: string; short?: boolean };
 type Screenshot = { src: string; alt_hi: string; alt_en: string };
 type Example = {
   question_lang: "hi" | "en";
@@ -121,20 +121,28 @@ export default function DemoClient({ content }: { content: DemoContent }) {
           {content.videos.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={`mt-7 ${
+              content.videos.length === 1 && content.videos[0].short
+                ? "flex justify-center"
+                : "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            }`}>
               {content.videos.map((v, i) => (
-                <div key={`${v.id}-${i}`}>
+                <div
+                  key={`${v.id}-${i}`}
+                  className={v.short ? "w-full max-w-[320px]" : undefined}
+                >
                   <YouTubeFacade
                     id={v.id}
                     titleHi={v.title_hi}
                     titleEn={v.title_en}
+                    short={v.short}
                   />
                   <p
                     className={`mt-2 text-sm leading-relaxed text-ink-soft ${
                       lang === "hi"
                         ? "font-[family-name:var(--font-devanagari)]"
                         : "font-[family-name:var(--font-serif)] italic"
-                    }`}
+                    } ${v.short ? "text-center" : ""}`}
                   >
                     {lang === "hi" ? v.title_hi : v.title_en}
                   </p>

@@ -55,6 +55,11 @@ next-env.d.ts
 !/test-results/phase6.9.2-baseline.md
 !/test-results/phase6.9.2-results.md
 
+# ruflo / claude-flow runtime — local only, never commit
+/.claude-flow/
+/.mcp.json
+/CLAUDE.md.pre-ruflo
+
 # claude code session state — ignore local cache + personal settings,
 # but allow team-shared memory rules + project CLAUDE.md
 # (per Anthropic memory docs: .claude/rules/ + .claude/CLAUDE.md are

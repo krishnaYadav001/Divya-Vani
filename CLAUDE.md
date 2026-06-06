@@ -49,9 +49,9 @@ Phase 7.0 iteration passes (pre-close; led to the 4 closing commits), each a per
   - **f5c35db** — §7 SCOPE REFUSAL (no code / tech tutorials / product-vendor recs / business advice; ABSOLUTE LEXICAL no-code-fences; bilingual redirect-to-dharma); §3 RECEIVING THE USER'S NAME (warm reception + 7 etymology examples + never-fabricate fallback); §10 NOT FLATTERY name-meaning carve-out
   - **d979426** — 4 advisor research docs tracked in git (beta-review-rubric.md, conversation-craft-research.md, prabhupada-krishna-persona-research.md, anthropic-prompt-design-research.md — closes fragile-reference for fresh CC clones)
 - Persona **~14,400 → ~16,465 tokens** across the cycle (char-estimate; real `countTokens` for end-of-Phase-7 / pre-restructure state measured **~24,813** — the ~10k–~17k rolling figures were chars/≈4 estimates undercounting Devanagari, not regressions). Single cache block preserved
-- Mid-session CLAUDE.md change: **"Claude advisor invariants — DO NOT BREAK"** sub-section added to Key invariants — mandatory web-search before asserting time-sensitive facts; travels via CLAUDE.md auto-load + founder's Claude-desktop user-instructions
+- Mid-session CLAUDE.md change: **"Claude advisor invariants — DO NOT BREAK"** sub-section added to Key invariants (mandatory web-search + edge-case discipline rules)
 - Phase 7 listening phase formally over; Wave 2 closed with current data (sufficient signal)
-- **Founder decisions:** Ronin Legal cold email DECLINED (own legal advocates); grievance@divyavani.co.in mailbox via Hostinger free email; Gokul-Kansa scriptural parallels kept permissive (no biographical-fuzziness restriction); name pleasantry "[X] बात है" formula kept (removed from post-beta queue); Razorpay full-access ticket pending poke; next persona iteration = COMPRESSION not additive + full XML restructure (deferral rationale: pre-launch timing; structure+compression pair; primary-source docs/anthropic-prompt-design-research.md) — both SHIPPED Phase 8.x as combined refactor (1254a27)
+- **Founder decisions:** Ronin Legal cold email DECLINED (own legal advocates); grievance@divyavani.co.in mailbox via Hostinger free email; Gokul-Kansa scriptural parallels kept permissive (no biographical-fuzziness restriction); name pleasantry "[X] बात है" formula kept (removed from post-beta queue); Razorpay full-access ticket pending poke; XML restructure + compression SHIPPED Phase 8.x (1254a27)
 
 ### Phase 8.0 — Launch prep cycle (CLOSED 2026-05-13/14)
 Privacy + persona + UX + STT + verse-card + mic-UX + i18n. 8 commits on top of 2 transitional:
@@ -76,13 +76,8 @@ Privacy + persona + UX + STT + verse-card + mic-UX + i18n. 8 commits on top of 2
 - **c4ee359** — Phase 8.x docs close-out (persona voice + Gottlieb doc updates)
 
 ### Phase 8.x backlog cleanup (Session 2026-05-16)
-- **b4b37ae** — next 16.2.4 → 16.2.6 (HIGH SSRF 8.6 GHSA-c4j6-fc7j-m34r + middleware-bypass 8.1 GHSA-492v-c6pp-mqqv) + @anthropic-ai/sdk 0.91.0 → 0.91.1; build PASS, test:prompt 82/83 (baseline)
-- **e0c3d90** — removed unused silero_vad_legacy.onnx (~1.8 MB; vad-web `model:"v5"` only, no fallback codepath verified)
-- **0a0cbae** — scripts/count-system-prompt-tokens.ts rewritten to measure persona via `messages.countTokens` (drops Phase 1.7 cache probe); added `npm run count:tokens` (measured 26,314 persona-only, 0.05% off the 26,327 reference)
-- **8bb373b** — CLAUDE.md status section structural rewrite
-- **Accepted residual:** postcss@8.4.31 bundled by Next (XSS via unescaped `</style>`, GHSA-qx2v-qp2m-jg93, CVSS 6.1) — transitive-only, not on app's request path, only npm "fix" is a Next downgrade. Monitor for upstream Next patch
-- onnxruntime-web: install-time advisories cleared upstream — no action
-- Resolved this session (formerly open backlog): count-tokens script (0a0cbae), VAD bundle trim (e0c3d90), onnxruntime-web npm-audit (b4b37ae + cleared upstream)
+- next 16.2.4 → 16.2.6 (SSRF + middleware-bypass CVEs) + @anthropic-ai/sdk 0.91.1; silero_vad_legacy.onnx removed (~1.8 MB); count:tokens script rewritten to use `messages.countTokens`; CLAUDE.md structural rewrite
+- **Accepted residual:** postcss GHSA-qx2v-qp2m-jg93 (transitive, not on request path; monitor for upstream Next patch)
 
 ### Open backlog (Phase 8.x or later)
 - PROJECT_HISTORY.md Phase 7 carry-forwards stale-item cleanup (STT-via-Web-Speech entry obsolete after d06984d)
@@ -280,4 +275,4 @@ Forward-looking. DO NOT IMPLEMENT until the corresponding phase ships.
 
 ## Build phase reference
 
-See [`docs/build-roadmap.md`](docs/build-roadmap.md) for the full 19-week phase plan and per-phase technical detail. Quick orientation: Phases 1 / 1.5 / 1.6 / 1.7 (corpus ingest) **complete** as of 2026-05-02; Phase 2 (RAG retuning) is **next**, then Phase 3 (persona prompt) → 4 (safety + name + content filter) → 5 (Razorpay seva) → 6 (mobile QA + Vercel deploy) → 7 (closed beta with 50 users) → 8 (public launch). Phase 9+ post-launch ladder lives in the "Post-launch pricing ladder" table above.
+See [`docs/build-roadmap.md`](docs/build-roadmap.md) for the full 19-week phase plan. Phases 1–8 complete (see Status section above). Phase 9+ post-launch ladder lives in the "Post-launch pricing ladder" table above.

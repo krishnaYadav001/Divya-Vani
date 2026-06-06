@@ -45,11 +45,10 @@ import {
 } from "@elevenlabs/react";
 import { BRAND } from "@/lib/brand";
 import { useLanguage } from "../providers/LanguageProvider";
-import { getTiersInOrder } from "@/lib/seva";
 import { loadTranscript, saveTranscript } from "@/lib/voiceTranscriptStorage";
 import AgentOrb, { type AgentOrbState } from "./AgentOrb";
 import HelplineOverlay from "./HelplineOverlay";
-import DiyaSevaPanel from "../components/DiyaSevaPanel";
+import SevaHubModal from "../components/SevaHubModal";
 import PeacockFeather from "../components/motifs/PeacockFeather";
 
 // Phase 11.6 env-var candidate (NEXT_PUBLIC_ELEVENLABS_AGENT_ID). Hardcoded for
@@ -57,7 +56,6 @@ import PeacockFeather from "../components/motifs/PeacockFeather";
 const AGENT_ID = "agent_3001ks8hkawgf5cb5k7fy8gwxsme";
 
 const C = BRAND.voiceCopy;
-const TIERS = getTiersInOrder();
 
 type Bilingual = { hi: string; en: string };
 type HelplineState = { flag: "self_harm" | "harm_others"; userLang: "hi" | "en" } | null;
@@ -538,17 +536,19 @@ function VoiceInner() {
     router.push("/chat");
   }, [endSession, router]);
 
-  const onPurchaseSuccess = useCallback((newBalance: number) => {
-    setCounter((p) => ({ ...p, sevaBalance: newBalance }));
-    // Voice access is "has ever completed a paid seva" (see voiceAccess.ts),
-    // NOT "balance > 0". This callback only fires after a verified payment, so
-    // the user now qualifies regardless of the returned balance figure (which
-    // could lag for a brand-new payer whose memory row was only just created).
-    // Grant access + clear any paywall error so the orb is reachable WITHOUT a
-    // reload — the prior `newBalance > 0` guard left the paywall stuck whenever
-    // the balance came back 0/unknown.
-    setHasAccess(true);
-    setError((e) => (e?.code === "paywall" ? null : e));
+  // After the SevaHubModal closes, re-check voice access via bootstrap so a
+  // freshly-completed wallet top-up or subscription grants access immediately.
+  const handleHubClose = useCallback(() => {
+    setIsSevaOpen(false);
+    fetch("/api/voice/bootstrap")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.hasAccess === true) {
+          setHasAccess(true);
+          setError((e) => (e?.code === "paywall" ? null : e));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Bilingual transcript row (night ivory ramp).
@@ -614,8 +614,8 @@ function VoiceInner() {
             </h1>
           </div>
 
-          {/* exit (right) + seva panel anchor — X only during an active call */}
-          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+          {/* exit — X only during an active call */}
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center">
             {isActive && (
               <button
                 type="button"
@@ -629,14 +629,6 @@ function VoiceInner() {
                 </svg>
               </button>
             )}
-            <DiyaSevaPanel
-              isOpen={isSevaOpen}
-              onClose={() => setIsSevaOpen(false)}
-              messageCount={counter.messageCount}
-              sevaBalance={counter.sevaBalance}
-              tiers={TIERS}
-              onPurchaseSuccess={onPurchaseSuccess}
-            />
           </div>
         </div>
       </header>
@@ -853,6 +845,14 @@ function VoiceInner() {
           </>
         )}
       </div>
+
+      {/* Voice-specific monetization hub — wallet (voice minutes) + plans
+          (Krishna Voice / Premium subscriptions). NOT the chat seva panel. */}
+      <SevaHubModal
+        open={isSevaOpen}
+        onClose={handleHubClose}
+        initialTab="wallet"
+      />
     </>
   );
 }

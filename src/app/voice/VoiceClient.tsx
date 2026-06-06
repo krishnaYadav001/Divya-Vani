@@ -24,16 +24,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { getTiersInOrder } from "@/lib/seva";
 import type { SafetyCard } from "@/lib/messages";
 import * as voice from "@/lib/voiceSession";
 import type { VoiceState, VoiceError } from "@/lib/voiceSession";
 import Orb, { type OrbState } from "./Orb";
 import TranscriptModal from "./TranscriptModal";
-import DiyaSevaPanel from "../components/DiyaSevaPanel";
+import SevaHubModal from "../components/SevaHubModal";
 
 const C = BRAND.voiceCopy;
-const TIERS = getTiersInOrder();
 
 function errorCopy(code: string): { hi: string; en: string } {
   const e = C.errors;
@@ -121,15 +119,17 @@ export default function VoiceClient() {
     // Fresh idle session for this mount (clears any prior session's turns).
     voice.reset();
 
-    // Paywall pre-check (best-effort; see header note on the seva_balance
-    // proxy). Free / unpaid users see the paywall overlay before speaking.
-    fetch("/api/me")
+    // Paywall pre-check — /api/voice/bootstrap is the authoritative gate:
+    // it checks subscription pool, voice-wallet balance, and legacy payments
+    // (see src/lib/voiceAccess.ts). /api/me only exposes seva_balance (chat
+    // messages) which is the wrong signal for voice access.
+    fetch("/api/voice/bootstrap")
       .then((r) => r.json())
       .then((d) => {
-        const mc = typeof d.message_count === "number" ? d.message_count : 0;
-        const sb = typeof d.seva_balance === "number" ? d.seva_balance : 0;
+        const mc = typeof d.messageCount === "number" ? d.messageCount : 0;
+        const sb = typeof d.sevaBalance === "number" ? d.sevaBalance : 0;
         setCounter({ message_count: mc, seva_balance: sb });
-        setHasAccess(sb > 0);
+        setHasAccess(d.hasAccess === true);
       })
       .catch(() => {
         setHasAccess(false);
@@ -157,14 +157,19 @@ export default function VoiceClient() {
      
   }, []);
 
-  // When the seva panel reflects a fresh purchase, an error("paywall") clears
-  // its overlay flavour but the seva overlay stays openable.
-  const onPurchaseSuccess = useCallback((newBalance: number) => {
-    setCounter((p) => ({ ...p, seva_balance: newBalance }));
-    if (newBalance > 0) {
-      setHasAccess(true);
-      setError((e) => (e?.code === "paywall" ? null : e));
-    }
+  // After the SevaHubModal closes, re-check voice access via bootstrap so a
+  // freshly-completed wallet top-up or subscription grants access immediately.
+  const handleHubClose = useCallback(() => {
+    setIsSevaOpen(false);
+    fetch("/api/voice/bootstrap")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.hasAccess === true) {
+          setHasAccess(true);
+          setError((e) => (e?.code === "paywall" ? null : e));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Focus the primary action when idle (accessibility entry point).
@@ -263,28 +268,17 @@ export default function VoiceClient() {
           {BRAND.name.en}
         </span>
 
-        <div className="relative flex shrink-0 items-center">
-          <button
-            type="button"
-            onClick={handleExit}
-            aria-label={`${C.exit.hi} · ${C.exit.en}`}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-vermillion/10 hover:text-vermillion focus:outline-none focus:ring-2 focus:ring-vermillion/40"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          </button>
-          {/* Seva panel — anchored under this top-right cluster (relative). */}
-          <DiyaSevaPanel
-            isOpen={isSevaOpen}
-            onClose={() => setIsSevaOpen(false)}
-            messageCount={counter.message_count}
-            sevaBalance={counter.seva_balance}
-            tiers={TIERS}
-            onPurchaseSuccess={onPurchaseSuccess}
-          />
-        </div>
+        <button
+          type="button"
+          onClick={handleExit}
+          aria-label={`${C.exit.hi} · ${C.exit.en}`}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-vermillion/10 hover:text-vermillion focus:outline-none focus:ring-2 focus:ring-vermillion/40"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+          </svg>
+        </button>
       </header>
 
       {/* ── Zone 2: identity disclaimer strip (Locked Decision #1) ──── */}
@@ -524,6 +518,14 @@ export default function VoiceClient() {
         isOpen={showTranscript}
         onClose={() => setShowTranscript(false)}
         turns={transcriptTurns}
+      />
+
+      {/* Voice-specific monetization hub — wallet (voice minutes) + plans
+          (Krishna Voice / Premium subscriptions). NOT the chat seva panel. */}
+      <SevaHubModal
+        open={isSevaOpen}
+        onClose={handleHubClose}
+        initialTab="wallet"
       />
     </>
   );

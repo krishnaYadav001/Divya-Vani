@@ -9,6 +9,7 @@ import {
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import { BRAND } from "@/lib/brand";
+import "@/lib/startup";
 import SiteFooter from "./components/SiteFooter";
 import SupportWidget from "./components/SupportWidget";
 import { LanguageProvider } from "./providers/LanguageProvider";

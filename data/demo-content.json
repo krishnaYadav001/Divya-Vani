@@ -1,8 +1,6 @@
 {
   "videos": [
-    { "id": "PLACEHOLDER_ID_1", "title_hi": "जल्द आ रहा है", "title_en": "Coming soon" },
-    { "id": "PLACEHOLDER_ID_2", "title_hi": "जल्द आ रहा है", "title_en": "Coming soon" },
-    { "id": "PLACEHOLDER_ID_3", "title_hi": "जल्द आ रहा है", "title_en": "Coming soon" }
+    { "id": "ZTxxZxxYpbw", "title_hi": "दिव्य वाणी — एक झलक", "title_en": "Divya Vani — A glimpse", "short": true }
   ],
   "screenshots": [
     { "src": "/demo/placeholder-1.png", "alt_hi": "Krishna के साथ बातचीत", "alt_en": "Conversation with Krishna" },

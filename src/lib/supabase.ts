@@ -368,6 +368,12 @@ export async function markPaymentRefunded(
   try {
     const client = getClient();
     if (!client) return false;
+    // Razorpay refund IDs are always "rfnd_" + alphanumeric. Reject anything
+    // else before interpolating into the PostgREST DSL filter string.
+    if (!/^rfnd_[A-Za-z0-9]+$/.test(refundId)) {
+      console.error("[supabase] markPaymentRefunded: invalid refundId format:", refundId);
+      return false;
+    }
     const { error } = await client
       .from("payments")
       .update({

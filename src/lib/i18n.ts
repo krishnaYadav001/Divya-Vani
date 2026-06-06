@@ -358,7 +358,7 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       heroBody:
         "A glimpse of conversations with Krishna. Real videos, real screenshots, real replies — so you can see how the flute sounds before stepping in.",
       ctaBegin: "Begin",
-      sectionRealConversations: "Real conversations",
+      sectionRealConversations: "Watch a walkthrough",
       sectionHowItLooks: "How it looks on screen",
       sectionHowKrishnaReplies: "How Krishna replies",
       sectionComingSoonVoice: "Coming soon — Krishna in voice",
@@ -601,7 +601,7 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       heroBody:
         "श्रीकृष्ण से बातचीत की एक झलक। असली वीडियो, असली स्क्रीनशॉट, असली जवाब — ताकि भीतर आने से पहले तुम बाँसुरी की धुन सुन सको।",
       ctaBegin: "अभी बात करो",
-      sectionRealConversations: "देखो — असली बातचीत",
+      sectionRealConversations: "वीडियो देखें",
       sectionHowItLooks: "और स्क्रीन पर ऐसा दिखता है",
       sectionHowKrishnaReplies: "सुनो — कैसे जवाब आता है",
       sectionComingSoonVoice: "जल्द — कृष्ण की आवाज़ में",

@@ -14,22 +14,24 @@ type Props = {
   id: string;
   titleHi: string;
   titleEn: string;
+  short?: boolean;
 };
 
 function isPlaceholder(id: string) {
   return id.startsWith("PLACEHOLDER_ID_");
 }
 
-export default function YouTubeFacade({ id, titleHi, titleEn }: Props) {
+export default function YouTubeFacade({ id, titleHi, titleEn, short }: Props) {
   const { lang } = useLanguage();
   const [playing, setPlaying] = useState(false);
   const placeholder = isPlaceholder(id);
   const title = lang === "hi" ? titleHi : titleEn;
+  const aspect = short ? "9 / 16" : "16 / 9";
 
   return (
     <div
       className="relative w-full overflow-hidden rounded-2xl border border-[oklch(86%_0.04_70)] bg-[var(--color-mist-2)] shadow-[0_8px_24px_-16px_oklch(40%_0.08_30_/_0.25)]"
-      style={{ aspectRatio: "16 / 9" }}
+      style={{ aspectRatio: aspect }}
     >
       {placeholder ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-linear-to-br from-[var(--color-buttermilk)] to-[var(--color-peach)] px-4 text-center">
