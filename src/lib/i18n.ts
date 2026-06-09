@@ -112,6 +112,8 @@ export type Messages = {
     ctaGlimpse: string;
     ctaTalk: string;
     freeMessages: string;
+    dataTitle: string;
+    dataDisclaimer: string;
   };
   // Demo / examples marketing page chrome.
   demo: {
@@ -352,6 +354,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       ctaGlimpse: "See a glimpse",
       ctaTalk: "Talk with Krishna",
       freeMessages: "10 free messages",
+      dataTitle: "Your privacy, your control",
+      dataDisclaimer: "Your data is completely in your hands. You have full control and can permanently delete it anytime from the settings.",
     },
     demo: {
       hero: "A glimpse of Krishna",
@@ -595,6 +599,8 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       ctaGlimpse: "एक झलक",
       ctaTalk: "कृष्ण से बात करो",
       freeMessages: "10 निःशुल्क संदेश",
+      dataTitle: "आपकी निजता, आपका नियंत्रण",
+      dataDisclaimer: "आपका डेटा पूरी तरह आपके हाथों में है। आप जब चाहें सेटिंग्स से इसे स्थायी रूप से हटा सकते हैं।",
     },
     demo: {
       hero: "श्रीकृष्ण से एक झलक",

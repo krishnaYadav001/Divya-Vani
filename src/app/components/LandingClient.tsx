@@ -111,16 +111,7 @@ export default function LandingClient() {
 
           {/* ── Text composition ────────────────────────────────── */}
           <div className="fade-up min-w-0 [animation-delay:180ms] [animation-fill-mode:backwards]">
-            <p className="flex items-center gap-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.4em] text-ink-faint">
-              Vol.
-              <span
-                aria-hidden
-                className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(78%_0.1_12)]"
-              />
-              Mathurā Edition
-            </p>
-
-            <h1 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(2.75rem,8vw,6.5rem)] font-normal leading-[0.88] text-ink">
+            <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.75rem,8vw,6.5rem)] font-normal leading-[0.88] text-ink">
               {nameHead}
               <br />
               {nameRest.join(" ")}.
@@ -169,8 +160,25 @@ export default function LandingClient() {
               </span>
             </div>
 
+            {/* Privacy Card */}
+            <div className="mt-8 flex items-start gap-3 rounded-[20px] border border-[oklch(85%_0.02_50)] bg-white/40 p-4 shadow-[0_4px_20px_-8px_oklch(50%_0.1_30_/_0.15)] backdrop-blur lg:max-w-[480px]">
+              <div className="mt-0.5 shrink-0 rounded-full bg-[oklch(94%_0.03_60)] p-1.5 text-[oklch(78%_0.1_12)] shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <div>
+                <p className={`text-[14px] font-medium text-ink ${ctaFont}`}>
+                  {t.landing.dataTitle}
+                </p>
+                <p className={`mt-0.5 text-[13px] leading-relaxed text-ink-soft ${proseFont}`}>
+                  {t.landing.dataDisclaimer}
+                </p>
+              </div>
+            </div>
+
             {/* Sanskrit quote */}
-            <div className="mt-6 border-t border-[var(--color-ink-line)] pt-4">
+            <div className="mt-8 border-t border-[var(--color-ink-line)] pt-4">
               <p className="font-[family-name:var(--font-devanagari)] text-lg italic leading-[1.55] text-ink-soft">
                 {SANSKRIT}
               </p>
