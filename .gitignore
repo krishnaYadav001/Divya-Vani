@@ -76,3 +76,14 @@ data/*.backup-*
 # bhagavata raw OCR sources (CC0 archive.org djvu_txt, ~600–760 KB each;
 # regenerate via curl per CLAUDE.md Phase 1.6 notes — keeps repo small)
 /data/bhagavata-raw/
+
+# agent and swarm runtimes (local-only, do not commit)
+/.agents/
+/.swarm/
+/skills-lock.json
+
+# temporary developer test files
+/body.json
+/smoke.sh
+/*.mp3
+

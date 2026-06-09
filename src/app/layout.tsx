@@ -53,8 +53,33 @@ const tiroDevanagari = Tiro_Devanagari_Hindi({
 
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.url),
-  title: BRAND.name.en,
+  title: {
+    default: `${BRAND.name.en} — Speak with Krishna AI`,
+    template: `%s | ${BRAND.name.en}`,
+  },
   description: BRAND.description.en,
+  applicationName: BRAND.name.en,
+  appleWebApp: {
+    capable: true,
+    title: BRAND.name.en,
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+  },
+  keywords: [
+    "Krishna AI",
+    "Bhagavad Gita AI",
+    "Hindu spirituality",
+    "dharma",
+    "Divya Vani",
+    "divyavani",
+    "Krishna chat",
+    "dharma AI"
+  ],
   // Brand icon set — the Sudarshan Chakra mark from the Dawn Aarti
   // handoff, rasterized at every standard size into /public. The SVG is
   // the canonical source (modern browsers prefer it); the PNGs cover
@@ -74,7 +99,7 @@ export const metadata: Metadata = {
     type: "website",
     url: BRAND.url,
     siteName: BRAND.name.en,
-    title: BRAND.name.en,
+    title: `${BRAND.name.en} — Speak with Krishna AI`,
     description: BRAND.description.en,
     // og.jpg, NOT og.png — DO NOT revert to PNG. The 1024×541 PNG was
     // 847 KB; WhatsApp silently drops any og:image over 600 KB (uses
@@ -100,7 +125,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: BRAND.name.en,
+    title: `${BRAND.name.en} — Speak with Krishna AI`,
     description: BRAND.description.en,
     images: ["/og.jpg"],
   },

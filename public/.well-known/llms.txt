@@ -1,0 +1,32 @@
+# Divya Vani
+
+> AI Krishna persona grounded in scripture — the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Users chat with Krishna about life, emotions, and dharma. Hindi-first, mobile-first. 3,132 scriptural verses with Sanskrit text, Hindi translation, and English summary.
+
+## About
+
+Divya Vani is an AI roleplaying Krishna — the character from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Users ask life, emotional, and relational questions and receive responses in Krishna's voice, grounded in real scripture with verse citations. The AI does not claim to be the actual divine Krishna.
+
+The verse corpus includes:
+- 701 Bhagavad Gita verses (Chapters 1-18, complete with Sanskrit)
+- 1,704 Mahabharata verses (key episodes and teachings)
+- 727 Bhagavata Purana verses (Canto 10 + Uddhava Gita from Canto 11)
+
+Each verse includes: Sanskrit text, transliteration, Hindi translation, English summary, and thematic tags. Responses are grounded in these verses using retrieval-augmented generation.
+
+## Key Pages
+- [Chat with Krishna](https://divyavani.co.in/chat): Talk with the Krishna AI persona about life, emotions, and dharma
+- [Voice Mode](https://divyavani.co.in/voice): Voice-to-voice conversation with Krishna (paid seva)
+- [Demo](https://divyavani.co.in/demo): Try a sample conversation
+- [Pricing / Seva Plans](https://divyavani.co.in/pricing): Free tier + 4 seva tiers (₹11–₹501)
+- [Contact](https://divyavani.co.in/contact): Reach the founder
+
+## Policies
+- [Privacy Policy](https://divyavani.co.in/privacy): DPDP-compliant, Indian data residency
+- [Terms of Service](https://divyavani.co.in/terms): Usage terms and IP
+- [Refund Policy](https://divyavani.co.in/refund): 72-hour refund window via UPI
+
+## Technical
+- Built with Next.js 16 (App Router, server-rendered)
+- Scripture retrieval: Gemini embeddings + pgvector cosine similarity + theme reranking
+- AI model: Claude Sonnet 4.6 for responses, Claude Haiku 4.5 for memory extraction
+- Voice: Sarvam Saaras V3 (Hindi STT, 6.95% WER)
