@@ -1,7 +1,8 @@
 {
   "videos": [
     { "id": "ZTxxZxxYpbw", "title_hi": "दिव्य वाणी — एक झलक", "title_en": "Divya Vani — A glimpse", "short": true },
-    { "id": "LIVFEzBCs5g", "title_hi": "जब आप पुकारते हैं... ज्ञान उत्तर देता है", "title_en": "When you call out... Wisdom answers", "short": true }
+    { "id": "LIVFEzBCs5g", "title_hi": "जब आप पुकारते हैं... ज्ञान उत्तर देता है", "title_en": "When you call out... Wisdom answers", "short": true },
+    { "id": "NrfjaAseUUA", "title_hi": "आधुनिक सेल्फ-हेल्प पुस्तकें क्यों असफल हो रही हैं", "title_en": "Why modern self-help books are failing you", "short": true }
   ],
   "screenshots": [
     { "src": "/demo/placeholder-1.png", "alt_hi": "Krishna के साथ बातचीत", "alt_en": "Conversation with Krishna" },
