@@ -168,6 +168,66 @@ export default function RootLayout({
         className="h-dvh flex flex-col overflow-hidden"
         suppressHydrationWarning
       >
+        {/* ---- Global JSON-LD structured data (AEO/GEO) ----
+            WebSite + Organization schemas live in the layout so every
+            page (including the homepage) is detectable by Google Rich
+            Results Test, AI engine crawlers, and knowledge-graph
+            extractors. Per-page schemas (Article, FAQPage) are added
+            by individual routes (e.g. /verse/[id]). */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: BRAND.name.en,
+              alternateName: BRAND.name.hi,
+              url: BRAND.url,
+              description: BRAND.description.en,
+              inLanguage: ["hi", "en", "sa"],
+              publisher: {
+                "@type": "Organization",
+                name: BRAND.name.en,
+                url: BRAND.url,
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: BRAND.name.en,
+              alternateName: BRAND.name.hi,
+              url: BRAND.url,
+              description: BRAND.description.en,
+              logo: `${BRAND.url}/favicon-512.png`,
+              contactPoint: {
+                "@type": "ContactPoint",
+                telephone: BRAND.contact.phone,
+                contactType: "customer service",
+                email: BRAND.contact.email,
+                areaServed: "IN",
+                availableLanguage: ["Hindi", "English"],
+              },
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "255 EWS, Barra-4, Janta Nagar",
+                addressLocality: "Kanpur",
+                addressRegion: "Uttar Pradesh",
+                postalCode: "208027",
+                addressCountry: "IN",
+              },
+              founder: {
+                "@type": "Person",
+                name: BRAND.contact.founder,
+              },
+              sameAs: [],
+            }),
+          }}
+        />
         <LanguageProvider>
           {children}
           <SiteFooter />
