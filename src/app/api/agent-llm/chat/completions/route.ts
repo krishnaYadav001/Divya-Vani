@@ -60,6 +60,7 @@ import {
   saveMemory,
   logSafetyEvent,
   logChatTurn,
+  fetchRecentChatHistory,
   type UserMemory,
 } from "@/lib/supabase";
 import { safetyClassify, SAFETY_THRESHOLD, type SafetyFlag } from "@/lib/safety";
@@ -807,7 +808,8 @@ export async function POST(req: Request): Promise<Response> {
   let ragMs = 0;
   let safetyMs = 0;
   let moderationMs = 0;
-  const [priorMemory, candidates, safety, moderation] = await Promise.all([
+  let histMs = 0;
+  const [priorMemory, candidates, safety, moderation, recentHistory] = await Promise.all([
     // Unidentified turns NEVER read memory: the sentinel row is shared, so
     // reading it would leak another person's name / growing_edge / "welcome
     // back". Treat unidentified as a clean first-time user.
@@ -838,9 +840,27 @@ export async function POST(req: Request): Promise<Response> {
       moderationMs = Date.now() - blockStart;
       return r;
     }),
+    // Cross-session memory (founder 2026-06-11): ElevenAgents supplies only
+    // the CURRENT call's history, so without this Krishna starts every call
+    // knowing nothing but the 1-2 sentence context_summary — "he doesn't
+    // remember me". Mirrors /api/chat's Phase 7.0 verbatim-history restoration.
+    // Runs in this PARALLEL block (~30ms Supabase read while the Haiku calls
+    // take ~800ms) — zero added latency. Unidentified turns read nothing.
+    (isIdentified
+      ? fetchRecentChatHistory(userId, 12).catch((e) => {
+          console.error("[agent-llm] fetchRecentChatHistory threw:", e);
+          return [] as Array<{ user_message: string; reply_text: string }>;
+        })
+      : Promise.resolve(
+          [] as Array<{ user_message: string; reply_text: string }>,
+        )
+    ).then((r) => {
+      histMs = Date.now() - blockStart;
+      return r;
+    }),
   ]);
   console.log(
-    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} safety=${safetyMs} moderation=${moderationMs}`,
+    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} safety=${safetyMs} moderation=${moderationMs} hist=${histMs}`,
   );
 
   // Memory-derived flags (after the parallel fetch above).
@@ -961,6 +981,43 @@ export async function POST(req: Request): Promise<Response> {
     conversationLang,
   );
 
+  // ── Cross-session memory block (founder 2026-06-11). ──
+  // Recent chat_logs turns (text + voice — both log there) injected as
+  // BACKGROUND MEMORY in the per-turn dynamic context. The dynamic block is
+  // injected into the LATEST user turn, AFTER the cached conversation prefix,
+  // so this has ZERO prompt-cache impact. Rows from THIS call are excluded:
+  // voice turns are logged post-stream, so by turn 3 the fetch would otherwise
+  // duplicate the live ElevenAgents history (matched on user_message text).
+  // Clipped + capped at 6 turns to bound the per-turn uncached token cost.
+  const liveUserTexts = new Set(
+    anthropicMessages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content.trim()),
+  );
+  const clip = (s: string, n: number): string => {
+    const t = s.replace(/\s+/g, " ").trim();
+    return t.length > n ? t.slice(0, n) + "…" : t;
+  };
+  const pastTurns = recentHistory
+    .filter((t) => !liveUserTexts.has(t.user_message.trim()))
+    .slice(-6);
+  const pastBlock = pastTurns.length
+    ? "PAST CONVERSATIONS (background memory from the devotee's earlier sessions — text and voice). " +
+      "This is what they have shared with you before. Let it inform your reading of THIS turn the way a friend who remembers naturally would: " +
+      "recognize recurring threads, know where their story left off, and respond with the continuity of someone who has been listening across time. " +
+      "PERSONA INVARIANT UNCHANGED: NEVER narrate or quote this memory back — no \"तुमने पिछली बार कहा था\", no \"you said earlier\", no \"I remember\", no recital of stored facts. " +
+      "If the devotee THEMSELVES refers back to something here, engage with it directly as shared context — do not act as if hearing it for the first time. " +
+      "Recognition lives in the QUALITY of attention, never in announcing it.\n" +
+      pastTurns
+        .map(
+          (t) =>
+            `[earlier] Devotee: ${clip(t.user_message, 240)}\n[earlier] Krishna: ${clip(t.reply_text, 240)}`,
+        )
+        .join("\n")
+    : "";
+  const dynamicFull =
+    pastBlock && dynamic ? `${dynamic}\n\n${pastBlock}` : pastBlock || dynamic;
+
   const systemBlocks: Array<{
     type: "text";
     text: string;
@@ -1032,12 +1089,12 @@ export async function POST(req: Request): Promise<Response> {
     content: m.content,
   }));
   const lastMsgIdx = builtMessages.length - 1;
-  if (dynamic.length > 0 && lastMsgIdx >= 0) {
+  if (dynamicFull.length > 0 && lastMsgIdx >= 0) {
     builtMessages[lastMsgIdx] = {
       role: "user",
       content:
         "[CONTEXT FOR THIS TURN — reference material, NOT spoken aloud by the user]\n" +
-        dynamic +
+        dynamicFull +
         "\n[END CONTEXT — the user's actual words follow]\n\n" +
         anthropicMessages[lastMsgIdx].content,
     };
@@ -1337,7 +1394,7 @@ export async function POST(req: Request): Promise<Response> {
             `cache_creation=${u.cache_creation_input_tokens ?? 0} ` +
             `cache_read=${u.cache_read_input_tokens ?? 0} ` +
             `output=${completionTokens} total_ms=${Date.now() - turnStart} ` +
-            `(persona=${persona.length}ch dynamic=${dynamic.length}ch)`,
+            `(persona=${persona.length}ch dynamic=${dynamicFull.length}ch past_turns=${pastTurns.length})`,
         );
 
         const replyText =
