@@ -811,7 +811,31 @@ export async function POST(req: Request): Promise<Response> {
   let moderationMs = 0;
   let histMs = 0;
   let semMs = 0;
-  const [priorMemory, candidates, safety, moderation, recentHistory, semanticHits] = await Promise.all([
+
+  // ── Speculative gating (founder 2026-06-11 latency pass). ──
+  // The safety + moderation Haiku classifiers (~500-800ms) used to gate Sonnet
+  // SERIALLY: Sonnet could not start until both returned. The real requirement
+  // is only that nothing REACHES THE USER before the gates pass — so the
+  // classifiers now run while Sonnet ramps up, and the stream below BUFFERS
+  // Sonnet's output until the verdict lands (gates resolve before Sonnet's
+  // first token on virtually every turn). Clean turns — the vast majority —
+  // get the whole classifier wait off the critical path. Flagged turns abandon
+  // the speculative stream unsent and behave exactly as before: moderation →
+  // fixed refusal; safety → restart WITH the SAFETY_FLAG persona steering +
+  // helpline tool first (a restart costs extra time only on distress turns,
+  // where presence matters far more than speed).
+  const gatesPromise = Promise.all([
+    safetyClassify(latestUserMessage).then((r) => {
+      safetyMs = Date.now() - blockStart;
+      return r;
+    }),
+    moderateInput(latestUserMessage).then((r) => {
+      moderationMs = Date.now() - blockStart;
+      return r;
+    }),
+  ]);
+
+  const [priorMemory, candidates, recentHistory, semanticHits] = await Promise.all([
     // Unidentified turns NEVER read memory: the sentinel row is shared, so
     // reading it would leak another person's name / growing_edge / "welcome
     // back". Treat unidentified as a clean first-time user.
@@ -834,14 +858,6 @@ export async function POST(req: Request): Promise<Response> {
         ragMs = Date.now() - blockStart;
         return r;
       }),
-    safetyClassify(latestUserMessage).then((r) => {
-      safetyMs = Date.now() - blockStart;
-      return r;
-    }),
-    moderateInput(latestUserMessage).then((r) => {
-      moderationMs = Date.now() - blockStart;
-      return r;
-    }),
     // Cross-session memory (founder 2026-06-11): ElevenAgents supplies only
     // the CURRENT call's history, so without this Krishna starts every call
     // knowing nothing but the 1-2 sentence context_summary — "he doesn't
@@ -875,7 +891,7 @@ export async function POST(req: Request): Promise<Response> {
     }),
   ]);
   console.log(
-    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} safety=${safetyMs} moderation=${moderationMs} hist=${histMs} sem=${semMs}`,
+    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} hist=${histMs} sem=${semMs} (safety/moderation resolve concurrently with Sonnet ramp-up — logged at verdict)`,
   );
 
   // Memory-derived flags (after the parallel fetch above).
@@ -925,46 +941,22 @@ export async function POST(req: Request): Promise<Response> {
       )
     : candidates.slice(0, 5);
 
-  // ── Step 7: safety + moderation gates. ──
-  // Edge case 13: NO safety_card is returned — ElevenAgents owns the UI. Safety
-  // is enforced via persona mode shift (safetyFlag → buildSystemPrompt) +
-  // safety_events logging only.
-  const safetyFlag: SafetyFlag | null =
-    safety.flag !== "safe" && safety.confidence > SAFETY_THRESHOLD
-      ? (safety.flag as SafetyFlag)
-      : null;
-
-  // Moderation gate — bypassed when safetyFlag is set: per Locked Decision #7,
-  // self_harm / harm_others MUST reach Krishna for compassionate Bhagavata mode.
-  const moderationFlag: ModerationFlag | null =
-    !safetyFlag &&
-    moderation.flag !== "safe" &&
-    moderation.confidence > MODERATION_THRESHOLD
-      ? moderation.flag
-      : null;
-
-  if (moderationFlag) {
-    if (isIdentified) {
-      waitUntil(
-        logSafetyEvent({
-          userId,
-          messageText: latestUserMessage,
-          flag: moderationFlag,
-          confidence: moderation.confidence,
-          replyText: MODERATION_REPLY,
-          versesReferenced: [],
-        }).catch((e) => console.error("[agent-llm] moderation logSafetyEvent failed:", e)),
-      );
-    }
-    return new Response(
-      fixedReplyStream(MODERATION_REPLY, includeUsage, responseModel),
-      { status: 200, headers: SSE_HEADERS },
-    );
-  }
+  // ── Step 7: safety + moderation verdicts now land INSIDE the stream ──
+  // (speculative gating — see gatesPromise above). Edge case 13 still holds:
+  // NO safety_card is returned — ElevenAgents owns the UI; safety is enforced
+  // via persona mode shift + helpline tool + safety_events logging.
+  // gateSafety carries the resolved safety result for persistTurnState (the
+  // stream assigns it at verdict time, which is always before persistence).
+  let gateSafety: { flag: string; confidence: number } = {
+    flag: "safe",
+    confidence: 0,
+  };
 
   // ── Latency: kick off memory extraction NOW (off the critical path). It runs
-  // concurrently with Sonnet's stream and is awaited in persistTurnState. Placed
-  // after the gates so a moderation/paywall short-circuit never spends it. ──
+  // concurrently with Sonnet's stream and is awaited in persistTurnState. With
+  // speculative gating it is also spent on the (rare) moderation-flagged turn —
+  // accepted: one wasted Haiku call on flagged turns vs ~500ms saved on all
+  // clean turns. ──
   // Skip the (heaviest) Haiku extraction entirely for unidentified turns —
   // nothing will be persisted, so there's no reason to spend it.
   const extractedPromise: Promise<ExtractedTurn | null> = isIdentified
@@ -984,17 +976,6 @@ export async function POST(req: Request): Promise<Response> {
   // extraction updates memory for the NEXT turn via persistTurnState.
   const effectiveMemory: UserMemory | null = priorMemory;
   const conversationLang: "hi" | "en" = detectLang(latestUserMessage, priorLang);
-
-  // ── Step 7 (build): system prompt — persona (cached) + dynamic + voice cap. ──
-  const { persona, dynamic } = buildSystemPrompt(
-    effectiveMemory,
-    isReturningUser,
-    isFirstTime,
-    verses,
-    priorCount,
-    safetyFlag,
-    conversationLang,
-  );
 
   // ── Cross-session memory block (founder 2026-06-11). ──
   // Recent chat_logs turns (text + voice — both log there) injected as
@@ -1053,14 +1034,35 @@ export async function POST(req: Request): Promise<Response> {
       "Recognition lives in the QUALITY of attention, never in announcing it.\n" +
       memoryLines.join("\n")
     : "";
+  // ── Step 7 (build): request assembly, as a FACTORY (speculative gating). ──
+  // The speculative run builds with flag=null; a safety-flagged turn rebuilds
+  // with the flag (only buildSystemPrompt's USER CONTEXT differs — the persona
+  // block and conversation prefix are byte-identical, so both builds share the
+  // same cache entries).
+  type AssembledRequest = {
+    systemBlocks: Array<{
+      type: "text";
+      text: string;
+      cache_control?: { type: "ephemeral"; ttl?: "1h" };
+    }>;
+    builtMessages: Anthropic.MessageParam[];
+    personaLen: number;
+    dynamicLen: number;
+  };
+  const assembleRequest = (flag: SafetyFlag | null): AssembledRequest => {
+  const { persona, dynamic } = buildSystemPrompt(
+    effectiveMemory,
+    isReturningUser,
+    isFirstTime,
+    verses,
+    priorCount,
+    flag,
+    conversationLang,
+  );
   const dynamicFull =
     pastBlock && dynamic ? `${dynamic}\n\n${pastBlock}` : pastBlock || dynamic;
 
-  const systemBlocks: Array<{
-    type: "text";
-    text: string;
-    cache_control?: { type: "ephemeral"; ttl?: "1h" };
-  }> = [
+  const systemBlocks: AssembledRequest["systemBlocks"] = [
     {
       type: "text",
       text: persona,
@@ -1149,6 +1151,13 @@ export async function POST(req: Request): Promise<Response> {
       ],
     };
   }
+  return {
+    systemBlocks,
+    builtMessages,
+    personaLen: persona.length,
+    dynamicLen: dynamicFull.length,
+  };
+  };
 
   // ── Step 11 prep: turn-state persistence (runs post-stream, in waitUntil). ──
   async function persistTurnState(replyText: string): Promise<void> {
@@ -1187,12 +1196,13 @@ export async function POST(req: Request): Promise<Response> {
       });
     }
 
-    // logSafetyEvent no-ops when flag === "safe".
+    // logSafetyEvent no-ops when flag === "safe". gateSafety was assigned at
+    // verdict time inside the stream — always before persistence runs.
     await logSafetyEvent({
       userId,
       messageText: latestUserMessage,
-      flag: safety.flag,
-      confidence: safety.confidence,
+      flag: gateSafety.flag,
+      confidence: gateSafety.confidence,
       replyText,
       versesReferenced: verseRefs,
     });
@@ -1207,7 +1217,7 @@ export async function POST(req: Request): Promise<Response> {
         replyText,
         language: conversationLang,
         versesReferenced: verseRefs,
-        safetyFlag: safety.flag,
+        safetyFlag: gateSafety.flag,
         messageCountAfter: priorCount + 1,
         source: "voice", // tag voice turns distinctly from chat in chat_logs
       }).catch((err) => console.warn("[agent-llm chat_logs] insert failed:", err));
@@ -1271,10 +1281,17 @@ export async function POST(req: Request): Promise<Response> {
       // that we revert to sentence-only boundaries for best TTS prosody.
       let firstFlushDone = false;
 
-      // Emit one OpenAI delta.content chunk. Lazily emits the role chunk first,
-      // and marks hasEmittedText (= "a content chunk has been sent").
-      const emitContent = (text: string) => {
-        if (!text) return; // edge 13: never emit an empty content chunk
+      // ── Speculative-gating buffer (founder 2026-06-11 latency pass) ──
+      // Sonnet starts BEFORE the safety/moderation verdict; until openGate()
+      // is called, emitContent BUFFERS chunks instead of sending — nothing
+      // reaches ElevenLabs before the gates pass. The verdict normally lands
+      // before Sonnet's first token, so the buffer is usually empty when the
+      // gate opens and emission is effectively live from the start.
+      let gateOpen = false;
+      const pendingTexts: string[] = [];
+      // Send one OpenAI delta.content chunk NOW. Lazily emits the role chunk
+      // first, and marks hasEmittedText (= "a content chunk has been sent").
+      const sendContentNow = (text: string) => {
         if (!roleEmitted) {
           // edge 10: role marker stays metadata-first, emitted before any text.
           roleEmitted = true;
@@ -1282,6 +1299,18 @@ export async function POST(req: Request): Promise<Response> {
         }
         hasEmittedText = true;
         send(contentChunkLine(id, created, responseModel, text));
+      };
+      const emitContent = (text: string) => {
+        if (!text) return; // edge 13: never emit an empty content chunk
+        if (!gateOpen) {
+          pendingTexts.push(text);
+          return;
+        }
+        sendContentNow(text);
+      };
+      const openGate = () => {
+        gateOpen = true;
+        for (const t of pendingTexts.splice(0)) sendContentNow(t);
       };
 
       // Exclusive end index of the next boundary in `buf` (boundary char +
@@ -1321,24 +1350,9 @@ export async function POST(req: Request): Promise<Response> {
         return -1;
       };
 
-      // ── Phase 11.5 — emit the helpline tool call up front when flagged ──
-      // BEFORE Krishna's first words, so the widget renders the overlay
-      // immediately, in parallel with the spoken reply (edge A5.6). Role chunk
-      // first; roleEmitted=true stops emitContent re-emitting it.
-      if (safetyFlag) {
-        send(roleChunkLine(id, created, responseModel));
-        roleEmitted = true;
-        send(
-          toolCallChunkLine(
-            id,
-            created,
-            responseModel,
-            "call_" + randomUUID(),
-            "show_helpline_card",
-            JSON.stringify({ flag: safetyFlag, user_lang: conversationLang }),
-          ),
-        );
-      }
+      // (Phase 11.5's up-front helpline tool emission moved into the verdict
+      // branch below — with speculative gating the safety flag is only known
+      // once the gates resolve, and the tool chunk still precedes any content.)
 
       // Flush the buffer in TTS-friendly units (edge 1: one Anthropic delta may
       // contain several sentences), then apply the no-boundary safety cap.
@@ -1394,35 +1408,49 @@ export async function POST(req: Request): Promise<Response> {
         }
       };
 
+      // Generation token: an ABANDONED speculative stream (flagged turn) must
+      // never keep mutating sentenceBuffer while the restart streams. Each
+      // runStream invocation carries its generation; stale handlers no-op.
+      let generation = 0;
+      // Initializer is cast (not bare null) so TS keeps the union type at the
+      // verdict-branch use sites — the only assignments happen inside the
+      // runStream closure, which control-flow narrowing can't see.
+      let activeStream = null as { abort: () => void } | null;
+
       try {
         // Retry overload/5xx BEFORE first token only (after first token a retry
         // would prepend a second partial reply to the stream the SDK is reading).
-        const runSonnetStream = async () => {
-          // Latency split: time spent on OUR pre-Sonnet work (body parse,
-          // identity, banned-word, the parallel memory+RAG+safety+moderation
-          // block, gates, prompt build) before the first Anthropic call. Logged
-          // alongside first_token_ms below so "our server prep" is separable
-          // from "Sonnet TTFT (+ any overload backoff)" — that tells us which
-          // half to attack next without guessing.
+        const runStream = async (
+          parts: AssembledRequest,
+          gen: number,
+        ): Promise<Anthropic.Message> => {
+          // Latency split: time spent on OUR pre-Sonnet work before this
+          // Anthropic call. With speculative gating this no longer includes the
+          // safety/moderation wait — compare with the gates-verdict log line.
           const preSonnetMs = Date.now() - turnStart;
           let lastErr: unknown;
           for (let attempt = 0; attempt <= MAX_OVERLOAD_RETRIES; attempt++) {
-            // edge 12: discard any partial buffer before (re)trying. Retries only
-            // happen before the first flush (hasEmittedText guard), so this is safe.
+            // edge 12: discard any partial buffer (live retries only happen
+            // before the first flush per the hasEmittedText guard; buffered
+            // speculative partials are safe to drop wholesale).
             sentenceBuffer = "";
+            pendingTexts.length = 0;
+            firstFlushDone = false;
             const messageStream = client.messages.stream(
               {
                 model: "claude-sonnet-4-6",
                 max_tokens: VOICE_MAX_TOKENS, // override request's 5000
                 temperature: VOICE_TEMPERATURE, // override request's 0.0
-                system: systemBlocks,
-                messages: builtMessages,
+                system: parts.systemBlocks,
+                messages: parts.builtMessages,
               },
               { signal: req.signal }, // edge case 10: propagate client abort
             );
+            activeStream = messageStream;
 
             messageStream.on("text", (delta) => {
               if (!delta) return; // edge 6: ignore empty deltas (no buffer change)
+              if (gen !== generation) return; // stale (abandoned) stream
               if (!firstTokenLogged) {
                 firstTokenLogged = true;
                 const ftMs = Date.now() - turnStart;
@@ -1440,6 +1468,9 @@ export async function POST(req: Request): Promise<Response> {
               return await messageStream.finalMessage();
             } catch (err) {
               lastErr = err;
+              // Abandoned on purpose (flagged turn) → bail quietly; the outer
+              // .catch(() => {}) on the speculative promise swallows this.
+              if (gen !== generation) throw err;
               // Abort → propagate (no retry, no persist). Already emitted text →
               // fatal. Non-overload (4xx) → fatal. Else back off + retry.
               if (req.signal.aborted || hasEmittedText) throw err;
@@ -1455,7 +1486,108 @@ export async function POST(req: Request): Promise<Response> {
           throw lastErr;
         };
 
-        const finalMsg = await runSonnetStream();
+        // ── Speculative run: Sonnet starts NOW with the flag-null prompt while
+        // the safety/moderation verdict resolves; output buffers until openGate().
+        const specParts = assembleRequest(null);
+        let usedParts = specParts;
+        const specPromise = runStream(specParts, generation);
+        // Flagged paths abandon this promise — the noop .catch prevents an
+        // unhandled rejection when the abort lands.
+        specPromise.catch(() => {});
+
+        const [safetyRes, moderationRes] = await gatesPromise;
+        gateSafety = { flag: safetyRes.flag, confidence: safetyRes.confidence };
+        console.log(
+          `[agent-llm] gates verdict at ${Date.now() - turnStart}ms: safety=${safetyRes.flag} (${safetyMs}ms) moderation=${moderationRes.flag} (${moderationMs}ms)`,
+        );
+        const safetyFlag: SafetyFlag | null =
+          safetyRes.flag !== "safe" && safetyRes.confidence > SAFETY_THRESHOLD
+            ? (safetyRes.flag as SafetyFlag)
+            : null;
+        // Moderation gate — bypassed when safetyFlag is set: per Locked
+        // Decision #7, self_harm / harm_others MUST reach Krishna for
+        // compassionate Bhagavata mode.
+        const moderationFlag: ModerationFlag | null =
+          !safetyFlag &&
+          moderationRes.flag !== "safe" &&
+          moderationRes.confidence > MODERATION_THRESHOLD
+            ? moderationRes.flag
+            : null;
+
+        let finalMsg: Anthropic.Message;
+
+        if (moderationFlag) {
+          // Abandon the speculative stream — its tokens are discarded UNSENT
+          // (nothing passed the gate). Same wire shape as fixedReplyStream.
+          generation++;
+          try {
+            activeStream?.abort();
+          } catch {
+            /* already finished */
+          }
+          if (isIdentified) {
+            waitUntil(
+              logSafetyEvent({
+                userId,
+                messageText: latestUserMessage,
+                flag: moderationFlag,
+                confidence: moderationRes.confidence,
+                replyText: MODERATION_REPLY,
+                versesReferenced: [],
+              }).catch((e) =>
+                console.error("[agent-llm] moderation logSafetyEvent failed:", e),
+              ),
+            );
+          }
+          send(roleChunkLine(id, created, responseModel));
+          send(contentChunkLine(id, created, responseModel, MODERATION_REPLY));
+          send(stopChunkLine(id, created, responseModel));
+          if (includeUsage) {
+            send(usageChunkLine(id, created, responseModel, 0, 0));
+          }
+          send(DONE_LINE);
+          controller.close();
+          return; // mirror the old short-circuit: no persistTurnState
+        }
+
+        if (safetyFlag) {
+          // Distress turn: abandon the un-flagged speculative run and RESTART
+          // with the SAFETY_FLAG persona steering — behavior identical to the
+          // pre-speculative architecture; the restart cost lands only on turns
+          // where presence matters far more than speed. Helpline tool first
+          // (Phase 11.5 / edge A5.6), then Krishna's reply streams live.
+          generation++;
+          try {
+            activeStream?.abort();
+          } catch {
+            /* already finished */
+          }
+          sentenceBuffer = "";
+          pendingTexts.length = 0;
+          firstFlushDone = false;
+          if (!roleEmitted) {
+            roleEmitted = true;
+            send(roleChunkLine(id, created, responseModel));
+          }
+          send(
+            toolCallChunkLine(
+              id,
+              created,
+              responseModel,
+              "call_" + randomUUID(),
+              "show_helpline_card",
+              JSON.stringify({ flag: safetyFlag, user_lang: conversationLang }),
+            ),
+          );
+          gateOpen = true; // verdict landed — the restart streams live
+          usedParts = assembleRequest(safetyFlag);
+          finalMsg = await runStream(usedParts, generation);
+        } else {
+          // Clean turn (the overwhelmingly common path): open the gate — any
+          // buffered chunks flush now, and emission is live from here on.
+          openGate();
+          finalMsg = await specPromise;
+        }
 
         const u = finalMsg.usage;
         const promptTokens =
@@ -1468,7 +1600,7 @@ export async function POST(req: Request): Promise<Response> {
             `cache_creation=${u.cache_creation_input_tokens ?? 0} ` +
             `cache_read=${u.cache_read_input_tokens ?? 0} ` +
             `output=${completionTokens} total_ms=${Date.now() - turnStart} ` +
-            `(persona=${persona.length}ch dynamic=${dynamicFull.length}ch past_turns=${pastTurns.length})`,
+            `(persona=${usedParts.personaLen}ch dynamic=${usedParts.dynamicLen}ch past_turns=${pastTurns.length})`,
         );
 
         const replyText =
