@@ -264,9 +264,12 @@ export default function VoiceClient() {
           </svg>
         </Link>
 
-        <span className="font-[family-name:var(--font-display)] text-sm tracking-[0.12em] text-ink">
+        <Link
+          href="/"
+          className="font-[family-name:var(--font-display)] text-sm tracking-[0.12em] text-ink transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-ink/40 rounded px-1"
+        >
           {BRAND.name.en}
-        </span>
+        </Link>
 
         <button
           type="button"

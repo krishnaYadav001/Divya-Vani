@@ -1090,8 +1090,13 @@ export default function ChatUI() {
             />
             <div className="min-w-0 text-center">
               <h1 className="whitespace-nowrap font-[family-name:var(--font-display)] text-xl font-normal leading-none tracking-[0.02em] text-ivory sm:text-3xl">
-                <span>{BRAND_HEAD}</span>
-                <span> {BRAND_TAIL.join(" ")}</span>
+                <Link
+                  href="/"
+                  className="transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-gold-leaf/40 rounded"
+                >
+                  <span>{BRAND_HEAD}</span>
+                  <span> {BRAND_TAIL.join(" ")}</span>
+                </Link>
               </h1>
               {/* Subtitle hidden on mobile — at ~360px it stacked one word
                   per line beside the icon cluster (founder 2026-05-25). */}
