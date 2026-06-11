@@ -64,7 +64,13 @@ const CONFIG = {
   // expressiveness: a higher stability keeps the character locked, a high
   // similarity_boost anchors hard to the reference voice. style is not exposed
   // on the agent tts config (and high style is what causes instability anyway).
-  voiceStability: 0.6,
+  // 0.6 → 0.78 (founder 2026-06-11, "pace varying very fast"): ElevenLabs docs
+  // put consistent-but-not-monotone delivery at 0.60–0.85; 0.6 sat at the
+  // expressive edge and the pace audibly wandered between sentence chunks.
+  // 0.78 trades a little expressiveness for steady, realistic pacing. Pairs
+  // with the route-side fix that groups sentences into larger TTS chunks
+  // (each chunk is a prosody unit — fewer, longer chunks = steadier pace).
+  voiceStability: 0.78,
   voiceSimilarityBoost: 0.85,
   voiceSpeed: 1.0,
   // Turn-taking (founder 2026-05-25) — cut the dead-air pause after the user

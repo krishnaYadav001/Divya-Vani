@@ -3,7 +3,7 @@
   "regions": ["bom1"],
   "functions": {
     "src/app/api/agent-llm/chat/completions/route.ts": {
-      "regions": ["sin1"]
+      "regions": ["sfo1"]
     }
   },
   "crons": [

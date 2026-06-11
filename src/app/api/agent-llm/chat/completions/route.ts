@@ -1217,7 +1217,16 @@ export async function POST(req: Request): Promise<Response> {
       // sentence (audible voice variation). We buffer deltas and emit ONE OpenAI
       // chunk per sentence instead. This rebatches only — NO debounce/sleep, no
       // added latency beyond waiting for the sentence's own punctuation to land.
-      const SENTENCE_CAP = 150; // edge 4: hard flush ceiling without a boundary
+      // Voice-pacing fix (founder 2026-06-11): each SSE delta.content chunk is
+      // ONE ElevenLabs TTS generation unit, and prosody resets at every unit —
+      // so per-sentence chunks made the pace audibly jump sentence-to-sentence,
+      // and the old 150-char cap force-split long Hindi sentences MID-sentence
+      // (the worst prosody break). After the fast first chunk, complete
+      // sentences are now GROUPED into chunks of ≥ MIN_TTS_CHUNK chars, and the
+      // no-boundary safety ceiling is raised to 300 so a normal Devanagari
+      // sentence is never bisected.
+      const SENTENCE_CAP = 300; // edge 4: hard flush ceiling without a boundary
+      const MIN_TTS_CHUNK = 140; // post-first-chunk grouping floor (chars)
       let sentenceBuffer = "";
       // Latency: the FIRST emitted chunk may flush at a clause boundary
       // (comma/semicolon/dash) so the first audio starts a clause sooner; after
@@ -1293,15 +1302,42 @@ export async function POST(req: Request): Promise<Response> {
         );
       }
 
-      // Flush every complete sentence in the buffer (edge 1: one Anthropic delta
-      // may contain several), then apply the 150-char safety cap.
+      // Flush the buffer in TTS-friendly units (edge 1: one Anthropic delta may
+      // contain several sentences), then apply the no-boundary safety cap.
       const flushSentences = () => {
-        let end: number;
-        // allowClause only until the first chunk has gone out (fast first audio).
-        while ((end = nextBoundaryEnd(sentenceBuffer, !firstFlushDone)) !== -1) {
-          emitContent(sentenceBuffer.slice(0, end)); // edge 2: a 1-char chunk is fine
-          sentenceBuffer = sentenceBuffer.slice(end);
-          firstFlushDone = true;
+        // First chunk: emit at the EARLIEST boundary (clause allowed) so the
+        // first audio still starts as fast as before. Latency unchanged.
+        if (!firstFlushDone) {
+          const end = nextBoundaryEnd(sentenceBuffer, true);
+          if (end !== -1) {
+            emitContent(sentenceBuffer.slice(0, end)); // edge 2: a 1-char chunk is fine
+            sentenceBuffer = sentenceBuffer.slice(end);
+            firstFlushDone = true;
+          }
+        }
+        // After the first chunk: group COMPLETE sentences until the group
+        // reaches MIN_TTS_CHUNK chars, then emit the whole group as ONE chunk —
+        // one stable prosody unit instead of a reset per sentence. A short
+        // trailing sentence simply waits for the next delta (or the final
+        // flush), which costs nothing audible: TTS is still speaking the
+        // previous chunk.
+        if (firstFlushDone) {
+          for (;;) {
+            let off = 0;
+            let groupEnd = -1;
+            for (;;) {
+              const e = nextBoundaryEnd(sentenceBuffer.slice(off), false);
+              if (e === -1) break;
+              off += e;
+              if (off >= MIN_TTS_CHUNK) {
+                groupEnd = off;
+                break;
+              }
+            }
+            if (groupEnd === -1) break;
+            emitContent(sentenceBuffer.slice(0, groupEnd));
+            sentenceBuffer = sentenceBuffer.slice(groupEnd);
+          }
         }
         // edge 4: no boundary but buffer too long — split at the last whitespace
         // within the first SENTENCE_CAP chars, else force-split at the cap.
