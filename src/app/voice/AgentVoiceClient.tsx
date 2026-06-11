@@ -323,6 +323,14 @@ function VoiceInner() {
         const uid = typeof d.userId === "string" ? d.userId : null;
         userIdRef.current = uid;
         setHasAccess(d.hasAccess === true);
+        // Warm the /api/agent-llm serverless function (fire-and-forget) so
+        // ElevenLabs' first POST after Begin doesn't pay a Vercel cold start.
+        // Bootstrap (above) warms the Anthropic persona cache in parallel.
+        if (d.hasAccess === true) {
+          void fetch("/api/agent-llm/chat/completions", { method: "GET" }).catch(
+            () => {},
+          );
+        }
         setCounter({
           messageCount: typeof d.messageCount === "number" ? d.messageCount : 0,
           sevaBalance: typeof d.sevaBalance === "number" ? d.sevaBalance : 0,
@@ -610,7 +618,12 @@ function VoiceInner() {
               className="ivory min-w-0 truncate font-[family-name:var(--font-display)] text-2xl font-normal leading-none tracking-[0.02em] sm:text-3xl"
               style={{ textShadow: "0 2px 8px oklch(8% 0.05 260 / 0.7)" }}
             >
-              {BRAND.name.en}
+              <Link
+                href="/"
+                className="transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-gold-leaf/40 rounded"
+              >
+                {BRAND.name.en}
+              </Link>
             </h1>
           </div>
 
@@ -870,25 +883,23 @@ function KrishnaBackdrop({ dim }: { dim: boolean }) {
   const imgBase = `absolute inset-0 h-full w-full object-cover transition-[opacity,filter] duration-500 ${
     dim ? "" : "voice-painting"
   }`;
-  const dimCls = dim
-    ? "opacity-30 blur-[2px] saturate-[.8]"
-    : "opacity-90";
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
-      {/* desktop / wide */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/krishna-flute-night.jpg"
-        alt=""
-        className={`${imgBase} hidden object-[20%_center] sm:block ${dimCls}`}
-      />
-      {/* mobile portrait */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/krishna-flute-mobile.jpg"
-        alt=""
-        className={`${imgBase} object-top sm:hidden ${dim ? "opacity-30 blur-[2px] saturate-[.8]" : "opacity-95"}`}
-      />
+      {/* One <picture> instead of two <img>s: a display:none <img> still
+          DOWNLOADS its file, so the old desktop+mobile pair cost every phone
+          the unused 88 KB desktop crop (and vice versa). <source media=...>
+          makes the browser fetch only the crop it will actually render. */}
+      <picture>
+        {/* desktop / wide crop ≥640px */}
+        <source media="(min-width: 640px)" srcSet="/krishna-flute-night.jpg" />
+        {/* mobile portrait crop (default) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/krishna-flute-mobile.jpg"
+          alt=""
+          className={`${imgBase} object-top sm:object-[20%_center] ${dim ? "opacity-30 blur-[2px] saturate-[.8]" : "opacity-95 sm:opacity-90"}`}
+        />
+      </picture>
       {/* top scrim — a gentle veil; the header is now borderless/transparent,
           so this is the legibility backing for the floating logo + icons */}
       <div

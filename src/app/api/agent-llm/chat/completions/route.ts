@@ -607,6 +607,22 @@ function resolveUserId(body: Record<string, unknown>): UserIdResult {
 }
 
 // =============================================================================
+// GET handler — serverless warm ping (founder 2026-06-11)
+// =============================================================================
+// The voice widget fires a fire-and-forget GET here on page mount (once
+// bootstrap confirms access) so this function is WARM before ElevenLabs'
+// first server-to-server POST arrives — otherwise the first turn of the call
+// pays a Vercel cold start on top of everything else. Deliberately unauthenticated:
+// it does no work, touches no state, and returns no data, so there is nothing
+// to protect; the POST path keeps its Bearer auth unchanged.
+export async function GET(): Promise<Response> {
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// =============================================================================
 // POST handler
 // =============================================================================
 export async function POST(req: Request): Promise<Response> {

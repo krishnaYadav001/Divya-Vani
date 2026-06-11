@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { preconnect } from "react-dom";
 import StarField from "./StarField";
 import AgentVoiceClient from "./AgentVoiceClient";
 
@@ -24,6 +25,11 @@ export const metadata: Metadata = {
 };
 
 export default function VoicePage() {
+  // First-connect latency: the ElevenLabs SDK opens a WebSocket + REST calls to
+  // api.elevenlabs.io on Begin. Preconnecting from the server-rendered page
+  // pays the DNS + TCP + TLS handshake during page load instead of at call
+  // start — worth a few hundred ms on a fresh mobile device.
+  preconnect("https://api.elevenlabs.io");
   return (
     <main className="bg-night relative flex h-full flex-1 flex-col overflow-hidden">
       <StarField className="z-0" count={70} />
