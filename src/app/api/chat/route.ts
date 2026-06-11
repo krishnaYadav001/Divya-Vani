@@ -34,6 +34,7 @@ import {
   type UserMemory,
 } from "@/lib/supabase";
 import { getTiersInOrder } from "@/lib/seva";
+import { searchChatMemory } from "@/lib/chatMemory";
 import {
   safetyClassify,
   SAFETY_THRESHOLD,
@@ -626,7 +627,7 @@ export async function POST(req: Request) {
     lastChatLang ??
     (priorSummary ? detectLang(priorSummary) : undefined);
 
-  const [candidates, extracted, safety, recentHistory, moderation] =
+  const [candidates, extracted, safety, recentHistory, moderation, semanticHits] =
     await Promise.all([
       gatherCandidates().catch((e) => {
         console.error("[gatherCandidates] threw:", e);
@@ -648,6 +649,11 @@ export async function POST(req: Request) {
       // fails to {flag:"safe",confidence:0} internally, so no per-call
       // .catch needed here. Gated after safetyFlag derivation below.
       moderateInput(message),
+      // Memory layer #4 (2026-06-11) — semantic retrieval over the user's OWN
+      // older turns (chat + voice both log to chat_logs). Surfaces the relevant
+      // old conversation even when it fell outside the verbatim 8-turn window.
+      // Silent-fails to [] internally (also covers the pre-SQL-paste state).
+      searchChatMemory(userId, message, 3),
     ]);
 
   const queryThemes = extracted?.query_themes ?? [];
@@ -776,6 +782,41 @@ export async function POST(req: Request) {
   ];
   if (dynamic.length > 0) {
     systemBlocks.push({ type: "text", text: dynamic });
+  }
+  // Memory layer #4 (2026-06-11) — semantically retrieved OLDER moments,
+  // deduped against the verbatim 8-turn window (already supplied to Sonnet as
+  // the messages array) and the current message. Additive block AFTER the
+  // persona, NO cache_control, so the persona cache breakpoint is untouched.
+  {
+    const seenTexts = new Set(
+      [message, ...recentHistory.map((t) => t.user_message)].map((s) =>
+        s.trim(),
+      ),
+    );
+    const semanticTurns = semanticHits.filter(
+      (h) => !seenTexts.has(h.user_message.trim()),
+    );
+    if (semanticTurns.length > 0) {
+      const clipMem = (s: string, n: number): string => {
+        const t = s.replace(/\s+/g, " ").trim();
+        return t.length > n ? t.slice(0, n) + "…" : t;
+      };
+      systemBlocks.push({
+        type: "text",
+        text:
+          "PAST CONVERSATIONS (background memory — older moments from this devotee's earlier sessions, retrieved because they relate by meaning to what was just said; may be from weeks ago). " +
+          "Let them inform your reading of THIS turn the way a friend who remembers naturally would: recognize recurring threads and respond with the continuity of someone who has been listening across time. " +
+          "PERSONA INVARIANT UNCHANGED: NEVER narrate or quote this memory back — no \"तुमने पिछली बार कहा था\", no \"you said earlier\", no \"I remember\", no recital of stored facts. " +
+          "If the devotee THEMSELVES refers back to something here, engage with it directly as shared context — do not act as if hearing it for the first time. " +
+          "Recognition lives in the QUALITY of attention, never in announcing it.\n" +
+          semanticTurns
+            .map((h) => {
+              const day = (h.turn_at ?? "").slice(0, 10);
+              return `[older${day ? " " + day : ""}] Devotee: ${clipMem(h.user_message, 240)}\n[older${day ? " " + day : ""}] Krishna: ${clipMem(h.reply_text, 240)}`;
+            })
+            .join("\n"),
+      });
+    }
   }
   // Phase 10.11 — voice mode: make Sonnet GENERATE short. The /api/tts 60-word
   // truncation only trims AFTER generation, saving no model time; this makes

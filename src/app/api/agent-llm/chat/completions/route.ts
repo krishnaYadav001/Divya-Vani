@@ -72,6 +72,7 @@ import {
   type ModerationFlag,
 } from "@/lib/moderation";
 import { hasVoiceAccess } from "@/lib/voiceAccess";
+import { searchChatMemory, type ChatMemoryHit } from "@/lib/chatMemory";
 import * as Sentry from "@sentry/nextjs";
 
 const client = new Anthropic();
@@ -809,7 +810,8 @@ export async function POST(req: Request): Promise<Response> {
   let safetyMs = 0;
   let moderationMs = 0;
   let histMs = 0;
-  const [priorMemory, candidates, safety, moderation, recentHistory] = await Promise.all([
+  let semMs = 0;
+  const [priorMemory, candidates, safety, moderation, recentHistory, semanticHits] = await Promise.all([
     // Unidentified turns NEVER read memory: the sentinel row is shared, so
     // reading it would leak another person's name / growing_edge / "welcome
     // back". Treat unidentified as a clean first-time user.
@@ -858,9 +860,22 @@ export async function POST(req: Request): Promise<Response> {
       histMs = Date.now() - blockStart;
       return r;
     }),
+    // Memory layer #4 (founder 2026-06-11): semantic retrieval over the user's
+    // OWN older turns — surfaces the relevant old conversation even when it
+    // fell outside the verbatim recent window. Gemini embed (~365ms) + RPC
+    // (~60ms) runs INSIDE this parallel block under the ~800ms Haiku long pole
+    // — zero added latency. Silent-fails to [] until the founder pastes the
+    // chat-memory SQL (docs/sql-chat-memory-retrieval.sql).
+    (isIdentified
+      ? searchChatMemory(userId, latestUserMessage, 3)
+      : Promise.resolve([] as ChatMemoryHit[])
+    ).then((r) => {
+      semMs = Date.now() - blockStart;
+      return r;
+    }),
   ]);
   console.log(
-    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} safety=${safetyMs} moderation=${moderationMs} hist=${histMs}`,
+    `[agent-llm] pre-AI block (parallel, ms from block start): mem=${memMs} rag=${ragMs} safety=${safetyMs} moderation=${moderationMs} hist=${histMs} sem=${semMs}`,
   );
 
   // Memory-derived flags (after the parallel fetch above).
@@ -1001,19 +1016,42 @@ export async function POST(req: Request): Promise<Response> {
   const pastTurns = recentHistory
     .filter((t) => !liveUserTexts.has(t.user_message.trim()))
     .slice(-6);
-  const pastBlock = pastTurns.length
+  // Memory layer #4: semantically retrieved OLDER moments (related-by-meaning
+  // to what the devotee just said), deduped against the verbatim window and
+  // the live call so nothing appears twice.
+  const verbatimTexts = new Set(pastTurns.map((t) => t.user_message.trim()));
+  const semanticTurns = semanticHits.filter(
+    (h) =>
+      !liveUserTexts.has(h.user_message.trim()) &&
+      !verbatimTexts.has(h.user_message.trim()),
+  );
+  const memoryLines: string[] = [];
+  if (pastTurns.length) {
+    memoryLines.push(
+      "Recent earlier turns:",
+      ...pastTurns.map(
+        (t) =>
+          `[earlier] Devotee: ${clip(t.user_message, 240)}\n[earlier] Krishna: ${clip(t.reply_text, 240)}`,
+      ),
+    );
+  }
+  if (semanticTurns.length) {
+    memoryLines.push(
+      "Older moments related by meaning to what the devotee just said (may be from weeks ago):",
+      ...semanticTurns.map((h) => {
+        const day = (h.turn_at ?? "").slice(0, 10);
+        return `[older${day ? " " + day : ""}] Devotee: ${clip(h.user_message, 240)}\n[older${day ? " " + day : ""}] Krishna: ${clip(h.reply_text, 240)}`;
+      }),
+    );
+  }
+  const pastBlock = memoryLines.length
     ? "PAST CONVERSATIONS (background memory from the devotee's earlier sessions — text and voice). " +
       "This is what they have shared with you before. Let it inform your reading of THIS turn the way a friend who remembers naturally would: " +
       "recognize recurring threads, know where their story left off, and respond with the continuity of someone who has been listening across time. " +
       "PERSONA INVARIANT UNCHANGED: NEVER narrate or quote this memory back — no \"तुमने पिछली बार कहा था\", no \"you said earlier\", no \"I remember\", no recital of stored facts. " +
       "If the devotee THEMSELVES refers back to something here, engage with it directly as shared context — do not act as if hearing it for the first time. " +
       "Recognition lives in the QUALITY of attention, never in announcing it.\n" +
-      pastTurns
-        .map(
-          (t) =>
-            `[earlier] Devotee: ${clip(t.user_message, 240)}\n[earlier] Krishna: ${clip(t.reply_text, 240)}`,
-        )
-        .join("\n")
+      memoryLines.join("\n")
     : "";
   const dynamicFull =
     pastBlock && dynamic ? `${dynamic}\n\n${pastBlock}` : pastBlock || dynamic;

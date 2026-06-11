@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { embedChatTurn } from "./chatMemory";
 
 /**
  * Phase 7.0 — names commonly mistaken by Haiku's extractMemory for user names
@@ -600,18 +601,46 @@ export async function logChatTurn(params: {
   try {
     const client = getClient();
     if (!client) return;
-    const { error } = await client.from("chat_logs").insert({
-      user_id: params.userId,
-      user_message: params.userMessage,
-      reply_text: params.replyText,
-      language: params.language ?? null,
-      verses_referenced: params.versesReferenced ?? [],
-      safety_flag: params.safetyFlag ?? null,
-      message_count_after: params.messageCountAfter ?? null,
-      source: params.source ?? "chat",
-    });
+    const { data, error } = await client
+      .from("chat_logs")
+      .insert({
+        user_id: params.userId,
+        user_message: params.userMessage,
+        reply_text: params.replyText,
+        language: params.language ?? null,
+        verses_referenced: params.versesReferenced ?? [],
+        safety_flag: params.safetyFlag ?? null,
+        message_count_after: params.messageCountAfter ?? null,
+        source: params.source ?? "chat",
+      })
+      .select("id")
+      .single();
     if (error) {
       console.error("[supabase] logChatTurn error:", error);
+      return;
+    }
+    // Phase 8.x memory layer #4 — embed the turn for semantic retrieval
+    // (src/lib/chatMemory.ts). A SEPARATE best-effort UPDATE after the insert,
+    // never part of it: if the chat_logs.embedding column hasn't been added
+    // yet (manual SQL pending) or Gemini hiccups, the log row itself is
+    // already safely written. Runs post-stream inside waitUntil — zero user
+    // latency.
+    try {
+      const embedding = await embedChatTurn(params.userMessage, params.replyText);
+      if (embedding && data?.id) {
+        const { error: embErr } = await client
+          .from("chat_logs")
+          .update({ embedding })
+          .eq("id", data.id);
+        if (embErr) {
+          console.warn(
+            "[supabase] chat_logs embedding update failed (column missing? run the chat-memory SQL):",
+            embErr.message,
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[supabase] chat_logs embedding step threw:", e);
     }
   } catch (e) {
     console.error("[supabase] logChatTurn threw:", e);
