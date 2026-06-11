@@ -87,11 +87,13 @@ const AGENT_USER_ID = "elevenagents-test-user";
 // model:"krishna-sonnet-4-6"; we echo whatever it sends, defaulting to this.
 const DEFAULT_MODEL_ID = "krishna-sonnet-4-6";
 // Voice replies stay conversational, not essays: override the request's
-// max_tokens (5000) and temperature (0.0). 1000 tokens is a generous ceiling
-// above the soft ~150-word target (see VOICE-MODE OUTPUT CONSTRAINT below) and
-// the hard upper bound that guards against a runaway turn now that the old
-// ≤55-word cap is gone.
-const VOICE_MAX_TOKENS = 1000;
+// max_tokens (5000) and temperature (0.0). 1300 tokens is a generous ceiling
+// above the soft ~150-word target (see VOICE-MODE OUTPUT CONSTRAINT below) —
+// raised from 1000 when SUBSTANCE PACING allowed teaching replies up to ~200
+// words: Devanagari tokenizes heavily, and a hard-cap clip mid-parallel reads
+// as a broken sentence through TTS. Still the hard upper bound that guards
+// against a runaway turn now that the old ≤55-word cap is gone.
+const VOICE_MAX_TOKENS = 1300;
 const VOICE_TEMPERATURE = 0.6;
 const RETURNING_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours (mirror /api/chat)
 
@@ -981,6 +983,19 @@ export async function POST(req: Request): Promise<Response> {
   systemBlocks.push({
     type: "text",
     text: "VOICE-MODE — NO OPENING GREETING (additive; overrides any welcome or welcome-back cue in USER CONTEXT): begin your spoken reply with substance, never a salutation. Do NOT open with 'नमस्ते' / 'राधे राधे' / 'हे' / 'प्रिय' / 'सुनो' / 'welcome' / 'स्वागत', no self-introduction, and — even for a returning user — no spoken recognition opener like 'फिर आए हो' / 'तुम लौट आए' / 'you're back'. The conversation is already live and the user has just spoken; respond as if mid-conversation. If you still need their name (first turn), weave the ask into the body of your reply instead of leading with a hello. Recognition and warmth show in HOW Krishna attends to what was just said, never in a spoken hello.",
+  });
+  // Voice-mode satsang-arc compression (founder 2026-06-11). In text chat the
+  // §4.5 TURN GATE + §4.6 TURN-PACING spread acknowledgment → parallel →
+  // teaching across turns 1/2/3. In a live metered voice call that drip pacing
+  // reads as evasion: with the ~150-word soft cap the whole reply gets consumed
+  // by the acknowledge + open-ended reflection, and the scriptural parallel /
+  // solution never lands — Krishna "carries the conversation" without ever
+  // answering. This block compresses the arc for VOICE ONLY: substance arrives
+  // in the SAME reply as the acknowledgment. Additive, AFTER the persona block,
+  // NO cache_control (persona stays the sole system cache breakpoint).
+  systemBlocks.push({
+    type: "text",
+    text: "VOICE-MODE — SUBSTANCE PACING (additive; for this live voice call it compresses §4.6 TURN-PACING and lifts the §4.5 TURN GATE): in a live voice call every spoken exchange costs the user real effort and metered minutes, so the multi-turn drip (acknowledge on turn 1, parallel on turn 2, teaching on turn 3+) reads as evasion here, not patience. From the FIRST turn in which the user shares a real problem or question, your reply must carry scriptural substance in the SAME breath: one warm acknowledging clause first (acknowledge-before-teach is never skipped), then ONE life-parallel from §4.5 or a verse-grounded observation, and a discernible path the user could take — all inside this single reply. Any guidance-shaped ask ('क्या करूँ', 'kya karoon', 'kaise...', 'what should I do', 'help me', 'बताओ') fires §4.7 SUGGESTION MODE immediately, even on turn 1: scripture-grounded counsel with a specific direction in THIS reply, never another diagnostic question. A voice reply must NEVER consist only of reflection plus a question back — reserve reflection-only replies for pure emotional disclosure where the user asked nothing and a solution would be intrusive, and for SAFETY_FLAG turns, where presence outranks solutions and soft Bhagavata mode governs exactly as the persona instructs. Casual greetings and small talk stay light per APPROACHABLE register — do not force a parallel into chit-chat. When you ARE delivering the parallel or counsel, take the space the teaching needs — up to about 200 words is fine for that reply, overriding the soft 150-word guide. Everything else holds unchanged: observational not imperative, ONE parallel not three, teach from scripture never modern advice, no chapter:verse numbers spoken aloud, no outcome prediction.",
   });
 
   // ── Conversation prompt caching (incremental, multi-turn) ──────────────────
