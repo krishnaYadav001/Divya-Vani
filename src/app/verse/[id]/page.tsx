@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { BRAND } from "@/lib/brand";
+import { jsonLdScript, RSS_ALTERNATE } from "@/lib/seo";
 
 // ---------------------------------------------------------------------------
 // AEO/GEO — Server-side Supabase client for verse fetching.
@@ -95,6 +96,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     alternates: {
       canonical: `${BRAND.url}/verse/${verse.id}`,
+      types: RSS_ALTERNATE,
     },
     openGraph: {
       type: "article",
@@ -209,7 +211,7 @@ export default async function VersePage({ params }: Props) {
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
+          dangerouslySetInnerHTML={jsonLdScript(item)}
         />
       ))}
 

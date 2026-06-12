@@ -3,6 +3,12 @@ import Link from "next/link";
 import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
 import { BRAND } from "@/lib/brand";
+import {
+  absoluteUrl,
+  jsonLdScript,
+  RSS_ALTERNATE,
+  SITE_LAST_MODIFIED,
+} from "@/lib/seo";
 
 // Phase 12 — standalone Contact page. Required by Razorpay's website
 // compliance crawl (Contact Us with a physical address) and Google Ads'
@@ -13,16 +19,63 @@ import { BRAND } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `Contact — ${BRAND.name.en}`,
   description: `Contact ${BRAND.name.en}: support email, phone, business address, and grievance officer.`,
-  alternates: { canonical: "/contact" },
+  alternates: { canonical: "/contact", types: RSS_ALTERNATE },
+  openGraph: {
+    url: absoluteUrl("/contact"),
+    title: `Contact | ${BRAND.name.en}`,
+    description: `Contact ${BRAND.name.en}: support email, phone, business address, and grievance officer.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Contact | ${BRAND.name.en}`,
+    description: `Contact ${BRAND.name.en}: support email, phone, business address, and grievance officer.`,
+  },
   robots: { index: true, follow: true },
 };
 
 const LAST_UPDATED = "2026-05-25";
 
 export default function ContactPage() {
+  const contactJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    name: `Contact | ${BRAND.name.en}`,
+    url: absoluteUrl("/contact"),
+    description: `Contact ${BRAND.name.en}: support email, phone, business address, and grievance officer.`,
+    dateModified: SITE_LAST_MODIFIED,
+    mainEntity: {
+      "@type": "Organization",
+      name: BRAND.name.en,
+      url: BRAND.url,
+      email: BRAND.contact.email,
+      telephone: BRAND.contact.phone,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "255 EWS, Barra-4, Janta Nagar",
+        addressLocality: "Kanpur",
+        addressRegion: "Uttar Pradesh",
+        postalCode: "208027",
+        addressCountry: "IN",
+      },
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer support and grievance officer",
+        email: BRAND.contact.email,
+        telephone: BRAND.contact.phone,
+        areaServed: "IN",
+        availableLanguage: ["Hindi", "English"],
+      },
+    },
+  };
+
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
-      <Atmosphere mode="distant" intensity={0.6} vignette={1} />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(contactJsonLd)}
+      />
+      <main className="relative flex flex-1 overflow-y-auto">
+        <Atmosphere mode="distant" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         <BackToChat />
@@ -159,6 +212,7 @@ Contact
           </p>
         </footer>
       </article>
-    </main>
+      </main>
+    </>
   );
 }

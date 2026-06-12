@@ -3,20 +3,50 @@ import Link from "next/link";
 import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
 import { BRAND } from "@/lib/brand";
+import { absoluteUrl, jsonLdScript, RSS_ALTERNATE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: `Terms of Service — ${BRAND.name.en}`,
   description: `Terms governing the use of ${BRAND.name.en}, including acceptable use, seva contributions, and refund policy.`,
-  alternates: { canonical: "/terms" },
+  alternates: { canonical: "/terms", types: RSS_ALTERNATE },
+  openGraph: {
+    url: absoluteUrl("/terms"),
+    title: `Terms of Service | ${BRAND.name.en}`,
+    description: `Terms governing the use of ${BRAND.name.en}, including acceptable use, seva contributions, and refund policy.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Terms of Service | ${BRAND.name.en}`,
+    description: `Terms governing the use of ${BRAND.name.en}, including acceptable use, seva contributions, and refund policy.`,
+  },
   robots: { index: true, follow: true },
 };
 
 const LAST_UPDATED = "2026-05-15";
 
 export default function TermsPage() {
+  const termsJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `Terms of Service | ${BRAND.name.en}`,
+    url: absoluteUrl("/terms"),
+    description: `Terms governing the use of ${BRAND.name.en}, including acceptable use, seva contributions, and refund policy.`,
+    dateModified: LAST_UPDATED,
+    isPartOf: {
+      "@type": "WebSite",
+      name: BRAND.name.en,
+      url: BRAND.url,
+    },
+  };
+
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
-      <Atmosphere mode="distant" intensity={0.6} vignette={1} />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(termsJsonLd)}
+      />
+      <main className="relative flex flex-1 overflow-y-auto">
+        <Atmosphere mode="distant" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         <BackToChat />
@@ -384,6 +414,7 @@ Terms
           </p>
         </footer>
       </article>
-    </main>
+      </main>
+    </>
   );
 }

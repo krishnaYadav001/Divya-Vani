@@ -4,20 +4,50 @@ import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
 import PolicySummary from "../components/PolicySummary";
 import { BRAND } from "@/lib/brand";
+import { absoluteUrl, jsonLdScript, RSS_ALTERNATE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: `Privacy Policy — ${BRAND.name.en}`,
   description: `How ${BRAND.name.en} collects, uses, and protects your data. Notice issued under India's Digital Personal Data Protection Act 2023.`,
-  alternates: { canonical: "/privacy" },
+  alternates: { canonical: "/privacy", types: RSS_ALTERNATE },
+  openGraph: {
+    url: absoluteUrl("/privacy"),
+    title: `Privacy Policy | ${BRAND.name.en}`,
+    description: `How ${BRAND.name.en} collects, uses, and protects your data. Notice issued under India's Digital Personal Data Protection Act 2023.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Privacy Policy | ${BRAND.name.en}`,
+    description: `How ${BRAND.name.en} collects, uses, and protects your data.`,
+  },
   robots: { index: true, follow: true },
 };
 
 const LAST_UPDATED = "2026-05-15";
 
 export default function PrivacyPage() {
+  const privacyJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `Privacy Policy | ${BRAND.name.en}`,
+    url: absoluteUrl("/privacy"),
+    description: `How ${BRAND.name.en} collects, uses, and protects your data.`,
+    dateModified: LAST_UPDATED,
+    isPartOf: {
+      "@type": "WebSite",
+      name: BRAND.name.en,
+      url: BRAND.url,
+    },
+  };
+
   return (
-    <main className="dv-scroll relative flex-1 overflow-y-auto overflow-x-hidden">
-      <Atmosphere mode="distant" intensity={0.6} vignette={1} />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(privacyJsonLd)}
+      />
+      <main className="dv-scroll relative flex-1 overflow-y-auto overflow-x-hidden">
+        <Atmosphere mode="distant" intensity={0.6} vignette={1} />
 
       <article className="relative z-10 mx-auto w-full max-w-[1100px] px-6 py-12 font-[family-name:var(--font-serif)] text-ink sm:px-10 sm:py-16">
         <BackToChat />
@@ -659,6 +689,7 @@ export default function PrivacyPage() {
           </p>
         </footer>
       </article>
-    </main>
+      </main>
+    </>
   );
 }

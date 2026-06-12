@@ -15,6 +15,11 @@
     "query": "मेरा boyfriend ने मुझे छोड़ दिया, मैं तीन साल साथ था।"
   },
   {
+    "category": "relationship_breakup_guidance",
+    "language": "hinglish",
+    "query": "Meri girlfriend ne relation tod diya. Main usse abhi bhi pyaar karta hoon. Kya karoon?"
+  },
+  {
     "category": "family_conflict",
     "language": "hindi",
     "query": "पापा से बहुत बड़ा झगड़ा हो गया है। वो कह रहे हैं कि मैं उनकी इज़्ज़त नहीं करता।"

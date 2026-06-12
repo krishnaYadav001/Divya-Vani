@@ -3,6 +3,7 @@ import Link from "next/link";
 import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
 import { BRAND } from "@/lib/brand";
+import { absoluteUrl, jsonLdScript, RSS_ALTERNATE } from "@/lib/seo";
 
 // Phase 12 — standalone Refund & Cancellation Policy. Razorpay's website
 // compliance crawl expects this as a distinct, directly-linkable page
@@ -13,16 +14,45 @@ import { BRAND } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `Refund & Cancellation Policy — ${BRAND.name.en}`,
   description: `Refund and cancellation policy for ${BRAND.name.en} seva contributions and subscriptions.`,
-  alternates: { canonical: "/refund" },
+  alternates: { canonical: "/refund", types: RSS_ALTERNATE },
+  openGraph: {
+    url: absoluteUrl("/refund"),
+    title: `Refund and Cancellation Policy | ${BRAND.name.en}`,
+    description: `Refund and cancellation policy for ${BRAND.name.en} seva contributions and subscriptions.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Refund and Cancellation Policy | ${BRAND.name.en}`,
+    description: `Refund and cancellation policy for ${BRAND.name.en} seva contributions and subscriptions.`,
+  },
   robots: { index: true, follow: true },
 };
 
 const LAST_UPDATED = "2026-05-25";
 
 export default function RefundPage() {
+  const refundJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `Refund and Cancellation Policy | ${BRAND.name.en}`,
+    url: absoluteUrl("/refund"),
+    description: `Refund and cancellation policy for ${BRAND.name.en} seva contributions and subscriptions.`,
+    dateModified: LAST_UPDATED,
+    isPartOf: {
+      "@type": "WebSite",
+      name: BRAND.name.en,
+      url: BRAND.url,
+    },
+  };
+
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
-      <Atmosphere mode="distant" intensity={0.6} vignette={1} />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(refundJsonLd)}
+      />
+      <main className="relative flex flex-1 overflow-y-auto">
+        <Atmosphere mode="distant" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         <BackToChat />
@@ -161,6 +191,7 @@ Refunds
           </p>
         </footer>
       </article>
-    </main>
+      </main>
+    </>
   );
 }

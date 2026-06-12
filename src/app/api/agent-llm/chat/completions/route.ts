@@ -50,6 +50,7 @@ import { waitUntil } from "@vercel/functions";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
 import {
   fetchCandidates,
+  rerankByTheme,
   applyDiversityBoost,
   getRagFlags,
   type VerseHit,
@@ -73,6 +74,10 @@ import {
 } from "@/lib/moderation";
 import { hasVoiceAccess } from "@/lib/voiceAccess";
 import { searchChatMemory, type ChatMemoryHit } from "@/lib/chatMemory";
+import {
+  buildScriptureSteeringBlock,
+  deterministicQueryThemesForTurn,
+} from "@/lib/scriptureSteering";
 import * as Sentry from "@sentry/nextjs";
 
 const client = new Anthropic();
@@ -927,19 +932,27 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  // ── Step 6d: RAG layers — cosine + source-diversity. ──
-  // Theme reranking is skipped on the voice path: its query themes come from the
-  // memory-extraction Haiku call, which we no longer await before Sonnet. The
-  // spoken reply still grounds on relevant verses (cosine top + source mix);
-  // only the rerank refinement is deferred (no verse cards are shown in voice).
+  // ── Step 6d: RAG layers — cosine + relationship-aware rerank + diversity. ──
+  // Voice still does NOT wait on extractMemory's Haiku query themes before
+  // Sonnet. For relationship turns, a deterministic theme pass gives us the
+  // same kind of retrieval nudge with zero added latency, countering the
+  // historic Gita/Arjuna gravity on love and breakup conversations.
+  const deterministicQueryThemes = deterministicQueryThemesForTurn(
+    latestUserMessage,
+    priorSummary,
+  );
+  const reranked =
+    ragFlags.themeRerank && deterministicQueryThemes.length > 0
+      ? rerankByTheme(candidates, deterministicQueryThemes, ragFlags.themeWeight)
+      : candidates;
   const verses = ragFlags.sourceDiversity
     ? applyDiversityBoost(
-        candidates,
+        reranked,
         5,
         ragFlags.diversityCosineThreshold,
         ragFlags.diversityScopeK,
       )
-    : candidates.slice(0, 5);
+    : reranked.slice(0, 5);
 
   // ── Step 7: safety + moderation verdicts now land INSIDE the stream ──
   // (speculative gating — see gatesPromise above). Edge case 13 still holds:
@@ -1049,6 +1062,10 @@ export async function POST(req: Request): Promise<Response> {
     personaLen: number;
     dynamicLen: number;
   };
+  const scriptureSteering = buildScriptureSteeringBlock(
+    latestUserMessage,
+    priorSummary,
+  );
   const assembleRequest = (flag: SafetyFlag | null): AssembledRequest => {
   const { persona, dynamic } = buildSystemPrompt(
     effectiveMemory,
@@ -1059,8 +1076,9 @@ export async function POST(req: Request): Promise<Response> {
     flag,
     conversationLang,
   );
-  const dynamicFull =
-    pastBlock && dynamic ? `${dynamic}\n\n${pastBlock}` : pastBlock || dynamic;
+  const dynamicFull = [dynamic, scriptureSteering, pastBlock]
+    .filter((block) => block.length > 0)
+    .join("\n\n");
 
   const systemBlocks: AssembledRequest["systemBlocks"] = [
     {

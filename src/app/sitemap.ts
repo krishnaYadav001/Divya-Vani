@@ -1,14 +1,10 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
-import { BRAND } from "@/lib/brand";
+import { absoluteUrl, PUBLIC_ROUTES, SITE_LAST_MODIFIED } from "@/lib/seo";
 
-// Phase 6.9.1 — Next 16 metadata-route convention. Default-export
-// from src/app/sitemap.ts is auto-served at /sitemap.xml.
-//
-// AEO/GEO — sitemap is now async: queries the verses table for all
-// 3,132 verse IDs and generates a canonical /verse/{id} entry for each.
-// Static pages are always included; verse entries are added when the
-// Supabase query succeeds. Silent-fail on error per ops invariant.
+// Next metadata-route convention: default export is served at /sitemap.xml.
+// Static entries come from PUBLIC_ROUTES so noindex/private pages cannot drift
+// into the sitemap. Verse entries are appended when Supabase is available.
 
 function getSitemapClient() {
   const url = process.env.SUPABASE_URL;
@@ -18,75 +14,15 @@ function getSitemapClient() {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lastModified = new Date();
+  const staticEntries: MetadataRoute.Sitemap = PUBLIC_ROUTES.map((route) => ({
+    url: absoluteUrl(route.path),
+    lastModified: route.lastModified,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
+  }));
 
-  // Static pages — always included regardless of Supabase status.
-  const staticEntries: MetadataRoute.Sitemap = [
-    {
-      url: BRAND.url,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 1.0,
-    },
-    {
-      url: `${BRAND.url}/chat`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      // Phase 10.5 — voice-to-voice mode (paid seva; orb UI).
-      url: `${BRAND.url}/voice`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${BRAND.url}/demo`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${BRAND.url}/pricing`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${BRAND.url}/contact`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
-    {
-      url: `${BRAND.url}/journey`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${BRAND.url}/privacy`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${BRAND.url}/terms`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${BRAND.url}/refund`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-  ];
-
-  // Dynamic verse entries — fetched from the verses table.
-  // Silent-fail: if Supabase is unavailable, only static entries are returned.
+  // Dynamic verse entries from the verses table. Silent-fail on error per the
+  // project ops invariant; static pages still remain crawlable.
   let verseEntries: MetadataRoute.Sitemap = [];
   try {
     const client = getSitemapClient();
@@ -99,10 +35,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       } else if (data) {
         verseEntries = data.map(
           (verse: { id: string; created_at: string }) => ({
-            url: `${BRAND.url}/verse/${verse.id}`,
+            url: absoluteUrl(`/verse/${verse.id}`),
             lastModified: verse.created_at
               ? new Date(verse.created_at)
-              : lastModified,
+              : SITE_LAST_MODIFIED,
             changeFrequency: "yearly" as const,
             priority: 0.6,
           }),
@@ -115,4 +51,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [...staticEntries, ...verseEntries];
 }
-

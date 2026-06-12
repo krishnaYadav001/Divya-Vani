@@ -36,6 +36,10 @@ import {
 import { getTiersInOrder } from "@/lib/seva";
 import { searchChatMemory } from "@/lib/chatMemory";
 import {
+  buildScriptureSteeringBlock,
+  deterministicQueryThemesForTurn,
+} from "@/lib/scriptureSteering";
+import {
   safetyClassify,
   SAFETY_THRESHOLD,
   type SafetyFlag,
@@ -656,7 +660,13 @@ export async function POST(req: Request) {
       searchChatMemory(userId, message, 3),
     ]);
 
-  const queryThemes = extracted?.query_themes ?? [];
+  const deterministicQueryThemes = deterministicQueryThemesForTurn(
+    message,
+    priorSummary ?? null,
+  );
+  const queryThemes = [
+    ...new Set([...(extracted?.query_themes ?? []), ...deterministicQueryThemes]),
+  ];
 
   let reranked = candidates;
   if (ragFlags.themeRerank && queryThemes.length > 0) {
@@ -759,6 +769,13 @@ export async function POST(req: Request) {
     safetyFlag,
     conversationLang,
   );
+  const scriptureSteering = buildScriptureSteeringBlock(
+    message,
+    priorSummary ?? null,
+  );
+  const dynamicWithSteering = [dynamic, scriptureSteering]
+    .filter((block) => block.length > 0)
+    .join("\n\n");
 
   const systemBlocks: Array<{
     type: "text";
@@ -780,8 +797,8 @@ export async function POST(req: Request) {
       cache_control: { type: "ephemeral", ttl: "1h" },
     },
   ];
-  if (dynamic.length > 0) {
-    systemBlocks.push({ type: "text", text: dynamic });
+  if (dynamicWithSteering.length > 0) {
+    systemBlocks.push({ type: "text", text: dynamicWithSteering });
   }
   // Memory layer #4 (2026-06-11) — semantically retrieved OLDER moments,
   // deduped against the verbatim 8-turn window (already supplied to Sonnet as

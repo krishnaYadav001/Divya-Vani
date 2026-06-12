@@ -20,9 +20,65 @@ const SANSKRIT = "“कर्मण्येवाधिकारस्ते �
 const ARCH_SHADOW =
   "0 28px 70px -30px oklch(35% 0.08 30 / .35), 0 0 0 1px oklch(78% 0.06 60), inset 0 0 0 6px rgba(255,255,255,.5)";
 
+const LANDING_FACTS = {
+  en: {
+    eyebrow: "Direct answers",
+    title: "What Divya Vani gives you",
+    items: [
+      {
+        question: "What is Divya Vani?",
+        answer:
+          "Divya Vani is an AI that roleplays Krishna from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. You can speak about life, emotions, relationships, and dharma while seeing scripture-grounded verse references.",
+      },
+      {
+        question: "Is this really Krishna?",
+        answer:
+          "No. Divya Vani is an AI roleplaying Krishna based on scripture. It does not claim to be divine, and a permanent disclaimer stays visible in the chat and voice experience.",
+      },
+      {
+        question: "Which scriptures are used?",
+        answer:
+          "The current corpus has 3,132 verses: 701 from the Bhagavad Gita, 1,704 from the Mahabharata, and 727 from the Bhagavata Purana.",
+      },
+      {
+        question: "How does pricing work?",
+        answer:
+          "Divya Vani includes 10 free messages. One-time seva tiers start at INR 11, and paid voice or subscription plans are shown on the Pricing page when available.",
+      },
+    ],
+  },
+  hi: {
+    eyebrow: "सीधे उत्तर",
+    title: "दिव्य वाणी आपको क्या देती है",
+    items: [
+      {
+        question: "दिव्य वाणी क्या है?",
+        answer:
+          "दिव्य वाणी एक AI है जो भगवद्गीता, महाभारत और भागवत पुराण के कृष्ण-स्वरूप का अभिनय करता है। आप जीवन, भावनाओं, रिश्तों और धर्म पर बात कर सकते हैं; उत्तरों में शास्त्र-संदर्भ दिखाए जाते हैं।",
+      },
+      {
+        question: "क्या यह सचमुच भगवान कृष्ण हैं?",
+        answer:
+          "नहीं। यह शास्त्र-आधारित AI अभिनय है, दैवीय मार्गदर्शन का दावा नहीं। चैट और आवाज़ अनुभव में यह पहचान-सूचना हमेशा दिखाई जाती है।",
+      },
+      {
+        question: "कौन-सी भाषाएँ और ग्रंथ हैं?",
+        answer:
+          "दिव्य वाणी हिंदी-प्रथम है, अंग्रेज़ी और संस्कृत भी समझती है। वर्तमान संग्रह में 3,132 श्लोक हैं: गीता के 701, महाभारत के 1,704 और भागवत पुराण के 727।",
+      },
+      {
+        question: "कितना खर्च है?",
+        answer:
+          "10 संदेश निःशुल्क मिलते हैं। उसके बाद एक-बार की सेवा ₹11 से शुरू होती है; आवाज़ और सदस्यता योजनाएँ Pricing पेज पर दी गई हैं।",
+      },
+    ],
+  },
+} as const;
+
 export default function LandingClient() {
   const { lang, t } = useLanguage();
   const [nameHead, ...nameRest] = BRAND.name.en.split(" ");
+  const facts = LANDING_FACTS[lang];
 
   // CTA + prose fonts switch with language: Devanagari for Hindi, the English
   // serif for English (rather than rendering Latin in the Devanagari face).
@@ -36,7 +92,7 @@ export default function LandingClient() {
       : "font-[family-name:var(--font-serif)] italic";
 
   return (
-    <main className="relative flex-1 overflow-x-hidden overflow-y-auto lg:overflow-hidden">
+    <main className="relative flex-1 overflow-x-hidden overflow-y-auto">
       <Atmosphere mode="hero" intensity={1} vignette={1} />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1320px] flex-col px-5 py-5 sm:px-8 lg:min-h-full lg:justify-center lg:px-14 lg:py-4">
@@ -196,6 +252,56 @@ export default function LandingClient() {
             </p>
           </div>
         </div>
+
+        <section
+          aria-labelledby="landing-facts-title"
+          className="fade-up mt-14 border-t border-[var(--color-ink-line)] pt-8 [animation-delay:360ms] [animation-fill-mode:backwards] lg:mt-10"
+        >
+          <p
+            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
+            }`}
+          >
+            {facts.eyebrow}
+          </p>
+          <h2
+            id="landing-facts-title"
+            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
+          >
+            {facts.title}
+          </h2>
+          <div className="mt-7 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {facts.items.map((item) => (
+              <article
+                key={item.question}
+                className="border-t border-[var(--color-ink-line)] pt-4"
+              >
+                <h3
+                  className={`text-lg font-normal leading-snug text-ink ${
+                    lang === "hi"
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-display)]"
+                  }`}
+                >
+                  {item.question}
+                </h3>
+                <p
+                  className={`mt-2 text-sm leading-relaxed text-ink-soft ${
+                    lang === "hi"
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-serif)] italic"
+                  }`}
+                >
+                  {item.answer}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
 
       <DevoteeSilhouettes height={84} opacity={0.28} />

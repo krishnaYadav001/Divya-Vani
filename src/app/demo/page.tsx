@@ -1,33 +1,88 @@
 import type { Metadata } from "next";
 import { BRAND } from "@/lib/brand";
+import {
+  absoluteUrl,
+  jsonLdScript,
+  RSS_ALTERNATE,
+  SITE_LAST_MODIFIED,
+} from "@/lib/seo";
 import demoContent from "../../../data/demo-content.json";
 import DemoClient, { type DemoContent } from "./DemoClient";
 
-// /demo — lightweight content-only marketing surface for X / Reddit /
-// WhatsApp shares. Content is driven by data/demo-content.json + the
-// /public/demo/ image directory; no admin UI, no API, no DB. To update
-// videos / screenshots / Q&A, the founder edits the JSON and commits
-// new files to /public/demo/.
-//
-// This server shell holds the page metadata (a server-only export) +
-// reads the content JSON. The interactive, language-aware body lives in
-// DemoClient ("use client") so the marketing chrome follows the EN/हिन्दी
-// toggle (Phase 12). The YouTubeFacade (click-to-embed), ScreenshotTile
-// (onError fallback), and DemoFeedback client components mount inside it.
+const description = `See ${BRAND.name.en} in action: example conversations with Krishna, video walkthroughs, and screenshots.`;
 
 export const metadata: Metadata = {
-  title: `Demo — ${BRAND.name.en}`,
-  description: `See ${BRAND.name.en} in action — example conversations with Krishna, video walkthroughs, and screenshots.`,
-  alternates: { canonical: "/demo" },
+  title: `Demo Conversations | ${BRAND.name.en}`,
+  description,
+  alternates: { canonical: "/demo", types: RSS_ALTERNATE },
   openGraph: {
-    url: `${BRAND.url}/demo`,
-    title: `Demo — ${BRAND.name.en}`,
-    description: `See ${BRAND.name.en} in action — example conversations with Krishna, video walkthroughs, and screenshots.`,
+    url: absoluteUrl("/demo"),
+    title: `Demo Conversations | ${BRAND.name.en}`,
+    description,
   },
+  twitter: {
+    card: "summary_large_image",
+    title: `Demo Conversations | ${BRAND.name.en}`,
+    description,
+  },
+  robots: { index: true, follow: true },
 };
 
 const content = demoContent as DemoContent;
 
+function buildDemoJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `Demo Conversations | ${BRAND.name.en}`,
+    url: absoluteUrl("/demo"),
+    description,
+    dateModified: SITE_LAST_MODIFIED,
+    isPartOf: {
+      "@type": "WebSite",
+      name: BRAND.name.en,
+      url: BRAND.url,
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      name: "Divya Vani demo content",
+      itemListElement: [
+        ...content.videos.map((video, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "VideoObject",
+            name: video.title_en,
+            description: `Demo video for ${BRAND.name.en}: ${video.title_en}`,
+            embedUrl: `https://www.youtube.com/embed/${video.id}`,
+            url: `https://www.youtube.com/watch?v=${video.id}`,
+          },
+        })),
+        ...content.examples.map((example, index) => ({
+          "@type": "ListItem",
+          position: content.videos.length + index + 1,
+          item: {
+            "@type": "Question",
+            name: example.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: example.reply,
+            },
+          },
+        })),
+      ],
+    },
+  };
+}
+
 export default function DemoPage() {
-  return <DemoClient content={content} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(buildDemoJsonLd())}
+      />
+      <DemoClient content={content} />
+    </>
+  );
 }

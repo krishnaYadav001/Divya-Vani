@@ -9,6 +9,7 @@ import {
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import { BRAND } from "@/lib/brand";
+import { jsonLdScript, SOCIAL_PROFILES } from "@/lib/seo";
 import "@/lib/startup";
 import SiteFooter from "./components/SiteFooter";
 import SupportWidget from "./components/SupportWidget";
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(BRAND.url),
   title: {
     default: `${BRAND.name.en} — Speak with Krishna AI`,
-    template: `%s | ${BRAND.name.en}`,
+    template: "%s",
   },
   description: BRAND.description.en,
   applicationName: BRAND.name.en,
@@ -132,6 +133,11 @@ export const metadata: Metadata = {
   // Phase 6.6 Stage C-1 — canonical removed from root layout. Each page
   // declares its own alternates.canonical so /chat / /privacy / /terms
   // don't all collapse to the root URL in search-engine indexes.
+  alternates: {
+    types: {
+      "application/rss+xml": "/feed.xml",
+    },
+  },
   robots: {
     index: true,
     follow: true,
@@ -176,8 +182,7 @@ export default function RootLayout({
             by individual routes (e.g. /verse/[id]). */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+          dangerouslySetInnerHTML={jsonLdScript({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: BRAND.name.en,
@@ -190,16 +195,15 @@ export default function RootLayout({
                 name: BRAND.name.en,
                 url: BRAND.url,
               },
-            }),
-          }}
+          })}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+          dangerouslySetInnerHTML={jsonLdScript({
               "@context": "https://schema.org",
               "@type": "Organization",
               name: BRAND.name.en,
+              legalName: BRAND.name.en,
               alternateName: BRAND.name.hi,
               url: BRAND.url,
               description: BRAND.description.en,
@@ -224,9 +228,8 @@ export default function RootLayout({
                 "@type": "Person",
                 name: BRAND.contact.founder,
               },
-              sameAs: [],
-            }),
-          }}
+              sameAs: SOCIAL_PROFILES,
+          })}
         />
         <LanguageProvider>
           {children}

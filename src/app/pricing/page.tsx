@@ -4,6 +4,12 @@ import Atmosphere from "../components/Atmosphere";
 import BackToChat from "../components/BackToChat";
 import SubscribeButton from "../components/SubscribeButton";
 import { BRAND } from "@/lib/brand";
+import {
+  absoluteUrl,
+  jsonLdScript,
+  RSS_ALTERNATE,
+  SITE_LAST_MODIFIED,
+} from "@/lib/seo";
 import { getTiersInOrder } from "@/lib/seva";
 import { getPlansInOrder, getOffer } from "@/lib/subscriptions";
 
@@ -15,10 +21,22 @@ import { getPlansInOrder, getOffer } from "@/lib/subscriptions";
 // until they ship, so the page always matches what a user can really buy.
 // English-only, matching the admin-page convention.
 
+const PRICING_DESCRIPTION = `Pricing for ${BRAND.name.en}: a free tier plus one-time seva contributions that unlock more messages.`;
+
 export const metadata: Metadata = {
   title: `Pricing — ${BRAND.name.en}`,
-  description: `Pricing for ${BRAND.name.en}: a free tier plus one-time seva contributions that unlock more messages.`,
-  alternates: { canonical: "/pricing" },
+  description: PRICING_DESCRIPTION,
+  alternates: { canonical: "/pricing", types: RSS_ALTERNATE },
+  openGraph: {
+    url: absoluteUrl("/pricing"),
+    title: `Pricing and Seva Plans | ${BRAND.name.en}`,
+    description: `Pricing for ${BRAND.name.en}: free messages, one-time seva tiers, subscriptions, billing, and refunds.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Pricing and Seva Plans | ${BRAND.name.en}`,
+    description: `Pricing for ${BRAND.name.en}: free messages, seva tiers, subscriptions, billing, and refunds.`,
+  },
   robots: { index: true, follow: true },
 };
 
@@ -27,10 +45,69 @@ const LAST_UPDATED = "2026-05-25";
 export default function PricingPage() {
   const tiers = getTiersInOrder();
   const plans = getPlansInOrder();
+  const oneTimeOffers = [
+    {
+      "@type": "Offer",
+      name: "Free",
+      price: "0",
+      priceCurrency: "INR",
+      description: "10 messages, no expiry",
+    },
+    ...tiers.map((tier) => ({
+      "@type": "Offer",
+      name: tier.displayName,
+      price: String(tier.priceInr),
+      priceCurrency: "INR",
+      description: `${tier.messages} messages`,
+      url: absoluteUrl("/pricing"),
+    })),
+  ];
+  const subscriptionOffers = plans.flatMap((plan) => {
+    const inr = getOffer(plan.key, "INR", "monthly");
+    const usd = getOffer(plan.key, "USD", "annual");
+    return [
+      {
+        "@type": "Offer",
+        name: `${plan.displayName} monthly`,
+        price: String(inr.amount / 100),
+        priceCurrency: "INR",
+        description: `${plan.entitlement.messagePool} messages and ${plan.entitlement.voiceMinutes} voice minutes per cycle`,
+        url: absoluteUrl("/pricing"),
+      },
+      {
+        "@type": "Offer",
+        name: `${plan.displayName} annual`,
+        price: String(usd.amount / 100),
+        priceCurrency: "USD",
+        description: `${plan.entitlement.messagePool} messages and ${plan.entitlement.voiceMinutes} voice minutes per cycle`,
+        url: absoluteUrl("/pricing"),
+      },
+    ];
+  });
+  const pricingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `Pricing and Seva Plans | ${BRAND.name.en}`,
+    url: absoluteUrl("/pricing"),
+    description: PRICING_DESCRIPTION,
+    dateModified: SITE_LAST_MODIFIED,
+    mainEntity: {
+      "@type": "SoftwareApplication",
+      name: BRAND.name.en,
+      applicationCategory: "LifestyleApplication",
+      operatingSystem: "Web",
+      offers: [...oneTimeOffers, ...subscriptionOffers],
+    },
+  };
 
   return (
-    <main className="relative flex flex-1 overflow-y-auto">
-      <Atmosphere mode="distant" intensity={0.6} vignette={1} />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(pricingJsonLd)}
+      />
+      <main className="relative flex flex-1 overflow-y-auto">
+        <Atmosphere mode="distant" intensity={0.6} vignette={1} />
 
       <article className="relative mx-auto w-full max-w-2xl px-6 py-12 font-serif text-krishna sm:px-8 sm:py-16">
         <BackToChat />
@@ -207,6 +284,7 @@ Pricing
           </p>
         </footer>
       </article>
-    </main>
+      </main>
+    </>
   );
 }

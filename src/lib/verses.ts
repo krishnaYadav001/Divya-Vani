@@ -219,7 +219,11 @@ export function rerankByTheme(
     return { ...c, __score: score };
   });
   scored.sort((a, b) => b.__score - a.__score);
-  return scored.map(({ __score, ...rest }) => rest as VerseHit);
+  return scored.map((hit) => {
+    const rest: VerseHit = { ...hit };
+    delete (rest as Partial<Scored>).__score;
+    return rest;
+  });
 }
 
 // Layer 2 — source-aware diversity boost. After Layer-1 reranking, if a
@@ -483,7 +487,7 @@ export type ApiVerse = {
 // most often across the 5 modes. extractScripturalEntities returns names
 // from this list ONLY (Haiku output is filtered against it).
 export const KRISHNA_SCRIPTURAL_ENTITIES = [
-  // §4.5 PARALLEL-MAPPING canonical 8
+  // §4.5 PARALLEL-MAPPING core figures
   'Arjuna', 'Sudama', 'Devaki', 'Yashoda', 'Rukmini', 'Yudhishthira',
   // Mausala parva, gopī viraha, Bhramara-gītā — events
   'Mausala', 'gopi', 'Bhramara',

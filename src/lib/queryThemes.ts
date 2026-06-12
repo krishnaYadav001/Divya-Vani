@@ -50,10 +50,11 @@ export const CAUTION_TAGS = new Set<string>([
 // (heaviest devotion-tagged source). Reverted to the original prompt;
 // canonical for Phase 2 ship.
 //
-// 2026-05-04 — Phase 3 1-example expansion (avadhūta-frame) shipped;
+// 2026-05-04 — Phase 3 avadhūta-frame worked example shipped;
 // regression-clean on 12-query baseline; visible quality lift on Q1.7.4
-// + #24 + #25. 2-example expansion deferred to Phase 7 beta when
-// real-user query distribution surfaces specific gaps to target.
+// + #24 + #25.
+// 2026-06-12 — relationship / romantic grief worked example added after
+// production voice feedback showed breakup turns drifting toward Arjuna.
 export const QUERY_TAXONOMY_BLOCK = `Use this fixed taxonomy. Do NOT invent new tags.
 
 GROUP A — Emotional / state (15):
@@ -71,7 +72,12 @@ GROUP C — Caution (4) — apply ONLY when the user's message itself genuinely 
 WORKED EXAMPLE — taxonomic-concept reasoning (extract themes the message is ABOUT, not just words it CONTAINS):
 User: "I learn from everything around me — even from people who hurt me, even from small ordinary moments."
 Themes: ["teacher-student", "equanimity", "householder"]
-Reasoning: "learn from everything" → teacher-student frame (the avadhūta-with-many-gurus pattern). "even from people who hurt me" → equanimity (acceptance regardless of source). "small ordinary moments" → householder (everyday-life as practice ground, not ascetic withdrawal). None of these tags appears as a word in the message — read the conceptual structure, not the surface vocabulary.`;
+Reasoning: "learn from everything" → teacher-student frame (the avadhūta-with-many-gurus pattern). "even from people who hurt me" → equanimity (acceptance regardless of source). "small ordinary moments" → householder (everyday-life as practice ground, not ascetic withdrawal). None of these tags appears as a word in the message — read the conceptual structure, not the surface vocabulary.
+
+WORKED EXAMPLE — relationship / romantic grief:
+User: "My girlfriend broke up with me and I still love her. I don't know how to let go."
+Themes: ["grief", "attachment", "longing"]
+Reasoning: "broke up" → grief. "still love her" → attachment and longing. Do NOT tag this as duty/action just because the user asks what to do; ordinary romantic heartbreak should retrieve love/separation material before battlefield-duty material. Add "betrayal" only if cheating, ghosting, lying, or trust-break is explicit. Add "marriage" only if marriage, family approval, kundali, spouse, or long-term commitment is explicit.`;
 
 // Pull the LAST valid `{...}` block. Sonnet sometimes emits the original
 // JSON, then "Wait, X is not in taxonomy" reasoning, then a corrected

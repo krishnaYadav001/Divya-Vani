@@ -29,6 +29,8 @@ const AI_BOTS = [
 ] as const;
 
 export default function robots(): MetadataRoute.Robots {
+  const host = new URL(BRAND.url).host;
+
   return {
     rules: [
       // Default rule for all crawlers
@@ -46,6 +48,6 @@ export default function robots(): MetadataRoute.Robots {
       })),
     ],
     sitemap: `${BRAND.url}/sitemap.xml`,
-    host: BRAND.url,
+    host,
   };
 }
