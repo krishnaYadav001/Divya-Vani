@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { getTier } from "@/lib/seva";
 import { getWalletPack } from "@/lib/subscriptions";
+import { timingSafeEqualHex } from "@/lib/secureCompare";
 import {
   findPaymentByOrderId,
   findPaymentByPaymentId,
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
       .createHmac("sha256", webhookSecret)
       .update(rawBody)
       .digest("hex");
-    if (expected !== signature) {
+    if (!timingSafeEqualHex(expected, signature)) {
       console.error("[razorpay/webhook] signature mismatch", { eventId });
       return NextResponse.json(
         { error: "signature mismatch" },
@@ -359,13 +360,25 @@ export async function POST(req: Request) {
           console.error("[razorpay/webhook] subscription.activated: missing id");
           break;
         }
-        await updateSubscriptionStatus(sub.id, {
+        const activatedOk = await updateSubscriptionStatus(sub.id, {
           status: "active",
           razorpay_customer_id: sub.customer_id ?? undefined,
           current_period_start: unixToIso(sub.current_start),
           current_period_end: unixToIso(sub.current_end),
         });
-        console.log("[razorpay/webhook] subscription activated:", sub.id);
+        if (!activatedOk) {
+          // The UPDATE to 'active' can only fail on the one-active-per-user
+          // partial unique index (a duplicate active sub) or a DB error. The
+          // create route now blocks a second chargeable sub, so this should be
+          // unreachable — alert loudly if it ever fires (a mandate may be
+          // charging without granting entitlements; manual cancel needed).
+          console.error(
+            "[razorpay/webhook] subscription.activated: status update FAILED — possible duplicate-active conflict or DB error:",
+            sub.id,
+          );
+        } else {
+          console.log("[razorpay/webhook] subscription activated:", sub.id);
+        }
         break;
       }
       case "subscription.charged": {
@@ -378,11 +391,18 @@ export async function POST(req: Request) {
           console.error("[razorpay/webhook] subscription.charged: missing id");
           break;
         }
-        await resetSubscriptionCycleUsage(sub.id, {
+        const chargedOk = await resetSubscriptionCycleUsage(sub.id, {
           current_period_start: unixToIso(sub.current_start),
           current_period_end: unixToIso(sub.current_end),
         });
-        console.log("[razorpay/webhook] subscription charged — cycle reset:", sub.id);
+        if (!chargedOk) {
+          console.error(
+            "[razorpay/webhook] subscription.charged: cycle reset FAILED — possible duplicate-active conflict or DB error:",
+            sub.id,
+          );
+        } else {
+          console.log("[razorpay/webhook] subscription charged — cycle reset:", sub.id);
+        }
         break;
       }
       case "subscription.pending":

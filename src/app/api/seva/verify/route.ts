@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { timingSafeEqualHex } from "@/lib/secureCompare";
 import { getTier, inferCurrencyFromAmount } from "@/lib/seva";
 import { fireMetaEvent } from "@/lib/metaEvents";
 import { fireGoogleAdsConversion } from "@/lib/googleAdsEvents";
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
     .createHmac("sha256", keySecret)
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
-  if (expected !== signature) {
+  if (!timingSafeEqualHex(expected, signature)) {
     await markPaymentFailed(orderId);
     return NextResponse.json({ error: "signature mismatch" }, { status: 400 });
   }

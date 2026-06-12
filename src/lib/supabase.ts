@@ -946,6 +946,53 @@ export async function fetchActiveSubscription(
   }
 }
 
+// Non-terminal subscription states: a row in any of these could still become
+// (or already is) a chargeable subscription, so the create route must not mint
+// a SECOND one alongside it (that path silently double-charges — the 2nd can
+// never go 'active' against the one-active-per-user partial unique index, yet
+// Razorpay keeps charging its mandate). 'created' = checkout started but never
+// authenticated; the others = a live/in-flight mandate.
+const NON_TERMINAL_SUB_STATES: SubscriptionStatus[] = [
+  "created",
+  "authenticated",
+  "active",
+  "pending",
+  "halted",
+];
+
+/**
+ * The user's most-recent subscription that is still in a non-terminal state
+ * (see NON_TERMINAL_SUB_STATES), or null. The create route uses this — NOT
+ * fetchActiveSubscription — to decide whether a new checkout is allowed, so a
+ * user mid-checkout (status 'created'/'authenticated') can't spin up a second
+ * chargeable subscription. Terminal rows (cancelled/completed/expired/paused)
+ * are ignored so a past subscriber can always resubscribe.
+ */
+export async function fetchInProgressSubscription(
+  userId: string,
+): Promise<SubscriptionRow | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .in("status", NON_TERMINAL_SUB_STATES)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("[supabase] fetchInProgressSubscription error:", error);
+      return null;
+    }
+    return (data as SubscriptionRow | null) ?? null;
+  } catch (e) {
+    console.error("[supabase] fetchInProgressSubscription threw:", e);
+    return null;
+  }
+}
+
 /**
  * Look up a subscription by its Razorpay id. Used by the webhook handler to
  * resolve the row a subscription.* event refers to.
@@ -1097,6 +1144,51 @@ export interface VoiceConsumeResult {
   from_pool: number;
   from_wallet: number;
   shortfall: number;
+}
+
+export interface VoiceMeterResult {
+  from_pool: number;
+  from_wallet: number;
+  shortfall: number;
+  /** Seconds actually charged this call beyond the prior high-water mark. */
+  delta: number;
+  /** The high-water mark already metered for this conversation before this call. */
+  already: number;
+}
+
+/**
+ * Meter a voice call against a per-conversation high-water mark so the browser's
+ * provisional duration report and ElevenLabs' authoritative post-call webhook
+ * can BOTH report the same call without double-charging — only the increment
+ * beyond what was already metered is debited (pool first, then wallet). This
+ * supersedes consumeVoiceSeconds. Requires the meter_voice_session SQL function
+ * + voice_sessions table (docs/subscriptions-rpcs.sql + schema). Silent-fail per
+ * the ops invariant: a metering miss must never block the voice flow.
+ */
+export async function meterVoiceSession(
+  userId: string,
+  conversationId: string,
+  totalSeconds: number,
+  source: "client" | "webhook",
+): Promise<VoiceMeterResult | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("meter_voice_session", {
+      p_conversation_id: conversationId,
+      p_user_id: userId,
+      p_total_seconds: Math.round(totalSeconds),
+      p_source: source,
+    });
+    if (error) {
+      console.error("[supabase] meterVoiceSession error:", error);
+      return null;
+    }
+    return (data as VoiceMeterResult | null) ?? null;
+  } catch (e) {
+    console.error("[supabase] meterVoiceSession threw:", e);
+    return null;
+  }
 }
 
 /**

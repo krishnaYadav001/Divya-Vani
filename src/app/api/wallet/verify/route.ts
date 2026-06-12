@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getWalletPack } from "@/lib/subscriptions";
+import { timingSafeEqualHex } from "@/lib/secureCompare";
 import {
   findPaymentByOrderId,
   markPaymentVerifiedAtomic,
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
     .createHmac("sha256", keySecret)
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
-  if (expected !== signature) {
+  if (!timingSafeEqualHex(expected, signature)) {
     await markPaymentFailed(orderId);
     return NextResponse.json({ error: "signature mismatch" }, { status: 400 });
   }

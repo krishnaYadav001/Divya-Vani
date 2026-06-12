@@ -5,10 +5,14 @@ import {
   type Currency,
   type PlanKey,
 } from "@/lib/subscriptions";
-import { createRazorpaySubscription } from "@/lib/razorpay";
 import {
-  fetchActiveSubscription,
+  createRazorpaySubscription,
+  cancelRazorpaySubscription,
+} from "@/lib/razorpay";
+import {
+  fetchInProgressSubscription,
   insertSubscription,
+  updateSubscriptionStatus,
 } from "@/lib/supabase";
 
 const USER_COOKIE = "god_messenger_uid";
@@ -19,6 +23,12 @@ const TOTAL_COUNT_BY_PERIOD: Record<string, number> = {
   monthly: 120,
   annual: 10,
 };
+
+// A 'created' subscription is a checkout the user started but never
+// authenticated. Within this window we treat it as the SAME in-progress
+// checkout and resume it (no second Razorpay subscription); past it, it's an
+// abandoned cart we retire before minting a fresh one.
+const STALE_CREATED_MS = 15 * 60 * 1000;
 
 function isCurrency(v: unknown): v is Currency {
   return v === "INR" || v === "USD";
@@ -80,15 +90,50 @@ export async function POST(req: Request) {
     );
   }
 
-  // Block a second subscription while one is already active (one-active-per-user
-  // is enforced by a partial unique index; refuse here so we never create an
-  // orphan Razorpay subscription that can't activate).
-  const existing = await fetchActiveSubscription(userId);
+  // Prevent a SECOND chargeable subscription alongside an existing one. We look
+  // at any non-terminal sub (created/authenticated/active/pending/halted), not
+  // just 'active': two authenticated mandates would silently double-charge (the
+  // 2nd can never go 'active' under the one-active-per-user partial unique
+  // index, yet Razorpay keeps charging it forever).
+  const existing = await fetchInProgressSubscription(userId);
   if (existing) {
-    return NextResponse.json(
-      { error: "already_subscribed", plan_key: existing.plan_key },
-      { status: 409 },
+    if (existing.status !== "created") {
+      // A live or in-flight mandate (active / authenticated / pending / halted)
+      // — refuse a new one. The Settings panel handles upgrades/cancel.
+      return NextResponse.json(
+        { error: "already_subscribed", plan_key: existing.plan_key, status: existing.status },
+        { status: 409 },
+      );
+    }
+    // status === 'created': a checkout was started but never authenticated.
+    const sameOffer =
+      existing.plan_key === planKey && existing.currency === currency;
+    const ageMs = Date.now() - new Date(existing.created_at ?? 0).getTime();
+    if (sameOffer && ageMs < STALE_CREATED_MS) {
+      // Same plan, still fresh → resume the SAME Razorpay subscription instead
+      // of minting a duplicate. Checkout only needs the subscription_id.
+      return NextResponse.json({
+        subscription_id: existing.razorpay_subscription_id,
+        short_url: null,
+        key_id: process.env.RAZORPAY_KEY_ID,
+        plan_key: planKey,
+        currency,
+        period: offer.period,
+        amount: offer.amount,
+        display: offer.display,
+        plan_name: plan.displayName,
+        resumed: true,
+      });
+    }
+    // Different plan, or an abandoned/stale checkout → retire the old 'created'
+    // subscription (best-effort cancel at Razorpay + mark expired locally) so
+    // the user can never end up holding two chargeable subscriptions.
+    await cancelRazorpaySubscription(existing.razorpay_subscription_id, false).catch(
+      () => {},
     );
+    await updateSubscriptionStatus(existing.razorpay_subscription_id, {
+      status: "expired",
+    });
   }
 
   const totalCount = TOTAL_COUNT_BY_PERIOD[offer.period] ?? 120;

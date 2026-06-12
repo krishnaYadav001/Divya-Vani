@@ -1,23 +1,29 @@
-// Phase 10.1 — Voice paywall check.
+// Phase 10.1 / Phase 9 — Voice paywall check.
 //
-// FOUNDER DECISION (v1): voice is available to anyone who has EVER
-// completed a paid seva — i.e., has at least one `payments` row with
-// status = 'verified'. Phase 9 (Krishna Plus subscription) may tighten
-// this to "active subscription / remaining pool" later.
+// FOUNDER DECISION (revised 2026-06-12): voice is a PAID-VOICE feature, NOT a
+// "ever paid anything" perk. The legacy rule — "anyone with at least one
+// verified seva payment gets voice forever" — is REMOVED. It granted unlimited
+// voice (≈₹16/min cost, nothing to debit) to any ₹11 seva buyer, an unbounded
+// cost leak. Voice now requires a real voice allowance:
 //
-// IMPORTANT SCHEMA NOTE: the spec referenced a `users_memory.message_pool`
-// / `total_paid_messages_purchased` field as the paid signal. Neither
-// exists in the live schema (see .claude/rules/schema.md). users_memory
-// has only `seva_balance` — the *remaining* purchased-message count,
-// which drops back to 0 once a paying user spends their messages and would
-// therefore WRONGLY deny voice to someone who has paid. The lifetime
-// "ever paid" signal is the `payments` table. The spec anticipated this
-// ("if unsure, count Razorpay-credited purchases via existing logic"),
-// so this check counts verified payments. Surfaced in the CC report for
-// founder override.
+//   • an ACTIVE subscription whose voice pool still has minutes left, OR
+//   • a one-time voice-minute WALLET balance (users_memory.voice_seconds_balance).
+//
+// A seva-only user (chat credits, no voice plan / wallet) gets NO voice and is
+// shown the top-up paywall. Voice is not live-tested yet, so this regresses no
+// real user; if a genuine grandfathered voice user ever surfaces, add an
+// explicit allowlist here rather than reopening the blanket seva grant.
+//
+// ENTRY FLOOR (Phase 9 hardening): entry requires at least
+// VOICE_MIN_START_SECONDS of COMBINED remaining balance (pool + wallet). Voice
+// metering is debited after the fact from the client-reported duration, so a
+// balance of "1 second remaining" must NOT buy a full unmetered session — the
+// floor bounds that. A user below the floor is sent to top up.
 //
 // Fail-closed: any DB error → denied. Voice degrades to text-only on the
-// frontend, so a rare DB blip costs a missed voice play, never free voice.
+// frontend, so a rare DB blip costs a missed voice play, never free voice. Each
+// balance probe fails closed INDEPENDENTLY (returns 0), so a blip on one branch
+// never inflates the combined total.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -40,19 +46,21 @@ function getDb(): SupabaseClient | null {
 
 export type VoiceAccess = { allowed: boolean; reason: string };
 
-// Phase 9 — voice is allowed when ANY of these hold (checked in parallel):
-//   • active subscription with voice pool remaining (voice_seconds_used <
-//     voice_minutes_pool*60), OR
-//   • a one-time wallet balance (users_memory.voice_seconds_balance > 0), OR
-//   • legacy: at least one verified seva payment (kept so existing voice users
-//     are NOT regressed; metering simply has nothing to debit for them).
-// Each check fails closed independently — a DB blip on one branch never grants
-// free voice, it just removes that branch from consideration.
-export async function hasVoiceAccess(userId: string): Promise<VoiceAccess> {
-  const db = getDb();
-  if (!db) return { allowed: false, reason: "db_unavailable" };
+// Minimum combined remaining voice balance (seconds) needed to START a session.
+// Bounds the "a sliver of balance buys a whole session" exposure: a user at or
+// below this floor tops up first. Modest so it never blocks a genuine call.
+export const VOICE_MIN_START_SECONDS = 60;
 
-  const subCheck = (async (): Promise<boolean> => {
+/**
+ * Remaining voice seconds available to `userId` right now, split by source.
+ * Each source is read independently and floored at 0; any error on a source
+ * yields 0 for that source (fail-closed) rather than throwing.
+ */
+async function readVoiceBalances(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ subRemaining: number; walletRemaining: number }> {
+  const subRemaining = (async (): Promise<number> => {
     try {
       const { data, error } = await db
         .from("subscriptions")
@@ -60,50 +68,48 @@ export async function hasVoiceAccess(userId: string): Promise<VoiceAccess> {
         .eq("user_id", userId)
         .eq("status", "active")
         .maybeSingle();
-      if (error || !data) return false;
-      return data.voice_seconds_used < data.voice_minutes_pool * 60;
+      if (error || !data) return 0;
+      return Math.max(0, data.voice_minutes_pool * 60 - data.voice_seconds_used);
     } catch {
-      return false;
+      return 0;
     }
   })();
 
-  const walletCheck = (async (): Promise<boolean> => {
+  const walletRemaining = (async (): Promise<number> => {
     try {
       const { data, error } = await db
         .from("users_memory")
         .select("voice_seconds_balance")
         .eq("user_id", userId)
         .maybeSingle();
-      if (error || !data) return false;
-      return (data.voice_seconds_balance ?? 0) > 0;
+      if (error || !data) return 0;
+      return Math.max(0, data.voice_seconds_balance ?? 0);
     } catch {
-      return false;
+      return 0;
     }
   })();
 
-  const legacyCheck = (async (): Promise<boolean> => {
-    try {
-      const { count, error } = await db
-        .from("payments")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "verified");
-      if (error) return false;
-      return (count ?? 0) > 0;
-    } catch {
-      return false;
-    }
-  })();
+  const [sub, wallet] = await Promise.all([subRemaining, walletRemaining]);
+  return { subRemaining: sub, walletRemaining: wallet };
+}
+
+// Phase 9 — voice is allowed when the user has at least VOICE_MIN_START_SECONDS
+// of combined remaining balance across (active subscription pool + wallet).
+export async function hasVoiceAccess(userId: string): Promise<VoiceAccess> {
+  const db = getDb();
+  if (!db) return { allowed: false, reason: "db_unavailable" };
 
   try {
-    const [hasSub, hasWallet, hasLegacy] = await Promise.all([
-      subCheck,
-      walletCheck,
-      legacyCheck,
-    ]);
-    if (hasSub) return { allowed: true, reason: "subscription" };
-    if (hasWallet) return { allowed: true, reason: "wallet" };
-    if (hasLegacy) return { allowed: true, reason: "seva_legacy" };
+    const { subRemaining, walletRemaining } = await readVoiceBalances(db, userId);
+    const total = subRemaining + walletRemaining;
+    if (total >= VOICE_MIN_START_SECONDS) {
+      return {
+        allowed: true,
+        reason: subRemaining > 0 ? "subscription" : "wallet",
+      };
+    }
+    // Has *some* balance but below the start floor → top-up, not first purchase.
+    if (total > 0) return { allowed: false, reason: "insufficient_balance" };
     return { allowed: false, reason: "payment_required" };
   } catch (e) {
     console.error("[voiceAccess] hasVoiceAccess threw:", e);

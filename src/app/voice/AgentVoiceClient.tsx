@@ -227,28 +227,40 @@ function VoiceInner() {
   // Phase 9 voice metering — wall-clock start of the live session, set on
   // connect and read once on disconnect to bill elapsed seconds (pool → wallet).
   const voiceSessionStartRef = useRef<number | null>(null);
+  // The ElevenLabs conversation id, captured on connect. Sent with the usage
+  // POST so the provisional client report and the authoritative post-call
+  // webhook share one dedup key (the server reconciles, never double-charges).
+  const voiceConversationIdRef = useRef<string | null>(null);
 
   // ── SDK conversation ──────────────────────────────────────────────────────
   const conversation = useConversation({
-    onConnect: () => {
+    onConnect: (props) => {
       voiceSessionStartRef.current = Date.now();
+      voiceConversationIdRef.current =
+        props && typeof props.conversationId === "string"
+          ? props.conversationId
+          : null;
       setHasConnected(true);
       setError(null);
       setUserTurnEnded(false);
     },
     onDisconnect: (details) => {
-      // Meter the finished session (fire-and-forget; keepalive so it survives a
-      // tab close). Debits the subscription voice pool then the wallet server-
-      // side. A metering miss is acceptable; entry was already gated.
+      // Provisional meter for the finished session (fire-and-forget; keepalive so
+      // it survives a tab close). Sends the ElevenLabs conversationId so the
+      // server debits via the high-water-mark ledger — the authoritative post-
+      // call webhook trues up the same call, and neither can double-charge. A
+      // missed/under-reported client POST is settled by the webhook.
       const startedAt = voiceSessionStartRef.current;
+      const conversationId = voiceConversationIdRef.current;
       voiceSessionStartRef.current = null;
+      voiceConversationIdRef.current = null;
       if (startedAt) {
         const seconds = Math.round((Date.now() - startedAt) / 1000);
         if (seconds > 0) {
           void fetch("/api/voice/usage", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seconds }),
+            body: JSON.stringify({ seconds, conversationId }),
             keepalive: true,
           }).catch(() => {});
         }

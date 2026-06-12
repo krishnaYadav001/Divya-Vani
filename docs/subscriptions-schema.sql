@@ -52,11 +52,30 @@ ALTER TABLE users_memory
 -- 3) Wallet purchases reuse the existing `payments` table. Widen the tier
 --    CHECK if one exists (the seva tier ids + the new wallet pack ids).
 --    `payments.tier` is currently a free-text column (no CHECK) — nothing to
---    alter; wallet pack ids ('wallet_in_4', 'wallet_usd_15', etc.) just store
+--    alter; wallet pack ids ('wallet_inr_4', 'wallet_usd_15', etc.) just store
 --    as-is. If you later add a CHECK constraint, include the wallet ids.
 
+-- 4) Voice session ledger — a high-water mark of metered seconds per ElevenLabs
+--    conversation. Voice is debited from TWO reports of the same call: the
+--    browser's provisional duration (instant, for snappy balance UX, but
+--    spoofable) and ElevenLabs' AUTHORITATIVE post-call webhook duration. Both
+--    call meter_voice_session() (see subscriptions-rpcs.sql), which only ever
+--    charges the INCREMENT beyond what this row already recorded — so the two
+--    reports (and webhook retries) can never double-charge, and a suppressed /
+--    under-reported client number is trued up by the webhook.
+CREATE TABLE IF NOT EXISTS voice_sessions (
+  conversation_id  text PRIMARY KEY,         -- ElevenLabs conversation id
+  user_id          text NOT NULL,
+  metered_seconds  int  NOT NULL DEFAULT 0,  -- max duration charged so far
+  last_source      text,                     -- 'client' | 'webhook' (diagnostics)
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_user_id ON voice_sessions (user_id);
+ALTER TABLE voice_sessions ENABLE ROW LEVEL SECURITY;  -- no policies; service role bypasses
+
 -- =============================================================================
--- Done. After running: confirm `subscriptions` exists and `users_memory` has
--- `voice_seconds_balance`. Then create the Razorpay Plans (see the setup
--- script / dashboard step) and set the RAZORPAY_PLAN_* env vars.
+-- Done. After running: confirm `subscriptions` + `voice_sessions` exist and
+-- `users_memory` has `voice_seconds_balance`. Then create the Razorpay Plans
+-- (see the setup script / dashboard step) and set the RAZORPAY_PLAN_* env vars.
 -- =============================================================================
