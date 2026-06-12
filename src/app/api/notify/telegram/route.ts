@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  escapeTelegramHtml,
+  formatTelegramDateTime,
+  sendTelegramMessage,
+} from "@/lib/telegramNotify";
 
 // Supabase database webhook receiver — fires on INSERT into user_feedback
 // and users_memory. Sends a Telegram message to the founder's chat.
@@ -12,39 +17,16 @@ interface SupabaseWebhookPayload {
   old_record: Record<string, unknown> | null;
 }
 
-async function sendTelegram(text: string): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
-    console.error("[notify/telegram] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID missing");
-    return;
-  }
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: "HTML",
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    console.error("[notify/telegram] Telegram API error:", res.status, body);
-  }
-}
-
 function formatFeedback(record: Record<string, unknown>): string {
-  const name = record.user_name ? String(record.user_name) : "Anonymous";
+  const name = record.user_name
+    ? escapeTelegramHtml(String(record.user_name))
+    : "Anonymous";
   const rating = record.rating != null ? `⭐ ${record.rating}/5` : null;
-  const message = record.message ? String(record.message).trim() : "";
+  const message = record.message
+    ? escapeTelegramHtml(String(record.message).trim())
+    : "";
   const time = record.created_at
-    ? new Date(String(record.created_at)).toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+    ? formatTelegramDateTime(String(record.created_at))
     : "";
 
   const lines = ["📬 <b>New Feedback</b>"];
@@ -56,18 +38,18 @@ function formatFeedback(record: Record<string, unknown>): string {
 }
 
 function formatNewUser(record: Record<string, unknown>): string {
-  const name = record.user_name ? `${String(record.user_name)}` : null;
+  const name = record.user_name
+    ? escapeTelegramHtml(String(record.user_name))
+    : null;
+  const userId = record.user_id
+    ? escapeTelegramHtml(String(record.user_id).slice(0, 8))
+    : null;
   const time = record.updated_at ?? record.last_active_at;
-  const timeStr = time
-    ? new Date(String(time)).toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : "";
+  const timeStr = time ? formatTelegramDateTime(String(time)) : "";
 
   const lines = ["🌸 <b>New User</b>"];
   if (name) lines.push(`👤 ${name}`);
+  if (userId) lines.push(`ID: ${userId}`);
   if (timeStr) lines.push(`🕐 ${timeStr} IST`);
   return lines.join("\n");
 }
@@ -108,7 +90,13 @@ export async function POST(req: Request) {
     }
 
     if (message) {
-      await sendTelegram(message);
+      const sent = await sendTelegramMessage(message);
+      if (!sent) {
+        return NextResponse.json(
+          { error: "telegram_send_failed" },
+          { status: 502 },
+        );
+      }
       console.log(`[notify/telegram] sent notification for ${table} INSERT`);
     }
 

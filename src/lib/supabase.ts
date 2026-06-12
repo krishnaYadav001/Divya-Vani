@@ -216,6 +216,96 @@ export async function touchActivity(userId: string): Promise<void> {
   }
 }
 
+export type VisitRecordStatus = "created" | "touched" | "failed";
+
+export interface VisitRecordResult {
+  status: VisitRecordStatus;
+  userId: string;
+  previousLastActiveAt: string | null;
+  userName: string | null;
+  messageCount: number | null;
+}
+
+/**
+ * Records the first browser visit immediately, before the user has sent a
+ * chat message. INSERT tells callers whether this is a brand-new Supabase row
+ * so the existing users_memory webhook can notify Telegram exactly once.
+ */
+export async function recordVisit(userId: string): Promise<VisitRecordResult> {
+  const failed: VisitRecordResult = {
+    status: "failed",
+    userId,
+    previousLastActiveAt: null,
+    userName: null,
+    messageCount: null,
+  };
+
+  try {
+    const client = getClient();
+    if (!client) return failed;
+    const now = new Date().toISOString();
+    const { error } = await client.from("users_memory").insert({
+      user_id: userId,
+      last_active_at: now,
+      updated_at: now,
+    });
+    if (!error) {
+      return {
+        status: "created",
+        userId,
+        previousLastActiveAt: null,
+        userName: null,
+        messageCount: 0,
+      };
+    }
+
+    if (error.code !== "23505") {
+      console.error("[supabase] recordVisit insert error:", error);
+      return failed;
+    }
+
+    const { data: existing, error: selectError } = await client
+      .from("users_memory")
+      .select("user_name, message_count, last_active_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (selectError) {
+      console.error("[supabase] recordVisit select error:", selectError);
+    }
+
+    const { error: updateError } = await client
+      .from("users_memory")
+      .update({
+        last_active_at: now,
+        updated_at: now,
+      })
+      .eq("user_id", userId);
+    if (updateError) {
+      console.error("[supabase] recordVisit update error:", updateError);
+      return failed;
+    }
+    return {
+      status: "touched",
+      userId,
+      previousLastActiveAt:
+        typeof existing?.last_active_at === "string"
+          ? existing.last_active_at
+          : null,
+      userName:
+        typeof existing?.user_name === "string" && !isBannedName(existing.user_name)
+          ? existing.user_name
+          : null,
+      messageCount:
+        typeof existing?.message_count === "number"
+          ? existing.message_count
+          : null,
+    };
+  } catch (e) {
+    console.error("[supabase] recordVisit threw:", e);
+    return failed;
+  }
+}
+
 /**
  * Inserts an audit row for an order just created with Razorpay. The row is
  * keyed by razorpay_order_id (UNIQUE) so the verify endpoint can look it

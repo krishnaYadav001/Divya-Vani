@@ -13,6 +13,7 @@ import { jsonLdScript, SOCIAL_PROFILES } from "@/lib/seo";
 import "@/lib/startup";
 import SiteFooter from "./components/SiteFooter";
 import SupportWidget from "./components/SupportWidget";
+import VisitTracker from "./components/VisitTracker";
 import { LanguageProvider } from "./providers/LanguageProvider";
 import "./globals.css";
 
@@ -232,6 +233,7 @@ export default function RootLayout({
           })}
         />
         <LanguageProvider>
+          <VisitTracker />
           {children}
           <SiteFooter />
           <SupportWidget />
