@@ -42,6 +42,22 @@ export interface UserMemory {
   training_opt_out?: boolean | null;
 }
 
+function newBlankMemory(lastActiveAt: string): UserMemory {
+  return {
+    main_problem: null,
+    emotion: null,
+    context_summary: null,
+    last_active_at: lastActiveAt,
+    message_count: 0,
+    seva_balance: 0,
+    is_first_time: true,
+    verses_referenced: [],
+    user_name: null,
+    growing_edge: null,
+    training_opt_out: false,
+  };
+}
+
 export type PaymentStatus = "created" | "verified" | "failed";
 
 export interface PaymentRow {
@@ -554,7 +570,26 @@ export async function fetchMemory(
       console.error("[supabase] fetchMemory error:", error);
       return null;
     }
-    if (!data) return null;
+    if (!data) {
+      // A valid cookie can outlive its users_memory row after Settings -> Delete
+      // all data, failed cookie clearing, or voice/bootstrap-first flows. Keep
+      // the one-row-per-cookie invariant by recreating a blank row immediately
+      // instead of letting the app work while the founder cannot find the user.
+      const now = new Date().toISOString();
+      const { error: ensureError } = await client.from("users_memory").upsert(
+        {
+          user_id: userId,
+          last_active_at: now,
+          updated_at: now,
+        },
+        { onConflict: "user_id" },
+      );
+      if (ensureError) {
+        console.error("[supabase] fetchMemory ensure row error:", ensureError);
+        return null;
+      }
+      return newBlankMemory(now);
+    }
     // Pre-migration environments may not have the training_opt_out column
     // yet — graceful default to false so the chat route's opt-out gate
     // continues to log normally until the ALTER TABLE is applied.
@@ -1354,6 +1389,24 @@ export async function fetchVoiceSecondsBalance(userId: string): Promise<number> 
       .maybeSingle();
     if (error) {
       console.error("[supabase] fetchVoiceSecondsBalance error:", error);
+      return 0;
+    }
+    if (!data) {
+      const now = new Date().toISOString();
+      const { error: ensureError } = await client.from("users_memory").upsert(
+        {
+          user_id: userId,
+          last_active_at: now,
+          updated_at: now,
+        },
+        { onConflict: "user_id" },
+      );
+      if (ensureError) {
+        console.error(
+          "[supabase] fetchVoiceSecondsBalance ensure row error:",
+          ensureError,
+        );
+      }
       return 0;
     }
     const bal = (data as { voice_seconds_balance?: number } | null)

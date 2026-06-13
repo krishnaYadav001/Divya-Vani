@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { deleteUserData } from "@/lib/supabase";
+import { randomUUID } from "crypto";
+import { deleteUserData, touchActivity } from "@/lib/supabase";
 
 const USER_COOKIE = "god_messenger_uid";
 
 // Phase 8 pre-launch — DPDP-compliant account deletion endpoint. Removes
 // chat_logs + safety_events + users_memory rows for the cookie-identified
-// user, then clears the cookie in the response so subsequent requests
-// start with a fresh identity. Service-role Supabase client (server-only).
+// user, then rotates the cookie to a fresh blank identity. This preserves the
+// erasure boundary while keeping the current browser findable in users_memory
+// immediately after the Settings -> Delete flow. Service-role Supabase client
+// (server-only).
 //
 // Intentionally NOT deleted (per Indian financial law + audit invariants):
 //   - payments table: retained per Income Tax Act + RBI reconciliation
@@ -30,16 +33,22 @@ export async function POST() {
 
     await deleteUserData(userId);
 
-    const res = NextResponse.json({ ok: true }, { status: 200 });
-    // Clear the identity cookie. Same security flags as the cookie set
-    // in /api/chat (httpOnly, sameSite=lax, secure in prod) so it
-    // overrides the existing cookie cleanly rather than leaving stale
-    // state in the browser jar.
-    res.cookies.set(USER_COOKIE, "", {
+    const nextUserId = randomUUID();
+    await touchActivity(nextUserId);
+
+    const res = NextResponse.json(
+      { ok: true, user_id: nextUserId },
+      { status: 200 },
+    );
+    // Rotate the identity cookie. Same security flags as the cookie set
+    // in /api/chat (httpOnly, sameSite=lax, secure in prod) so it overrides the
+    // existing cookie cleanly while avoiding a no-row/no-cookie limbo after the
+    // client-side redirect.
+    res.cookies.set(USER_COOKIE, nextUserId, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 0,
+      maxAge: 60 * 60 * 24 * 365,
       path: "/",
     });
 

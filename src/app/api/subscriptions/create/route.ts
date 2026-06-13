@@ -12,6 +12,7 @@ import {
 import {
   fetchInProgressSubscription,
   insertSubscription,
+  touchActivity,
   updateSubscriptionStatus,
 } from "@/lib/supabase";
 
@@ -78,6 +79,11 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+
+  // Keep the subscriptions FK path robust after Settings -> Delete all data or
+  // voice-first checkout: a valid cookie should always have a blank
+  // users_memory row before we insert subscription state against it.
+  await touchActivity(userId);
 
   const planId = process.env[offer.planIdEnv];
   if (!planId) {
