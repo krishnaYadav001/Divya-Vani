@@ -11,25 +11,81 @@ const QUICK_ACTIONS = [
   "About plans",
 ];
 
+const TRIGGER_SIZE = 48;
+const EDGE_GAP = 8;
+const CLICK_SLOP = 5;
+
+type WidgetPosition = { right: number; bottom: number };
+
 export default function SupportWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const suppressClickUntilRef = useRef(0);
 
   // Draggable position — right/bottom offset from viewport edges.
   // Default sits above the chat input bar on all routes.
   const [pos, setPos] = useState({ right: 16, bottom: 88 });
   const dragRef = useRef<{
+    pointerId: number;
     startPX: number;
     startPY: number;
     startRight: number;
     startBottom: number;
+    livePos: WidgetPosition;
+    raf: number | null;
     moved: boolean;
   } | null>(null);
+
+  const clampPosition = useCallback(
+    (right: number, bottom: number): WidgetPosition => {
+      const maxRight = Math.max(
+        EDGE_GAP,
+        window.innerWidth - TRIGGER_SIZE - EDGE_GAP,
+      );
+      const maxBottom = Math.max(
+        EDGE_GAP,
+        window.innerHeight - TRIGGER_SIZE - EDGE_GAP,
+      );
+
+      return {
+        right: Math.max(EDGE_GAP, Math.min(maxRight, right)),
+        bottom: Math.max(EDGE_GAP, Math.min(maxBottom, bottom)),
+      };
+    },
+    [],
+  );
+
+  const applyCommittedPosition = useCallback((next: WidgetPosition) => {
+    const node = widgetRef.current;
+    if (!node) return;
+    node.style.right = `${next.right}px`;
+    node.style.bottom = `${next.bottom}px`;
+    node.style.transform = "";
+  }, []);
+
+  const scheduleDragFrame = useCallback(() => {
+    const d = dragRef.current;
+    if (!d || d.raf !== null) return;
+
+    d.raf = window.requestAnimationFrame(() => {
+      const current = dragRef.current;
+      const node = widgetRef.current;
+      if (!current) return;
+
+      current.raf = null;
+      if (!node) return;
+      const translateX = current.startRight - current.livePos.right;
+      const translateY = current.startBottom - current.livePos.bottom;
+      node.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+    });
+  }, []);
 
   useEffect(() => {
     if (open) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,43 +95,115 @@ export default function SupportWidget() {
     if (open && messages.length === 0) textareaRef.current?.focus();
   }, [open, messages.length]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setPos((current) => clampPosition(current.right, current.bottom));
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [clampPosition]);
+
+  useEffect(() => {
+    applyCommittedPosition(pos);
+  }, [applyCommittedPosition, pos]);
+
+  useEffect(() => {
+    return () => {
+      const d = dragRef.current;
+      if (d && d.raf !== null) window.cancelAnimationFrame(d.raf);
+    };
+  }, []);
+
   // Drag handlers — pointer capture ensures move/up fire even off the button.
-  // Click (open/close) is handled in onPointerUp when the pointer hasn't moved.
+  // Click (open/close) is handled separately so completed drags can suppress it.
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
       if (e.button !== 0 || open) return;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      const startPos = clampPosition(pos.right, pos.bottom);
       dragRef.current = {
+        pointerId: e.pointerId,
         startPX: e.clientX,
         startPY: e.clientY,
-        startRight: pos.right,
-        startBottom: pos.bottom,
+        startRight: startPos.right,
+        startBottom: startPos.bottom,
+        livePos: startPos,
+        raf: null,
         moved: false,
       };
+      setIsDragging(true);
     },
-    [open, pos],
+    [clampPosition, open, pos],
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
       const d = dragRef.current;
-      if (!d) return;
+      if (!d || d.pointerId !== e.pointerId) return;
       const dx = e.clientX - d.startPX;
       const dy = e.clientY - d.startPY;
-      if (!d.moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+      if (!d.moved && Math.abs(dx) < CLICK_SLOP && Math.abs(dy) < CLICK_SLOP) {
+        return;
+      }
+
+      e.preventDefault();
       d.moved = true;
-      setPos({
-        right: Math.max(8, Math.min(window.innerWidth - 56, d.startRight - dx)),
-        bottom: Math.max(8, Math.min(window.innerHeight - 56, d.startBottom - dy)),
-      });
+      d.livePos = clampPosition(d.startRight - dx, d.startBottom - dy);
+      scheduleDragFrame();
     },
-    [],
+    [clampPosition, scheduleDragFrame],
   );
 
-  const onPointerUp = useCallback(() => {
-    const d = dragRef.current;
-    dragRef.current = null;
-    if (!d?.moved) setOpen((v) => !v);
+  const finishDrag = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
+      const d = dragRef.current;
+      if (!d || d.pointerId !== e.pointerId) return;
+
+      if (d.raf !== null) window.cancelAnimationFrame(d.raf);
+      dragRef.current = null;
+      setIsDragging(false);
+
+      if (!d.moved) return;
+
+      applyCommittedPosition(d.livePos);
+      setPos(d.livePos);
+      suppressClickUntilRef.current = cancelled
+        ? 0
+        : window.performance.now() + 250;
+    },
+    [applyCommittedPosition],
+  );
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      finishDrag(e);
+    },
+    [finishDrag],
+  );
+
+  const onPointerCancel = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      finishDrag(e, true);
+    },
+    [finishDrag],
+  );
+
+  const onLostPointerCapture = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      finishDrag(e, true);
+    },
+    [finishDrag],
+  );
+
+  const onTriggerClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (suppressClickUntilRef.current > window.performance.now()) {
+      e.preventDefault();
+      return;
+    }
+
+    suppressClickUntilRef.current = 0;
+    setOpen((v) => !v);
   }, []);
 
   const send = async (text: string) => {
@@ -113,13 +241,38 @@ export default function SupportWidget() {
     }
   };
 
+  const triggerClassName = [
+    "relative flex h-12 w-12 items-center justify-center rounded-full shadow-[0_4px_20px_-4px_oklch(40%_0.08_30_/_0.4)]",
+    isDragging
+      ? "transition-none"
+      : "transition-transform hover:scale-105 active:scale-95",
+  ].join(" ");
+
+  const triggerStyle: React.CSSProperties = {
+    cursor: open ? "pointer" : isDragging ? "grabbing" : "grab",
+    touchAction: open ? "manipulation" : "none",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTouchCallout: "none",
+    background:
+      "linear-gradient(180deg, var(--color-buttermilk) 0%, var(--color-peach) 100%)",
+    border: "1px solid oklch(76% 0.12 80 / 0.5)",
+  };
+
+  const widgetStyle: React.CSSProperties = {
+    right: pos.right,
+    bottom: pos.bottom,
+    willChange: isDragging ? "transform" : undefined,
+  };
+
   // Panel width never overflows the left edge of the viewport.
   const panelWidth = `min(320px, calc(100vw - ${pos.right}px - 1rem))`;
 
   return (
     <div
+      ref={widgetRef}
       className="fixed z-50"
-      style={{ right: pos.right, bottom: pos.bottom }}
+      style={widgetStyle}
     >
       {/* Chat panel — opens above the trigger button */}
       {open && (
@@ -331,17 +484,15 @@ export default function SupportWidget() {
 
       {/* Floating trigger button — draggable when panel is closed */}
       <button
+        onClick={onTriggerClick}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onLostPointerCapture={onLostPointerCapture}
         aria-label={open ? "Close support chat" : "Open support chat"}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full shadow-[0_4px_20px_-4px_oklch(40%_0.08_30_/_0.4)] transition-transform hover:scale-105 active:scale-95"
-        style={{
-          cursor: open ? "pointer" : "grab",
-          background:
-            "linear-gradient(180deg, var(--color-buttermilk) 0%, var(--color-peach) 100%)",
-          border: "1px solid oklch(76% 0.12 80 / 0.5)",
-        }}
+        className={triggerClassName}
+        style={triggerStyle}
       >
         {open ? (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
