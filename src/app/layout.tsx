@@ -56,7 +56,7 @@ const tiroDevanagari = Tiro_Devanagari_Hindi({
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.url),
   title: {
-    default: `${BRAND.name.en} — Speak with Krishna AI`,
+    default: `${BRAND.name.en} — Talk with Krishna AI`,
     template: "%s",
   },
   description: BRAND.description.en,
@@ -101,7 +101,7 @@ export const metadata: Metadata = {
     type: "website",
     url: BRAND.url,
     siteName: BRAND.name.en,
-    title: `${BRAND.name.en} — Speak with Krishna AI`,
+    title: `${BRAND.name.en} — Talk with Krishna AI`,
     description: BRAND.description.en,
     // og.jpg, NOT og.png — DO NOT revert to PNG. The 1024×541 PNG was
     // 847 KB; WhatsApp silently drops any og:image over 600 KB (uses
@@ -127,7 +127,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND.name.en} — Speak with Krishna AI`,
+    title: `${BRAND.name.en} — Talk with Krishna AI`,
     description: BRAND.description.en,
     images: ["/og.jpg"],
   },

@@ -104,7 +104,13 @@ export default function DemoClient({ content }: { content: DemoContent }) {
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
             <Link href="/chat" className={`${PRIMARY_CTA} ${ctaFont}`}>
-              {td.ctaBegin}
+              {t.landing.ctaAsk}
+            </Link>
+            <Link
+              href="/voice"
+              className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+            >
+              🎤&nbsp;{t.landing.ctaTalk}
             </Link>
             <span className={`text-base leading-relaxed text-ink-soft ${ctaFont}`}>
               {t.landing.freeMessages}
@@ -218,9 +224,9 @@ export default function DemoClient({ content }: { content: DemoContent }) {
           )}
         </section>
 
-        {/* ── Krishna Voice teaser ────────────────────────────────── */}
+        {/* ── Krishna Voice — LIVE ────────────────────────────────── */}
         <section className="mt-16 sm:mt-20">
-          <SectionHeader label={td.sectionComingSoonVoice} />
+          <SectionHeader label={td.sectionVoiceLive} />
           <div className="mx-auto mt-7 max-w-[640px] rounded-2xl border border-[oklch(86%_0.04_70)] bg-linear-to-br from-[var(--color-buttermilk)] to-[var(--color-peach)] px-5 py-6 text-center sm:px-7 sm:py-8">
             <p
               className={`text-base leading-relaxed text-ink sm:text-lg ${
@@ -232,26 +238,41 @@ export default function DemoClient({ content }: { content: DemoContent }) {
               {td.voiceTeaserBody}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                disabled
-                aria-disabled="true"
-                className={`inline-flex min-h-12 cursor-not-allowed items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/40 px-7 py-3 text-[14px] text-ink-faint ${ctaFont}`}
-              >
-                {td.listen}
-              </button>
-              <span className="inline-flex items-center rounded-full border border-[oklch(80%_0.06_80)] bg-white/50 px-3 py-1 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.26em] text-[var(--color-gold-leaf)]">
-                {td.inDevelopment}
-              </span>
+              <Link href="/voice" className={`${PRIMARY_CTA} ${ctaFont}`}>
+                🎤&nbsp;{td.tryVoiceFree}
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* ── Footer CTA ──────────────────────────────────────────── */}
-        <section className="mt-16 flex flex-col items-center gap-3 sm:mt-20">
-          <Link href="/chat" className={`${PRIMARY_CTA} ${ctaFont}`}>
-            {td.ctaBegin}
-          </Link>
+        {/* ── Footer CTA — start in chat or voice, or see pricing ──── */}
+        <section className="mt-16 flex flex-col items-center gap-4 sm:mt-20">
+          <p
+            className={`max-w-[520px] text-center text-base leading-relaxed text-ink-soft ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {td.closingNote}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
+            <Link href="/chat" className={`${PRIMARY_CTA} ${ctaFont}`}>
+              {t.landing.ctaAsk}
+            </Link>
+            <Link
+              href="/voice"
+              className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+            >
+              🎤&nbsp;{t.landing.ctaTalk}
+            </Link>
+            <Link
+              href="/pricing"
+              className={`inline-flex min-h-12 items-center rounded-full px-3 py-3 text-[15px] text-ink-soft underline decoration-[oklch(80%_0.06_80)] decoration-1 underline-offset-4 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+            >
+              {t.landing.ctaPricing}
+            </Link>
+          </div>
         </section>
       </div>
     </main>

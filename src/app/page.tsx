@@ -13,20 +13,20 @@ import {
 // EN/Hindi language toggle.
 
 const homepageDescription =
-  "Chat with an AI roleplaying Krishna, grounded in 3,132 scripture verses from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.";
+  "Chat or speak with Krishna AI and receive scripture-backed reflections from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Hindi and English supported.";
 
 export const metadata: Metadata = {
-  title: `Speak with Krishna AI | ${BRAND.name.en}`,
+  title: `${BRAND.name.en} — Talk with Krishna AI | Scripture-Backed Chat & Voice`,
   description: homepageDescription,
   alternates: { canonical: "/", types: RSS_ALTERNATE },
   openGraph: {
     url: BRAND.url,
-    title: `${BRAND.name.en} - Speak with Krishna AI`,
+    title: `${BRAND.name.en} — Talk with Krishna AI | Scripture-Backed Chat & Voice`,
     description: homepageDescription,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND.name.en} - Speak with Krishna AI`,
+    title: `${BRAND.name.en} — Talk with Krishna AI`,
     description: homepageDescription,
   },
 };

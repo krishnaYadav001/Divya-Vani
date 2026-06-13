@@ -75,12 +75,20 @@ export default function SiteFooter() {
         {t.footer.pricing}
       </Link>
       {DOT}
+      <Link href="/about" className={LINK_CLASS}>
+        {t.footer.about}
+      </Link>
+      {DOT}
       <Link href="/privacy" className={LINK_CLASS}>
         {t.footer.privacy}
       </Link>
       {DOT}
       <Link href="/terms" className={LINK_CLASS}>
         {t.footer.terms}
+      </Link>
+      {DOT}
+      <Link href="/refund" className={LINK_CLASS}>
+        {t.footer.refund}
       </Link>
       {DOT}
       <Link href="/settings" className={LINK_CLASS}>

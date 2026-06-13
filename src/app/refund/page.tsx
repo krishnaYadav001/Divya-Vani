@@ -94,17 +94,23 @@ Refunds
 
           <section>
             <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
-              Subscriptions (When Available)
+              Subscriptions
             </h2>
             <p className="mb-3">
-              For any recurring subscription plan:
+              Divya Vani offers monthly and annual subscription plans. For any
+              recurring subscription:
             </p>
             <ul className="ml-5 list-disc space-y-2">
               <li>
                 You may <strong>cancel anytime</strong> from Settings or by
-                emailing us. Cancellation stops future renewals; your access
+                emailing us. Cancellation stops future billing; your access
                 continues until the end of the period you have already paid
                 for.
+              </li>
+              <li>
+                Subscription cancellation stops future billing but does not
+                automatically refund already used billing periods unless
+                required by law or explicitly stated.
               </li>
               <li>
                 The first charge is refundable within 72 hours if no

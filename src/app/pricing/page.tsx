@@ -15,16 +15,16 @@ import { getPlansInOrder, getOffer } from "@/lib/subscriptions";
 
 // Phase 12 — public Pricing page. Required by Razorpay's website crawl +
 // Google Ads (transparent pricing on a linkable page). Reads the live
-// seva config from src/lib/seva.ts so the page can NEVER drift from what
-// the checkout actually charges. Only CURRENTLY-PURCHASABLE tiers are
-// listed (free + one-time seva) — subscriptions are not advertised here
-// until they ship, so the page always matches what a user can really buy.
-// English-only, matching the admin-page convention.
+// seva config from src/lib/seva.ts AND the live subscription config from
+// src/lib/subscriptions.ts so the page can NEVER drift from what the
+// checkout actually charges. Lists everything currently purchasable: the
+// free tier, one-time seva, and recurring subscriptions (INR monthly / USD
+// annual — both now live). English-only, matching the admin-page convention.
 
 const PRICING_DESCRIPTION = `Pricing for ${BRAND.name.en}: a free tier plus one-time seva contributions that unlock more messages.`;
 
 export const metadata: Metadata = {
-  title: `Pricing — ${BRAND.name.en}`,
+  title: `${BRAND.name.en} Pricing — Chat & Voice Plans`,
   description: PRICING_DESCRIPTION,
   alternates: { canonical: "/pricing", types: RSS_ALTERNATE },
   openGraph: {
@@ -129,6 +129,11 @@ Pricing
               <em>seva</em> — a one-time contribution that unlocks more
               messages — or choose a monthly subscription for ongoing text and
               voice with Krishna.
+            </p>
+            <p className="mt-3 rounded-xl border border-brass/25 bg-brass/5 px-4 py-3 text-sm text-brass-dark">
+              Regional pricing may be shown depending on your country. Indian
+              users may see INR (₹) pricing, while international users may see
+              USD ($) pricing.
             </p>
           </section>
 

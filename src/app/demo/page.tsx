@@ -12,17 +12,17 @@ import DemoClient, { type DemoContent } from "./DemoClient";
 const description = `See ${BRAND.name.en} in action: example conversations with Krishna, video walkthroughs, and screenshots.`;
 
 export const metadata: Metadata = {
-  title: `Demo Conversations | ${BRAND.name.en}`,
+  title: `${BRAND.name.en} Demo — See Krishna AI Chat & Voice Examples`,
   description,
   alternates: { canonical: "/demo", types: RSS_ALTERNATE },
   openGraph: {
     url: absoluteUrl("/demo"),
-    title: `Demo Conversations | ${BRAND.name.en}`,
+    title: `${BRAND.name.en} Demo — See Krishna AI Chat & Voice Examples`,
     description,
   },
   twitter: {
     card: "summary_large_image",
-    title: `Demo Conversations | ${BRAND.name.en}`,
+    title: `${BRAND.name.en} Demo — See Krishna AI Chat & Voice Examples`,
     description,
   },
   robots: { index: true, follow: true },

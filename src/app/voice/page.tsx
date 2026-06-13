@@ -14,17 +14,17 @@ const description =
   "Talk with Krishna in voice: speak your question and hear a reply grounded in scripture from an AI roleplaying Krishna.";
 
 export const metadata: Metadata = {
-  title: `Voice Conversation with Krishna | ${BRAND.name.en}`,
+  title: `Talk with Krishna AI by Voice — ${BRAND.name.en}`,
   description,
   alternates: { canonical: "/voice", types: RSS_ALTERNATE },
   openGraph: {
     url: absoluteUrl("/voice"),
-    title: `Voice Conversation with Krishna | ${BRAND.name.en}`,
+    title: `Talk with Krishna AI by Voice — ${BRAND.name.en}`,
     description,
   },
   twitter: {
     card: "summary_large_image",
-    title: `Voice Conversation with Krishna | ${BRAND.name.en}`,
+    title: `Talk with Krishna AI by Voice — ${BRAND.name.en}`,
     description,
   },
   robots: { index: true, follow: true },

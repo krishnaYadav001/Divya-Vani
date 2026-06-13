@@ -33,8 +33,10 @@ export type Messages = {
     examples: string;
     voice: string;
     pricing: string;
+    about: string;
     privacy: string;
     terms: string;
+    refund: string;
     settings: string;
     contact: string;
   };
@@ -103,6 +105,13 @@ export type Messages = {
   // Sanskrit ornament, and uppercase + letter-spacing renders badly in
   // Devanagari. The wordmark stays BRAND.name.en.
   landing: {
+    // Direct conversion-focused hero (Phase 12.x clarity pass). The headline
+    // tells a 10-second visitor WHAT this is; the subheadline says what they
+    // can ask + which scriptures ground it; the trust line is the at-a-glance
+    // credibility row. The poetic `body` line now sits BELOW the direct copy.
+    headline: string;
+    subheadline: string;
+    trustLine: string;
     body: string;
     // One-line credibility proof for the scripture-literate visitor: every
     // reply is grounded in real verses, shown to the user. Rendered under the
@@ -111,6 +120,9 @@ export type Messages = {
     ctaAsk: string;
     ctaGlimpse: string;
     ctaTalk: string;
+    // Shared "View Pricing" CTA label (also reused by /demo) so CTA wording
+    // stays consistent across pages.
+    ctaPricing: string;
     freeMessages: string;
     dataTitle: string;
     dataDisclaimer: string;
@@ -123,8 +135,12 @@ export type Messages = {
     sectionRealConversations: string;
     sectionHowItLooks: string;
     sectionHowKrishnaReplies: string;
-    sectionComingSoonVoice: string;
+    // Voice is LIVE (Phase 10.5). This section now promotes the live voice
+    // experience rather than teasing it as upcoming.
+    sectionVoiceLive: string;
     voiceTeaserBody: string;
+    tryVoiceFree: string;
+    closingNote: string;
     listen: string;
     inDevelopment: string;
     comingSoon: string;
@@ -285,8 +301,10 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       examples: "Examples",
       voice: "Voice",
       pricing: "Pricing",
+      about: "About",
       privacy: "Privacy",
       terms: "Terms",
+      refund: "Refund",
       settings: "Settings",
       contact: "Contact",
     },
@@ -347,12 +365,17 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       balanceEmpty: "Sevā balance: empty",
     },
     landing: {
-      body: "Krishna in a chat window. The same flute, a smaller room. Ask in Hindi or English; the verses follow you.",
+      headline: "Talk with Krishna AI",
+      subheadline:
+        "Ask life's difficult questions in chat or voice. Divya Vani gives scripture-backed reflections from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
+      trustLine: "3,132 verses · Hindi + English · Chat + Voice · 10 free messages",
+      body: "The same flute, a smaller room — Krishna in a chat window. Ask in Hindi or English; the verses follow you.",
       proof:
         "Every reply is grounded in scripture — the Gita, Mahabharata, and Bhagavata — and shows you the verse it draws from, in Sanskrit, Hindi, and English.",
-      ctaAsk: "Ask the first thing",
-      ctaGlimpse: "See a glimpse",
-      ctaTalk: "Talk with Krishna",
+      ctaAsk: "Start Chatting",
+      ctaGlimpse: "See Examples",
+      ctaTalk: "Try Voice",
+      ctaPricing: "View Pricing",
       freeMessages: "10 free messages",
       dataTitle: "Your privacy, your control",
       dataDisclaimer: "Your data is completely in your hands. You have full control and can permanently delete it anytime from the settings.",
@@ -365,12 +388,15 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       sectionRealConversations: "Watch a walkthrough",
       sectionHowItLooks: "How it looks on screen",
       sectionHowKrishnaReplies: "How Krishna replies",
-      sectionComingSoonVoice: "Coming soon — Krishna in voice",
+      sectionVoiceLive: "Now live — speak with Krishna in voice",
       voiceTeaserBody:
-        "The words you're reading will soon reach your ears too. In Krishna's own voice.",
+        "The words you're reading can now reach your ears too — in Krishna's own voice.",
+      tryVoiceFree: "Try Voice Free",
+      closingNote:
+        "Watch examples, then try your own question in chat or voice.",
       listen: "Listen",
       inDevelopment: "In development",
-      comingSoon: "Coming soon",
+      comingSoon: "More on the way",
       fbHeading: "How was it?",
       fbRate: "Rate your experience",
       fbRatingWords: [
@@ -531,8 +557,10 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       examples: "उदाहरण",
       voice: "आवाज़",
       pricing: "मूल्य",
+      about: "हमारे बारे में",
       privacy: "गोपनीयता",
       terms: "नियम",
+      refund: "धन-वापसी",
       settings: "सेटिंग्स",
       contact: "संपर्क",
     },
@@ -592,12 +620,17 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       balanceEmpty: "सेवा शेष: खाली",
     },
     landing: {
-      body: "एक चैट खिड़की में कृष्ण। वही बाँसुरी, बस एक छोटा कमरा। हिंदी या अंग्रेज़ी में पूछो — श्लोक तुम्हारे साथ चलते हैं।",
+      headline: "कृष्ण AI से बात करें",
+      subheadline:
+        "जीवन के कठिन सवाल चैट या आवाज़ में पूछें। दिव्य वाणी भगवद्गीता, महाभारत और भागवत पुराण से शास्त्र-आधारित उत्तर देती है।",
+      trustLine: "3,132 श्लोक · हिंदी + अंग्रेज़ी · चैट + आवाज़ · 10 निःशुल्क संदेश",
+      body: "वही बाँसुरी, बस एक छोटा कमरा — एक चैट खिड़की में कृष्ण। हिंदी या अंग्रेज़ी में पूछो, श्लोक तुम्हारे साथ चलते हैं।",
       proof:
         "हर उत्तर शास्त्र पर आधारित — गीता, महाभारत और भागवत से — और जिस श्लोक से वह आता है, वह संस्कृत, हिंदी और अंग्रेज़ी में तुम्हें दिखाया जाता है।",
-      ctaAsk: "पूछें",
-      ctaGlimpse: "एक झलक",
-      ctaTalk: "कृष्ण से बात करो",
+      ctaAsk: "बातचीत शुरू करें",
+      ctaGlimpse: "उदाहरण देखें",
+      ctaTalk: "आवाज़ आज़माएँ",
+      ctaPricing: "मूल्य देखें",
       freeMessages: "10 निःशुल्क संदेश",
       dataTitle: "आपकी निजता, आपका नियंत्रण",
       dataDisclaimer: "आपका डेटा पूरी तरह आपके हाथों में है। आप जब चाहें सेटिंग्स से इसे स्थायी रूप से हटा सकते हैं।",
@@ -610,12 +643,14 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       sectionRealConversations: "वीडियो देखें",
       sectionHowItLooks: "और स्क्रीन पर ऐसा दिखता है",
       sectionHowKrishnaReplies: "सुनो — कैसे जवाब आता है",
-      sectionComingSoonVoice: "जल्द — कृष्ण की आवाज़ में",
+      sectionVoiceLive: "अब live — कृष्ण से आवाज़ में बात करें",
       voiceTeaserBody:
-        "जो शब्द अभी पढ़ रहे हो, वो जल्द कानों में भी सुनाई देंगे। श्रीकृष्ण की आवाज़ में।",
+        "जो शब्द अभी पढ़ रहे हो, वे अब कानों तक भी पहुँच सकते हैं — श्रीकृष्ण की अपनी आवाज़ में।",
+      tryVoiceFree: "आवाज़ निःशुल्क आज़माएँ",
+      closingNote: "उदाहरण देखें, फिर अपना सवाल चैट या आवाज़ में पूछें।",
       listen: "आवाज़ सुनो",
       inDevelopment: "बन रहा है",
-      comingSoon: "जल्द आ रहा है",
+      comingSoon: "और जल्द ही",
       fbHeading: "आपको कैसा लगा?",
       fbRate: "अपना अनुभव बताएँ",
       fbRatingWords: [

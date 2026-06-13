@@ -230,12 +230,55 @@ Terms
               </li>
             </ul>
             <p className="mt-3">
-              All payments are one-time, non-recurring; there is no
-              subscription billing in the current version. Payments are
-              processed by Razorpay; we do not store card or bank details.
-              Prices are in Indian Rupees (INR) and inclusive of any
-              applicable taxes per Indian law.
+              Seva contributions are one-time and non-recurring. Divya Vani
+              also offers optional monthly and annual subscription plans (see
+              the <Link
+                href="/pricing"
+                className="underline decoration-brass underline-offset-2 hover:text-peacock"
+              >
+                Pricing page
+              </Link>). Payments are processed by Razorpay; we do not store
+              card or bank details. Indian customers are charged in Indian
+              Rupees (INR); international customers may be charged in US
+              Dollars (USD). All prices are inclusive of any applicable taxes
+              per law.
             </p>
+          </section>
+
+          <section>
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
+              Subscriptions
+            </h2>
+            <ul className="ml-5 list-disc space-y-2">
+              <li>
+                {BRAND.name.en} may offer monthly or annual subscription
+                plans.
+              </li>
+              <li>
+                Subscription benefits may include message limits, voice
+                minutes, or premium access depending on the selected plan.
+              </li>
+              <li>
+                Subscriptions renew automatically each cycle until cancelled.
+                You can cancel anytime from your account Settings or through
+                the payment provider flow; access continues until the end of
+                the period you have already paid for.
+              </li>
+              <li>
+                Unused messages or voice minutes may not roll over unless
+                specifically stated on the Pricing page.
+              </li>
+              <li>
+                Pricing, limits, and benefits are shown on the{" "}
+                <Link
+                  href="/pricing"
+                  className="underline decoration-brass underline-offset-2 hover:text-peacock"
+                >
+                  Pricing page
+                </Link>{" "}
+                and may change over time.
+              </li>
+            </ul>
           </section>
 
           <section>

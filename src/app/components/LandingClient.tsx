@@ -43,7 +43,7 @@ const LANDING_FACTS = {
       {
         question: "How does pricing work?",
         answer:
-          "Divya Vani includes 10 free messages. One-time seva tiers start at INR 11, and paid voice or subscription plans are shown on the Pricing page when available.",
+          "Divya Vani includes 10 free messages. One-time seva tiers start at ₹11, and paid voice plus monthly and annual subscription plans are available on the Pricing page.",
       },
     ],
   },
@@ -75,10 +75,78 @@ const LANDING_FACTS = {
   },
 } as const;
 
+// Conversion-focused marketing sections rendered below the hero. Kept as a
+// local bilingual const (same pattern as LANDING_FACTS) so this landing-only
+// copy doesn't bloat the shared i18n dictionary. `verses` mirrors the live
+// corpus counts (3,132 total). `audience` and `questions` answer "is this for
+// me?" and "what can I ask?" — the two questions a first-time visitor has.
+const LANDING_SECTIONS = {
+  en: {
+    versesEyebrow: "Grounded in scripture",
+    versesTitle: "Grounded in 3,132 scripture verses",
+    verses: [
+      { count: "701", source: "Bhagavad Gita" },
+      { count: "1,704", source: "Mahabharata" },
+      { count: "727", source: "Bhagavata Purana" },
+    ],
+    audienceEyebrow: "Who it's for",
+    audienceTitle: "Who is Divya Vani for?",
+    audience: [
+      "NRIs who want to stay connected with Krishna's wisdom",
+      "Global seekers drawn to Indian scriptures",
+      "Krishna devotees and Bhagavad Gita learners",
+      "Anyone facing stress, confusion, relationships, family pressure, or career questions",
+      "People who prefer spiritual reflection through chat or voice",
+    ],
+    questionsEyebrow: "Start anywhere",
+    questionsTitle: "What can you ask Krishna AI?",
+    questions: [
+      "I feel anxious. What should I do?",
+      "How do I stop comparing myself with others?",
+      "What does Krishna say about duty?",
+      "How do I handle family pressure?",
+      "How can I stay calm during failure?",
+      "What does the Gita say about attachment?",
+    ],
+    safetyNote:
+      "Divya Vani is an AI-based spiritual reflection tool. It is not therapy, medical, legal, financial, or divine advice.",
+  },
+  hi: {
+    versesEyebrow: "शास्त्र पर आधारित",
+    versesTitle: "3,132 श्लोकों पर आधारित",
+    verses: [
+      { count: "701", source: "भगवद्गीता" },
+      { count: "1,704", source: "महाभारत" },
+      { count: "727", source: "भागवत पुराण" },
+    ],
+    audienceEyebrow: "किसके लिए",
+    audienceTitle: "दिव्य वाणी किसके लिए है?",
+    audience: [
+      "कृष्ण की वाणी से जुड़े रहना चाहने वाले प्रवासी भारतीय (NRIs)",
+      "भारतीय शास्त्रों में रुचि रखने वाले विश्व-भर के जिज्ञासु",
+      "कृष्ण-भक्त और गीता के अध्येता",
+      "तनाव, उलझन, रिश्ते, पारिवारिक दबाव या करियर के सवालों से जूझ रहे लोग",
+      "जो चैट या आवाज़ में आध्यात्मिक चिंतन पसंद करते हैं",
+    ],
+    questionsEyebrow: "कहीं से भी शुरू करें",
+    questionsTitle: "कृष्ण AI से क्या पूछ सकते हैं?",
+    questions: [
+      "मन बेचैन है। मैं क्या करूँ?",
+      "दूसरों से अपनी तुलना करना कैसे छोड़ूँ?",
+      "कृष्ण कर्तव्य के बारे में क्या कहते हैं?",
+      "पारिवारिक दबाव को कैसे सँभालूँ?",
+      "असफलता में शांत कैसे रहूँ?",
+      "गीता आसक्ति के बारे में क्या कहती है?",
+    ],
+    safetyNote:
+      "दिव्य वाणी एक AI-आधारित आध्यात्मिक चिंतन साधन है। यह चिकित्सा, कानूनी, वित्तीय, मानसिक-स्वास्थ्य या दैवीय सलाह नहीं है।",
+  },
+} as const;
+
 export default function LandingClient() {
   const { lang, t } = useLanguage();
-  const [nameHead, ...nameRest] = BRAND.name.en.split(" ");
   const facts = LANDING_FACTS[lang];
+  const sections = LANDING_SECTIONS[lang];
 
   // CTA + prose fonts switch with language: Devanagari for Hindi, the English
   // serif for English (rather than rendering Latin in the Devanagari face).
@@ -101,7 +169,7 @@ export default function LandingClient() {
           <Wordmark size="sm" stack="horizontal" />
           <nav className="flex items-center gap-6 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.26em] text-ink-soft sm:gap-8">
             <Link
-              href="/contact"
+              href="/about"
               className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
             >
               ABOUT
@@ -167,14 +235,71 @@ export default function LandingClient() {
 
           {/* ── Text composition ────────────────────────────────── */}
           <div className="fade-up min-w-0 [animation-delay:180ms] [animation-fill-mode:backwards]">
-            <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.75rem,8vw,6.5rem)] font-normal leading-[0.88] text-ink">
-              {nameHead}
-              <br />
-              {nameRest.join(" ")}.
+            {/* Conversion-focused headline — tells a first-time visitor what
+                this is in one line. The brand name stays in the masthead
+                wordmark + footer; here the value proposition leads. */}
+            <h1
+              className={`text-[clamp(2.5rem,7vw,5.5rem)] font-normal leading-[0.95] text-ink ${
+                lang === "hi"
+                  ? "font-[family-name:var(--font-devanagari)] leading-[1.1]"
+                  : "font-[family-name:var(--font-display)]"
+              }`}
+            >
+              {t.landing.headline}
             </h1>
 
+            {/* Direct explanation — what you can ask + which scriptures. */}
             <p
-              className={`mt-5 max-w-[460px] text-base leading-relaxed text-ink-soft lg:text-lg ${proseFont}`}
+              className={`mt-5 max-w-[480px] text-base leading-relaxed text-ink-soft lg:text-lg ${proseFont}`}
+            >
+              {t.landing.subheadline}
+            </p>
+
+            {/* At-a-glance trust row — verses · languages · modes · free tier.
+                Latin uses the tracked display caps; Devanagari switches to the
+                Tiro face at normal case (tracking + uppercase break matras). */}
+            <p
+              className={`mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-faint ${
+                lang === "hi"
+                  ? "font-[family-name:var(--font-devanagari)] text-[13px] leading-relaxed"
+                  : "font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.16em]"
+              }`}
+            >
+              <span
+                aria-hidden
+                className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(78%_0.1_12)]"
+              />
+              {t.landing.trustLine}
+            </p>
+
+            {/* CTA — consistent labels across the site: Start Chatting /
+                Try Voice / See Examples. */}
+            <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <Link
+                href="/chat"
+                className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+              >
+                {t.landing.ctaAsk}
+              </Link>
+              {/* Phase 10.5 — voice-to-voice mode entry (now live). */}
+              <Link
+                href="/voice"
+                className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+              >
+                🎤&nbsp;{t.landing.ctaTalk}
+              </Link>
+              <Link
+                href="/demo"
+                className={`inline-flex min-h-12 items-center rounded-full px-3 py-3 text-[15px] text-ink-soft underline decoration-[oklch(80%_0.06_80)] decoration-1 underline-offset-4 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+              >
+                {t.landing.ctaGlimpse}
+              </Link>
+            </div>
+
+            {/* Poetic line — kept, but now BELOW the direct explanation so it
+                reads as flavour, not the primary description. */}
+            <p
+              className={`mt-6 max-w-[460px] text-sm leading-relaxed text-ink-faint ${proseFont}`}
             >
               {t.landing.body}
             </p>
@@ -183,38 +308,10 @@ export default function LandingClient() {
                 scripture-literate visitor. Kept understated (smaller, soft)
                 so it reads as a credential, not a second tagline. */}
             <p
-              className={`mt-3 max-w-[460px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
+              className={`mt-2 max-w-[460px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
             >
               {t.landing.proof}
             </p>
-
-            {/* CTA */}
-            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Link
-                href="/chat"
-                className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
-              >
-                {t.landing.ctaAsk}
-              </Link>
-              <Link
-                href="/demo"
-                className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
-              >
-                {t.landing.ctaGlimpse}
-              </Link>
-              {/* Phase 10.5 — voice-to-voice mode entry. */}
-              <Link
-                href="/voice"
-                className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
-              >
-                🎤&nbsp;{t.landing.ctaTalk}
-              </Link>
-              <span
-                className={`text-base leading-relaxed text-ink-soft ${ctaFont}`}
-              >
-                {t.landing.freeMessages}
-              </span>
-            </div>
 
             {/* Privacy Card */}
             <div className="mt-8 flex items-start gap-3 rounded-[20px] border border-[oklch(85%_0.02_50)] bg-white/40 p-4 shadow-[0_4px_20px_-8px_oklch(50%_0.1_30_/_0.15)] backdrop-blur lg:max-w-[480px]">
@@ -301,6 +398,170 @@ export default function LandingClient() {
               </article>
             ))}
           </div>
+        </section>
+
+        {/* ── Trust badge — corpus breakdown (3,132 verses) ──────────── */}
+        <section
+          aria-labelledby="landing-verses-title"
+          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
+        >
+          <p
+            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
+            }`}
+          >
+            {sections.versesEyebrow}
+          </p>
+          <h2
+            id="landing-verses-title"
+            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
+          >
+            {sections.versesTitle}
+          </h2>
+          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {sections.verses.map((v) => (
+              <div
+                key={v.source}
+                className="rounded-[20px] border border-[oklch(86%_0.04_70)] bg-white/55 px-6 py-6 text-center shadow-[0_8px_24px_-16px_oklch(40%_0.08_30_/_0.25)] backdrop-blur"
+              >
+                <p className="font-[family-name:var(--font-display)] text-[clamp(2rem,6vw,2.75rem)] leading-none text-[var(--color-gold-leaf)]">
+                  {v.count}
+                </p>
+                <p
+                  className={`mt-2 text-sm text-ink-soft ${
+                    lang === "hi"
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-display)] uppercase tracking-[0.14em]"
+                  }`}
+                >
+                  {v.source}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Who is this for ────────────────────────────────────────── */}
+        <section
+          aria-labelledby="landing-audience-title"
+          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
+        >
+          <p
+            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
+            }`}
+          >
+            {sections.audienceEyebrow}
+          </p>
+          <h2
+            id="landing-audience-title"
+            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
+          >
+            {sections.audienceTitle}
+          </h2>
+          <div className="mt-7 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {sections.audience.map((item, i) => (
+              <article
+                key={i}
+                className="flex gap-3 border-t border-[var(--color-ink-line)] pt-4"
+              >
+                <span
+                  aria-hidden
+                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45 bg-[oklch(78%_0.1_12)]"
+                />
+                <p
+                  className={`text-base leading-relaxed text-ink-soft ${
+                    lang === "hi"
+                      ? "font-[family-name:var(--font-devanagari)]"
+                      : "font-[family-name:var(--font-serif)] italic"
+                  }`}
+                >
+                  {item}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ── What can you ask — example questions (display only; /chat
+            has no prefill, so these are illustrative, with a Start
+            Chatting CTA below) ───────────────────────────────────────── */}
+        <section
+          aria-labelledby="landing-questions-title"
+          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
+        >
+          <p
+            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
+            }`}
+          >
+            {sections.questionsEyebrow}
+          </p>
+          <h2
+            id="landing-questions-title"
+            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-display)]"
+            }`}
+          >
+            {sections.questionsTitle}
+          </h2>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            {sections.questions.map((q, i) => (
+              <p
+                key={i}
+                className={`rounded-2xl border border-[oklch(86%_0.04_70)] bg-white/45 px-5 py-3.5 text-base leading-relaxed text-ink backdrop-blur ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-serif)] italic"
+                }`}
+              >
+                <span aria-hidden className="text-[var(--color-gold-leaf)]">“</span>
+                {q}
+                <span aria-hidden className="text-[var(--color-gold-leaf)]">”</span>
+              </p>
+            ))}
+          </div>
+          <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
+            <Link
+              href="/chat"
+              className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+            >
+              {t.landing.ctaAsk}
+            </Link>
+            <Link
+              href="/voice"
+              className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+            >
+              🎤&nbsp;{t.landing.ctaTalk}
+            </Link>
+            <Link
+              href="/pricing"
+              className={`inline-flex min-h-12 items-center rounded-full px-3 py-3 text-[15px] text-ink-soft underline decoration-[oklch(80%_0.06_80)] decoration-1 underline-offset-4 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+            >
+              {t.landing.ctaPricing}
+            </Link>
+          </div>
+
+          {/* Safety / scope disclaimer — visible but calm. */}
+          <p
+            className={`mt-10 max-w-[680px] text-xs leading-relaxed text-ink-faint ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {sections.safetyNote}
+          </p>
         </section>
       </div>
 
