@@ -1,6 +1,6 @@
 import { BRAND } from "@/lib/brand";
 
-export const SITE_LAST_MODIFIED = "2026-06-12";
+export const SITE_LAST_MODIFIED = "2026-06-13";
 export const RSS_ALTERNATE = {
   "application/rss+xml": "/feed.xml",
 } as const;
@@ -26,7 +26,7 @@ export const PUBLIC_ROUTES = [
     path: "/",
     title: `${BRAND.name.en} — Talk with Krishna AI | Scripture-Backed Chat & Voice`,
     description:
-      "Chat or speak with Krishna AI and receive scripture-backed reflections from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Hindi and English supported.",
+      "Chat or speak with Krishna AI in Hindi or English. Divya Vani gives scripture-backed reflections grounded in scriptures from a curated scripture corpus.",
     lastModified: SITE_LAST_MODIFIED,
     changeFrequency: "weekly",
     priority: 1.0,
@@ -35,7 +35,7 @@ export const PUBLIC_ROUTES = [
     path: "/chat",
     title: `Chat with Krishna AI | ${BRAND.name.en}`,
     description:
-      "Start a text conversation with Krishna AI in Hindi or English. Responses are grounded in scripture and include verse cards.",
+      "Chat casually, learn stories, or reflect through Krishna’s wisdom in Hindi or English. Responses are scripture-backed and include verse cards.",
     lastModified: SITE_LAST_MODIFIED,
     changeFrequency: "weekly",
     priority: 0.9,
@@ -44,7 +44,7 @@ export const PUBLIC_ROUTES = [
     path: "/voice",
     title: `Talk with Krishna AI by Voice — ${BRAND.name.en}`,
     description:
-      "Talk with Krishna AI by voice and hear spoken replies grounded in scripture. Voice mode is a paid seva feature.",
+      "Talk with Krishna AI by voice. The voice is AI-generated, and replies are scripture-backed reflections grounded in scriptures.",
     lastModified: SITE_LAST_MODIFIED,
     changeFrequency: "weekly",
     priority: 0.8,
@@ -53,7 +53,7 @@ export const PUBLIC_ROUTES = [
     path: "/demo",
     title: `${BRAND.name.en} Demo — See Krishna AI Chat & Voice Examples`,
     description:
-      "See sample Divya Vani conversations, videos, screenshots, and replies before starting your own chat or voice session.",
+      "See scripture-backed Divya Vani conversations, videos, screenshots, and replies before starting your own chat or voice session.",
     lastModified: SITE_LAST_MODIFIED,
     changeFrequency: "weekly",
     priority: 0.7,
@@ -71,7 +71,7 @@ export const PUBLIC_ROUTES = [
     path: "/pricing",
     title: `${BRAND.name.en} Pricing — Chat & Voice Plans`,
     description:
-      "View Divya Vani free messages, one-time seva tiers, subscriptions, billing currencies, and refund links.",
+      "View Divya Vani free messages, one-time seva tiers, Chat + Voice subscriptions, billing currencies, and refund links.",
     lastModified: SITE_LAST_MODIFIED,
     changeFrequency: "monthly",
     priority: 0.7,
@@ -124,17 +124,17 @@ export const HOMEPAGE_FAQS = [
   {
     question: "What is Divya Vani?",
     answer:
-      "Divya Vani is an AI that roleplays Krishna from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Users can speak about life, emotions, relationships, and dharma while seeing scripture-grounded verse references.",
+      "Divya Vani is not a random chatbot. Its reflections are grounded in a curated scripture corpus from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
   },
   {
     question: "Is Divya Vani actually Krishna or divine guidance?",
     answer:
-      "No. Divya Vani is an AI roleplaying Krishna based on scripture. It does not claim to be the divine Krishna, and a permanent disclaimer stays visible in the chat and voice experience.",
+      "No. Divya Vani is an AI-based spiritual reflection tool. It does not claim to be the real Lord Krishna or divine guidance.",
   },
   {
     question: "Which languages and scriptures does Divya Vani support?",
     answer:
-      "Divya Vani is Hindi-first and also supports English and Sanskrit. The current corpus has 3,132 verses: 701 from the Bhagavad Gita, 1,704 from the Mahabharata, and 727 from the Bhagavata Purana.",
+      "Divya Vani supports Hindi + English through Chat + Voice. The curated scripture corpus has 3,132 verses: 701 from the Bhagavad Gita, 1,704 from the Mahabharata, and 727 from the Bhagavata Purana.",
   },
   {
     question: "How much does Divya Vani cost?",

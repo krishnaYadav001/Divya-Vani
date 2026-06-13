@@ -9,7 +9,7 @@ import {
 } from "@/lib/seo";
 
 const description =
-  "Chat with Krishna AI in Hindi or English. Divya Vani replies in Krishna's voice with scripture-grounded verse cards from the Gita, Mahabharata, and Bhagavata.";
+  "Chat casually, learn stories, or reflect through Krishna’s wisdom in Hindi or English. Divya Vani replies with scripture-backed verse cards from its curated scripture corpus.";
 
 export const metadata: Metadata = {
   title: `Chat with Krishna AI | ${BRAND.name.en}`,

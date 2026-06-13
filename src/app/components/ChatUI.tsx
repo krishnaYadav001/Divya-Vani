@@ -137,6 +137,7 @@ export default function ChatUI() {
   const [userId, setUserId] = useState<string | null>(null);
   const priorUserIdRef = useRef<string | null>(null);
   const sentryReportedRef = useRef(false);
+  const freshTopicNextRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -321,11 +322,39 @@ export default function ChatUI() {
     }
   }, [messages, isSending, userId]);
 
+  function handleStartFresh() {
+    if (isSending) return;
+    freshTopicNextRef.current = true;
+    if (isListening) stopSession();
+    dismissMicError();
+    setServerModerationWarning(null);
+    setInput("");
+    setMessages([]);
+    if (userId) clearSession(userId);
+    track("chat_start_fresh");
+  }
+
+  function focusComposer() {
+    textareaRef.current?.focus();
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  function handlePromptCategory(prompt: string, label: string) {
+    if (isSending) return;
+    if (isListening) stopSession();
+    dismissMicError();
+    setServerModerationWarning(null);
+    if (prompt.trim()) setInput(prompt);
+    focusComposer();
+    track("chat_prompt_selected", { label });
+  }
+
   async function sendMessage(textOverride?: string) {
     const text = (textOverride ?? input).trim();
     if (!text || isSending) return;
     if (findBannedWord(text)) return; // defense in depth — submit is also disabled in UI
     if (messages.length === 0) track("first_message_sent");
+    const freshTopic = freshTopicNextRef.current;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -354,7 +383,7 @@ export default function ChatUI() {
           // at the top of src/app/api/chat/route.ts.
           Accept: "application/x-ndjson",
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, freshTopic }),
       });
 
       if (!res.ok) {
@@ -385,6 +414,7 @@ export default function ChatUI() {
         }
         throw new Error(`HTTP ${res.status}`);
       }
+      if (freshTopic) freshTopicNextRef.current = false;
 
       const contentType = res.headers.get("content-type") ?? "";
       const isStream =
@@ -1011,17 +1041,10 @@ export default function ChatUI() {
           </span>
         </button>
       </form>
-      {/* Phase 7.0 onboarding-suggestion redesign — replaced the 8
-          clickable emotional-state pills (ONBOARDING_OPTIONS) with
-          static informational text. Beta-tester feedback: first-time
-          users tapped pills like "मन थोड़ा भारी है आज" out of
-          curiosity without being in those states, and Krishna
-          responded to phantom emotion with deep acknowledge-first
-          reflection — register mismatch. Static text shows what
-          users CAN DO without forcing an emotional framing; the user
-          defines their register by what they type. Shown on every
-          empty-state (no longer gated on isFirstTime — informational
-          context is useful for returning users too). */}
+      {/* Phase 2 onboarding prompts — complete editable examples only.
+          Buttons fill the composer and focus it; they never auto-send.
+          This keeps onboarding as a starting hint without inventing
+          emotional intent from vague one-word categories. */}
       {isEmpty && (
         <div className="mt-2 flex w-full flex-col items-center gap-5 text-center">
           <h2
@@ -1043,14 +1066,31 @@ export default function ChatUI() {
             <span className="h-px w-12 bg-linear-to-l from-transparent to-gold-mute" />
           </div>
           <div
-            className={`flex flex-col gap-2.5 text-base leading-relaxed text-ivory/70 ${
+            className={`grid w-full gap-2.5 text-ivory/70 sm:grid-cols-2 ${
               lang === "hi"
                 ? "font-devanagari"
-                : "font-[family-name:var(--font-serif)] italic"
+                : "font-[family-name:var(--font-serif)]"
             }`}
           >
-            {t.chat.suggestions.map((s, i) => (
-              <span key={i}>{s}</span>
+            {t.chat.promptCategories.map((option, i) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => handlePromptCategory(option.prompt, option.label)}
+                disabled={isSending}
+                className={`group flex min-h-16 w-full flex-col items-start justify-center gap-1 rounded-lg border border-gold/20 bg-ink2/45 px-4 py-3 text-left shadow-[0_1px_0_rgba(0,0,0,0.25)_inset] transition-colors hover:border-gold/45 hover:bg-ink2/65 focus:outline-none focus:ring-2 focus:ring-gold/35 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  i === t.chat.promptCategories.length - 1 ? "sm:col-span-2" : ""
+                }`}
+              >
+                <span className="text-sm font-medium text-gold">
+                  {option.label}
+                </span>
+                {option.prompt ? (
+                  <span className="text-sm leading-snug text-ivory/75 group-hover:text-ivory/90">
+                    {option.prompt}
+                  </span>
+                ) : null}
+              </button>
             ))}
           </div>
         </div>
@@ -1263,7 +1303,7 @@ export default function ChatUI() {
           footer-input shape. The {inputBlock} JSX is shared so both
           branches use one form, one set of handlers, one autogrow effect. */}
       {isEmpty ? (
-        <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+        <div className="relative z-10 flex flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
           {/* Orchestrated page-load — single high-impact moment per
               Anthropic's frontend-design skill ("one well-orchestrated
               page load with staggered reveals creates more delight than
@@ -1271,7 +1311,7 @@ export default function ChatUI() {
               list cascade in sequence on first paint. animation-fill-mode
               backwards holds each child at its pre-animation state during
               the delay so there's no flash-then-fade. */}
-          <div className="flex w-full max-w-[600px] flex-col items-center gap-6">
+          <div className="mx-auto my-auto flex w-full max-w-[600px] flex-col items-center gap-6">
             {/* Dawn Aarti — a quietly floating bansuri above the
                 greeting (handoff empty-state spec). dawn-float is
                 CSS-only + reduced-motion-safe (globals.css). */}
@@ -1358,6 +1398,23 @@ export default function ChatUI() {
           </div>
 
           <div className="relative z-10 border-t border-brass/30 bg-parchment/70 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+            {messages.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleStartFresh}
+                  disabled={isSending}
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-full border border-gold/25 bg-ink2/50 px-4 py-2 text-xs text-gold-dim shadow-[0_1px_0_rgba(0,0,0,0.25)_inset] transition-colors hover:border-gold/45 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold/35 disabled:cursor-not-allowed disabled:opacity-45 ${
+                    lang === "hi"
+                      ? "font-devanagari"
+                      : "font-[family-name:var(--font-serif)] italic"
+                  }`}
+                >
+                  <FreshTopicIcon className="h-4 w-4" />
+                  <span>{t.chat.ariaStartFresh}</span>
+                </button>
+              </div>
+            )}
             {inputBlock}
           </div>
         </>
@@ -1693,6 +1750,27 @@ function AlertTriangleIcon({ className }: { className?: string }) {
       <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+// Chat utility icon for "Start fresh". Same 24x24 outline vocabulary as the
+// mic/send/settings icons already used in this file.
+function FreshTopicIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+      <path d="M5 5h14v14H5z" />
     </svg>
   );
 }

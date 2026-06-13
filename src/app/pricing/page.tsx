@@ -21,7 +21,7 @@ import { getPlansInOrder, getOffer } from "@/lib/subscriptions";
 // free tier, one-time seva, and recurring subscriptions (INR monthly / USD
 // annual — both now live). English-only, matching the admin-page convention.
 
-const PRICING_DESCRIPTION = `Pricing for ${BRAND.name.en}: a free tier plus one-time seva contributions that unlock more messages.`;
+const PRICING_DESCRIPTION = `Pricing for ${BRAND.name.en}: free messages, one-time seva, and Chat + Voice subscriptions for scripture-backed reflections.`;
 
 export const metadata: Metadata = {
   title: `${BRAND.name.en} Pricing — Chat & Voice Plans`,
@@ -45,6 +45,8 @@ const LAST_UPDATED = "2026-05-25";
 export default function PricingPage() {
   const tiers = getTiersInOrder();
   const plans = getPlansInOrder();
+  const trustCopy = BRAND.trust.en;
+  const casualCopy = BRAND.casual.en;
   const oneTimeOffers = [
     {
       "@type": "Offer",
@@ -135,6 +137,43 @@ Pricing
               users may see INR (₹) pricing, while international users may see
               USD ($) pricing.
             </p>
+          </section>
+
+          <section className="border-t border-brass/20 pt-7">
+            <p className="mb-3 font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.22em] text-gold-dim">
+              {trustCopy.eyebrow}
+            </p>
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
+              {trustCopy.title}
+            </h2>
+            <p>{trustCopy.body}</p>
+            <p className="mt-3 text-sm text-brass-dark">
+              {trustCopy.supporting}
+            </p>
+            <ul className="mt-4 grid gap-2 text-sm text-brass-dark sm:grid-cols-2">
+              {trustCopy.facts.map((fact) => (
+                <li key={fact} className="border-t border-brass/20 pt-2">
+                  {fact}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-xs text-brass-dark">
+              {BRAND.disclaimer.en}
+            </p>
+          </section>
+
+          <section className="border-t border-brass/20 pt-7">
+            <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-normal text-gold">
+              {casualCopy.title}
+            </h2>
+            <p>{casualCopy.body}</p>
+            <ul className="mt-4 space-y-2 text-sm text-brass-dark">
+              {casualCopy.prompts.slice(0, 4).map((prompt) => (
+                <li key={prompt} className="border-t border-brass/20 pt-2">
+                  {prompt}
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section>

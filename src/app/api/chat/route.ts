@@ -206,6 +206,17 @@ function isReturningAfterGap(prior: UserMemory | null): boolean {
   return Date.now() - last >= RETURNING_THRESHOLD_MS;
 }
 
+function stripContinuityMemory(memory: UserMemory | null): UserMemory | null {
+  if (!memory) return null;
+  return {
+    ...memory,
+    main_problem: null,
+    emotion: null,
+    context_summary: null,
+    growing_edge: null,
+  };
+}
+
 // Phase 2 piggyback: extract memory + classify the user's query into the
 // 34-tag taxonomy in ONE Haiku call. The query themes feed Layer-1
 // theme-overlap reranking against the chunks pre-tagged in Step 2.2.
@@ -412,11 +423,13 @@ function buildSystemPrompt(
     lines.push(`- Their main concern: ${memory.main_problem}`);
   }
   if (memory?.context_summary) {
-    lines.push(`- Recent emotional thread: ${memory.context_summary}`);
+    lines.push(
+      `- Recent emotional thread (background only; do not override a clear new topic in the user's latest message): ${memory.context_summary}`,
+    );
   }
   if (memory?.growing_edge) {
     lines.push(
-      `- USER'S GROWING EDGE (silent steering input — NEVER narrate to the user): ${memory.growing_edge}. Let this shape the register of your reply, the verses you reach for, and the questions you ask. Krishna does NOT name this arc to the user (persona invariant: Krishna NEVER reveals stored memory). The user discovers their own arc through Krishna's gravitational pull, not through Krishna's announcement.`,
+      `- USER'S GROWING EDGE (silent steering input — NEVER narrate to the user; background only, not a command to continue an old topic): ${memory.growing_edge}. Let this shape the register of your reply, the verses you reach for, and the questions you ask only when it fits the latest message. Krishna does NOT name this arc to the user (persona invariant: Krishna NEVER reveals stored memory). The user discovers their own arc through Krishna's gravitational pull, not through Krishna's announcement.`,
     );
   }
   if (isFirstTime) {
@@ -481,15 +494,21 @@ export async function POST(req: Request) {
     timingLast = logTiming(turnId, turnStart, step, timingLast);
   };
 
-  const { message } = await req.json();
+  const body = (await req.json()) as {
+    message?: unknown;
+    freshTopic?: unknown;
+  };
+  const rawMessage = body.message;
+  const freshTopic = body.freshTopic === true;
   timing("chat_received");
 
-  if (typeof message !== "string" || !message.trim()) {
+  if (typeof rawMessage !== "string" || !rawMessage.trim()) {
     return NextResponse.json(
       { error: "message must be a non-empty string" },
       { status: 400 },
     );
   }
+  const message = rawMessage.trim();
 
   // Phase 7.0 Path A — server-side word filter (defense in depth +
   // latency saver). Mirrors the client-side check in ChatUI; runs
@@ -585,7 +604,7 @@ export async function POST(req: Request) {
   }
 
   // 4. Compute returning-after-gap flag from PRIOR last_active_at.
-  const isReturningUser = isReturningAfterGap(priorMemory);
+  const isReturningUser = !freshTopic && isReturningAfterGap(priorMemory);
 
   // 5. Run verse retrieval, memory extraction, and safety classification
   //    in parallel. All must finish before the final reply, because the
@@ -625,8 +644,10 @@ export async function POST(req: Request) {
 
   // Phase 7 — derived BEFORE parallel block so extractMemory can apply
   // asymmetric stickiness in its Haiku prompt.
-  const lastChatLang = await fetchLastChatLanguage(userId);
-  const priorSummary = priorMemory?.context_summary?.trim();
+  const lastChatLang = freshTopic ? null : await fetchLastChatLanguage(userId);
+  const priorSummary = freshTopic
+    ? null
+    : priorMemory?.context_summary?.trim();
   const priorLang =
     lastChatLang ??
     (priorSummary ? detectLang(priorSummary) : undefined);
@@ -639,16 +660,20 @@ export async function POST(req: Request) {
       }),
       extractMemory(
         message,
-        priorMemory?.context_summary ?? null,
+        freshTopic ? null : (priorMemory?.context_summary ?? null),
         nameAwaited,
         priorLang,
-        priorMemory?.growing_edge ?? null,
+        freshTopic ? null : (priorMemory?.growing_edge ?? null),
       ),
       safetyClassify(message),
-      fetchRecentChatHistory(userId, 8).catch((e) => {
-        console.error("[chat] fetchRecentChatHistory failed:", e);
-        return [] as Array<{ user_message: string; reply_text: string }>;
-      }),
+      freshTopic
+        ? Promise.resolve(
+            [] as Array<{ user_message: string; reply_text: string }>,
+          )
+        : fetchRecentChatHistory(userId, 8).catch((e) => {
+            console.error("[chat] fetchRecentChatHistory failed:", e);
+            return [] as Array<{ user_message: string; reply_text: string }>;
+          }),
       // Phase 7.0 Path B — Haiku-based moderation classifier. Silent-
       // fails to {flag:"safe",confidence:0} internally, so no per-call
       // .catch needed here. Gated after safetyFlag derivation below.
@@ -657,7 +682,7 @@ export async function POST(req: Request) {
       // older turns (chat + voice both log to chat_logs). Surfaces the relevant
       // old conversation even when it fell outside the verbatim 8-turn window.
       // Silent-fails to [] internally (also covers the pre-SQL-paste state).
-      searchChatMemory(userId, message, 3),
+      freshTopic ? Promise.resolve([]) : searchChatMemory(userId, message, 3),
     ]);
 
   const deterministicQueryThemes = deterministicQueryThemesForTurn(
@@ -732,9 +757,12 @@ export async function POST(req: Request) {
   // Merge prior memory with this turn's freshly extracted fields so the
   // current reply has access to the just-detected name + updated emotion
   // / problem / summary instead of using only the previous turn's state.
-  const effectiveMemory: UserMemory | null = extracted
-    ? { ...priorMemory, ...extracted }
+  const continuityMemory = freshTopic
+    ? stripContinuityMemory(priorMemory)
     : priorMemory;
+  const effectiveMemory: UserMemory | null = extracted
+    ? { ...continuityMemory, ...extracted }
+    : continuityMemory;
 
   // 5b. Final reply (Sonnet 4.6) with scripture + user context + safety injected.
   //
@@ -822,6 +850,7 @@ export async function POST(req: Request) {
         type: "text",
         text:
           "PAST CONVERSATIONS (background memory — older moments from this devotee's earlier sessions, retrieved because they relate by meaning to what was just said; may be from weeks ago). " +
+          "Use them only when they clearly help with the user's latest message or when the latest message is vague. If the latest message names a new topic, the new topic wins; do not pull back to these older turns. " +
           "Let them inform your reading of THIS turn the way a friend who remembers naturally would: recognize recurring threads and respond with the continuity of someone who has been listening across time. " +
           "PERSONA INVARIANT UNCHANGED: NEVER narrate or quote this memory back — no \"तुमने पिछली बार कहा था\", no \"you said earlier\", no \"I remember\", no recital of stored facts. " +
           "If the devotee THEMSELVES refers back to something here, engage with it directly as shared context — do not act as if hearing it for the first time. " +
@@ -885,7 +914,7 @@ export async function POST(req: Request) {
         main_problem: extracted.main_problem,
         emotion: extracted.emotion,
         context_summary: extracted.context_summary,
-        growing_edge: extracted.growing_edge,
+        growing_edge: freshTopic ? (extracted.growing_edge ?? null) : extracted.growing_edge,
         message_count: nextMessageCount,
         is_first_time: false,
         verses_referenced: verseRefs,
@@ -893,6 +922,10 @@ export async function POST(req: Request) {
       });
     } else {
       await saveMemory(userId, {
+        main_problem: freshTopic ? null : undefined,
+        emotion: freshTopic ? null : undefined,
+        context_summary: freshTopic ? null : undefined,
+        growing_edge: freshTopic ? null : undefined,
         message_count: nextMessageCount,
         is_first_time: false,
         verses_referenced: verseRefs,

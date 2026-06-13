@@ -109,7 +109,7 @@ const LANDING_SECTIONS = {
       "What does the Gita say about attachment?",
     ],
     safetyNote:
-      "Divya Vani is an AI-based spiritual reflection tool. It is not therapy, medical, legal, financial, or divine advice.",
+      "Divya Vani is an AI-based spiritual reflection tool. It does not claim to be the real Lord Krishna or divine guidance.",
   },
   hi: {
     versesEyebrow: "शास्त्र पर आधारित",
@@ -147,6 +147,8 @@ export default function LandingClient() {
   const { lang, t } = useLanguage();
   const facts = LANDING_FACTS[lang];
   const sections = LANDING_SECTIONS[lang];
+  const trustCopy = BRAND.trust[lang];
+  const casualCopy = BRAND.casual[lang];
 
   // CTA + prose fonts switch with language: Devanagari for Hindi, the English
   // serif for English (rather than rendering Latin in the Devanagari face).
@@ -359,7 +361,7 @@ export default function LandingClient() {
               lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
             }`}
           >
-            {facts.eyebrow}
+            {trustCopy.eyebrow}
           </p>
           <h2
             id="landing-facts-title"
@@ -369,8 +371,26 @@ export default function LandingClient() {
                 : "font-[family-name:var(--font-display)]"
             }`}
           >
-            {facts.title}
+            {trustCopy.title}
           </h2>
+          <p
+            className={`mt-4 max-w-[760px] text-base leading-relaxed text-ink-soft ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {trustCopy.body}
+          </p>
+          <p
+            className={`mt-3 max-w-[760px] text-sm leading-relaxed text-ink-soft ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {trustCopy.supporting}
+          </p>
           <div className="mt-7 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {facts.items.map((item) => (
               <article
@@ -503,7 +523,7 @@ export default function LandingClient() {
               lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
             }`}
           >
-            {sections.questionsEyebrow}
+            {casualCopy.eyebrow}
           </p>
           <h2
             id="landing-questions-title"
@@ -513,10 +533,19 @@ export default function LandingClient() {
                 : "font-[family-name:var(--font-display)]"
             }`}
           >
-            {sections.questionsTitle}
+            {casualCopy.title}
           </h2>
+          <p
+            className={`mt-4 max-w-[760px] text-base leading-relaxed text-ink-soft ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {casualCopy.body}
+          </p>
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            {sections.questions.map((q, i) => (
+            {casualCopy.prompts.map((q, i) => (
               <p
                 key={i}
                 className={`rounded-2xl border border-[oklch(86%_0.04_70)] bg-white/45 px-5 py-3.5 text-base leading-relaxed text-ink backdrop-blur ${
@@ -560,7 +589,7 @@ export default function LandingClient() {
                 : "font-[family-name:var(--font-serif)] italic"
             }`}
           >
-            {sections.safetyNote}
+            {BRAND.disclaimer[lang]}
           </p>
         </section>
       </div>

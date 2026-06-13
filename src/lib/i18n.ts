@@ -48,10 +48,13 @@ export type Messages = {
     promptAccent: string;
     // Header subtitle (desktop only) under the wordmark.
     subtitle: string;
-    // Empty-state greeting + value-prop line + the four "what you can do" hints.
+    // Empty-state greeting + value-prop line + editable onboarding prompts.
     greeting: string;
     valueProp: string;
-    suggestions: [string, string, string, string];
+    promptCategories: Array<{
+      label: string;
+      prompt: string;
+    }>;
     // Voice-input status chips.
     listening: string;
     transcribing: string;
@@ -63,6 +66,7 @@ export type Messages = {
     // aria-labels (assistive only) — kept single-language for consistency.
     ariaDisclaimer: string;
     ariaVoiceMode: string;
+    ariaStartFresh: string;
     ariaSettings: string;
     ariaSeva: string;
     ariaSend: string;
@@ -315,12 +319,28 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       subtitle: "A quiet place to say what's on your mind",
       greeting: "How are you feeling today…",
       valueProp:
-        "Talk with Krishna — every reply grounded in the Gita, Mahabharata, and Bhagavata",
-      suggestions: [
-        "Ask your questions",
-        "Share what's on your heart",
-        "Learn from the Gita, Mahabharata, and Bhagavata",
-        "Just sit with him — no reason needed",
+        "Talk casually or reflect through Krishna’s wisdom — replies are scripture-backed",
+      promptCategories: [
+        {
+          label: "Reflect on life",
+          prompt: "I am confused between two choices. Help me reflect clearly.",
+        },
+        {
+          label: "Talk about Krishna",
+          prompt: "Tell me a story about Lord Krishna.",
+        },
+        {
+          label: "Understand a Gita verse",
+          prompt: "Explain Bhagavad Gita 2.47 in simple words.",
+        },
+        {
+          label: "I am just exploring",
+          prompt: "I am just exploring.",
+        },
+        {
+          label: "Type my own question",
+          prompt: "",
+        },
       ],
       listening: "listening",
       transcribing: "transcribing",
@@ -329,6 +349,7 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       sendButton: "Send",
       ariaDisclaimer: "Disclaimer",
       ariaVoiceMode: "Voice mode",
+      ariaStartFresh: "Start fresh",
       ariaSettings: "Settings",
       ariaSeva: "Seva",
       ariaSend: "Send",
@@ -367,11 +388,11 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     landing: {
       headline: "Talk with Krishna AI",
       subheadline:
-        "Ask life's difficult questions in chat or voice. Divya Vani gives scripture-backed reflections from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
+        "Ask casually, learn stories, or reflect through Krishna’s wisdom in chat or voice. Divya Vani gives scripture-backed reflections grounded in scriptures from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
       trustLine: "3,132 verses · Hindi + English · Chat + Voice · 10 free messages",
       body: "The same flute, a smaller room — Krishna in a chat window. Ask in Hindi or English; the verses follow you.",
       proof:
-        "Every reply is grounded in scripture — the Gita, Mahabharata, and Bhagavata — and shows you the verse it draws from, in Sanskrit, Hindi, and English.",
+        "Responses are grounded in a curated scripture corpus — the Gita, Mahabharata, and Bhagavata — and show you the verse they draw from, in Sanskrit, Hindi, and English.",
       ctaAsk: "Start Chatting",
       ctaGlimpse: "See Examples",
       ctaTalk: "Try Voice",
@@ -383,14 +404,14 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     demo: {
       hero: "A glimpse of Krishna",
       heroBody:
-        "A glimpse of conversations with Krishna. Real videos, real screenshots, real replies — so you can see how the flute sounds before stepping in.",
+        "A glimpse of scripture-backed conversations with Krishna AI: videos, screenshots, and sample replies, so you can see the experience before stepping in.",
       ctaBegin: "Begin",
       sectionRealConversations: "Watch a walkthrough",
       sectionHowItLooks: "How it looks on screen",
       sectionHowKrishnaReplies: "How Krishna replies",
       sectionVoiceLive: "Now live — speak with Krishna in voice",
       voiceTeaserBody:
-        "The words you're reading can now reach your ears too — in Krishna's own voice.",
+        "The voice is AI-generated and does not claim to be the real voice of Lord Krishna.",
       tryVoiceFree: "Try Voice Free",
       closingNote:
         "Watch examples, then try your own question in chat or voice.",
@@ -570,12 +591,28 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       promptAccent: "यहाँ कह सकते हो",
       subtitle: "एक शांत जगह, जहाँ आप अपनी बात कह सकते हैं",
       greeting: "आज मन कैसा लग रहा है…",
-      valueProp: "भगवान कृष्ण से बात करो — हर उत्तर गीता, महाभारत, भागवत से",
-      suggestions: [
-        "अपने सवाल पूछो",
-        "मन की बात बाँटो",
-        "गीता, महाभारत, भागवत से सीखो",
-        "बस साथ बैठो, कोई कारण नहीं चाहिए",
+      valueProp: "सहज बात करें या कृष्ण की बुद्धि से चिंतन करें — उत्तर शास्त्र-आधारित हैं",
+      promptCategories: [
+        {
+          label: "जीवन पर विचार",
+          prompt: "मैं दो विकल्पों के बीच उलझा हूँ। मुझे साफ़ सोचने में मदद करें।",
+        },
+        {
+          label: "कृष्ण के बारे में",
+          prompt: "भगवान कृष्ण की कोई कहानी सुनाइए।",
+        },
+        {
+          label: "गीता का श्लोक समझें",
+          prompt: "भगवद्गीता 2.47 को सरल शब्दों में समझाइए।",
+        },
+        {
+          label: "मैं बस खोज में हूँ",
+          prompt: "अभी मैं बस खोज में हूँ।",
+        },
+        {
+          label: "अपना सवाल लिखूँ",
+          prompt: "",
+        },
       ],
       listening: "सुन रहा हूँ…",
       transcribing: "समझ रहा हूँ…",
@@ -584,6 +621,7 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       sendButton: "भेजें",
       ariaDisclaimer: "अस्वीकरण",
       ariaVoiceMode: "आवाज़ में बात करो",
+      ariaStartFresh: "नई बात शुरू करें",
       ariaSettings: "सेटिंग्स",
       ariaSeva: "सेवा",
       ariaSend: "भेजें",
@@ -622,11 +660,11 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     landing: {
       headline: "कृष्ण AI से बात करें",
       subheadline:
-        "जीवन के कठिन सवाल चैट या आवाज़ में पूछें। दिव्य वाणी भगवद्गीता, महाभारत और भागवत पुराण से शास्त्र-आधारित उत्तर देती है।",
+        "सहज बात करें, कहानियाँ सीखें, या चैट और आवाज़ में कृष्ण की बुद्धि से चिंतन करें। दिव्य वाणी भगवद्गीता, महाभारत और भागवत पुराण से शास्त्र-आधारित चिंतन देती है।",
       trustLine: "3,132 श्लोक · हिंदी + अंग्रेज़ी · चैट + आवाज़ · 10 निःशुल्क संदेश",
       body: "वही बाँसुरी, बस एक छोटा कमरा — एक चैट खिड़की में कृष्ण। हिंदी या अंग्रेज़ी में पूछो, श्लोक तुम्हारे साथ चलते हैं।",
       proof:
-        "हर उत्तर शास्त्र पर आधारित — गीता, महाभारत और भागवत से — और जिस श्लोक से वह आता है, वह संस्कृत, हिंदी और अंग्रेज़ी में तुम्हें दिखाया जाता है।",
+        "उत्तर गीता, महाभारत और भागवत के curated scripture corpus पर आधारित हैं, और जिस श्लोक से वे आते हैं, वह संस्कृत, हिंदी और अंग्रेज़ी में दिखाया जाता है।",
       ctaAsk: "बातचीत शुरू करें",
       ctaGlimpse: "उदाहरण देखें",
       ctaTalk: "आवाज़ आज़माएँ",
@@ -638,14 +676,14 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
     demo: {
       hero: "श्रीकृष्ण से एक झलक",
       heroBody:
-        "श्रीकृष्ण से बातचीत की एक झलक। असली वीडियो, असली स्क्रीनशॉट, असली जवाब — ताकि भीतर आने से पहले तुम बाँसुरी की धुन सुन सको।",
+        "कृष्ण AI के साथ शास्त्र-आधारित बातचीतों की एक झलक: वीडियो, स्क्रीनशॉट और sample replies, ताकि भीतर आने से पहले अनुभव समझ सको।",
       ctaBegin: "अभी बात करो",
       sectionRealConversations: "वीडियो देखें",
       sectionHowItLooks: "और स्क्रीन पर ऐसा दिखता है",
       sectionHowKrishnaReplies: "सुनो — कैसे जवाब आता है",
       sectionVoiceLive: "अब live — कृष्ण से आवाज़ में बात करें",
       voiceTeaserBody:
-        "जो शब्द अभी पढ़ रहे हो, वे अब कानों तक भी पहुँच सकते हैं — श्रीकृष्ण की अपनी आवाज़ में।",
+        "यह आवाज़ AI-generated है और भगवान कृष्ण की वास्तविक आवाज़ होने का दावा नहीं करती।",
       tryVoiceFree: "आवाज़ निःशुल्क आज़माएँ",
       closingNote: "उदाहरण देखें, फिर अपना सवाल चैट या आवाज़ में पूछें।",
       listen: "आवाज़ सुनो",

@@ -661,14 +661,15 @@ function VoiceInner() {
       {/* ── Zone 2: identity disclaimer (Locked Decision #1) — borderless +
           transparent like the header (founder 2026-05-24); just the text
           floating over the scene, with a shadow for legibility. ──────── */}
-      <p
+      <div
         className={`ivory-faint relative z-20 shrink-0 px-4 py-1 text-center text-[11px] leading-tight ${
           lang === "hi" ? "font-devanagari" : "font-serif italic"
         }`}
         style={{ textShadow: "0 1px 4px oklch(8% 0.05 260 / 0.7)" }}
       >
-        {C.disclaimer[lang]}
-      </p>
+        <p>{C.disclaimer[lang]}</p>
+        <p className="mt-1">{C.voiceGeneratedDisclaimer[lang]}</p>
+      </div>
 
       {/* ── Zone 3: hero — orb DURING the call, transcript AFTER it ──── */}
       {/* overflow-hidden + min-h-0 guarantee the Zone 4/5 controls below never

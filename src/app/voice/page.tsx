@@ -11,7 +11,7 @@ import {
 } from "@/lib/seo";
 
 const description =
-  "Talk with Krishna in voice: speak your question and hear a reply grounded in scripture from an AI roleplaying Krishna.";
+  "Talk with Krishna AI by voice. The voice is AI-generated, and replies are scripture-backed reflections grounded in scriptures from a curated scripture corpus.";
 
 export const metadata: Metadata = {
   title: `Talk with Krishna AI by Voice — ${BRAND.name.en}`,

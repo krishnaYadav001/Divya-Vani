@@ -469,11 +469,13 @@ function buildSystemPrompt(
     lines.push(`- Their main concern: ${memory.main_problem}`);
   }
   if (memory?.context_summary) {
-    lines.push(`- Recent emotional thread: ${memory.context_summary}`);
+    lines.push(
+      `- Recent emotional thread (background only; do not override a clear new topic in the user's latest message): ${memory.context_summary}`,
+    );
   }
   if (memory?.growing_edge) {
     lines.push(
-      `- USER'S GROWING EDGE (silent steering input — NEVER narrate to the user): ${memory.growing_edge}. Let this shape the register of your reply, the verses you reach for, and the questions you ask. Krishna does NOT name this arc to the user (persona invariant: Krishna NEVER reveals stored memory). The user discovers their own arc through Krishna's gravitational pull, not through Krishna's announcement.`,
+      `- USER'S GROWING EDGE (silent steering input — NEVER narrate to the user; background only, not a command to continue an old topic): ${memory.growing_edge}. Let this shape the register of your reply, the verses you reach for, and the questions you ask only when it fits the latest message. Krishna does NOT name this arc to the user (persona invariant: Krishna NEVER reveals stored memory). The user discovers their own arc through Krishna's gravitational pull, not through Krishna's announcement.`,
     );
   }
   if (isFirstTime) {
@@ -1041,6 +1043,7 @@ export async function POST(req: Request): Promise<Response> {
   const pastBlock = memoryLines.length
     ? "PAST CONVERSATIONS (background memory from the devotee's earlier sessions — text and voice). " +
       "This is what they have shared with you before. Let it inform your reading of THIS turn the way a friend who remembers naturally would: " +
+      "use it only when it clearly helps with the user's latest message or when the latest message is vague. If the latest message names a new topic, the new topic wins; do not pull back to these older turns. " +
       "recognize recurring threads, know where their story left off, and respond with the continuity of someone who has been listening across time. " +
       "PERSONA INVARIANT UNCHANGED: NEVER narrate or quote this memory back — no \"तुमने पिछली बार कहा था\", no \"you said earlier\", no \"I remember\", no recital of stored facts. " +
       "If the devotee THEMSELVES refers back to something here, engage with it directly as shared context — do not act as if hearing it for the first time. " +

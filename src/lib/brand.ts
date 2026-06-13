@@ -29,8 +29,66 @@ export const BRAND = {
     hi: "जब मन उलझा हो, बस किसी से बात करनी हो…",
   },
   disclaimer: {
-    en: "This is an AI roleplaying Krishna based on scripture, not divine guidance.",
-    hi: "यह AI शास्त्र-आधारित कृष्ण रूप का अभिनय कर रहा है, दैवीय मार्गदर्शन नहीं।",
+    en: "Divya Vani is an AI-based spiritual reflection tool. It does not claim to be the real Lord Krishna or divine guidance.",
+    hi: "दिव्य वाणी एक AI-आधारित आध्यात्मिक चिंतन साधन है। यह वास्तविक भगवान कृष्ण या दैवीय मार्गदर्शन होने का दावा नहीं करता।",
+  },
+  trust: {
+    en: {
+      eyebrow: "Grounded in scriptures",
+      title: "Why trust Divya Vani?",
+      body: "Divya Vani is not a random chatbot. Its reflections are grounded in a curated scripture corpus from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
+      supporting: "When you ask a question, Divya Vani reflects through scripture-backed wisdom instead of giving generic motivational advice.",
+      facts: [
+        "Grounded in 3,132 scripture verses",
+        "701 verses from the Bhagavad Gita",
+        "1,704 verses from the Mahabharata",
+        "727 verses from the Bhagavata Purana",
+        "Hindi + English",
+        "Chat + Voice",
+      ],
+    },
+    hi: {
+      eyebrow: "शास्त्रों पर आधारित",
+      title: "दिव्य वाणी पर भरोसा क्यों?",
+      body: "दिव्य वाणी कोई random chatbot नहीं है। इसके चिंतन भगवद्गीता, महाभारत और भागवत पुराण के curated scripture corpus पर आधारित हैं।",
+      supporting: "जब आप प्रश्न पूछते हैं, दिव्य वाणी generic motivational advice के बजाय शास्त्र-आधारित ज्ञान से कृष्ण की बुद्धि के माध्यम से चिंतन कराती है।",
+      facts: [
+        "3,132 शास्त्रीय श्लोकों पर आधारित",
+        "भगवद्गीता से 701 श्लोक",
+        "महाभारत से 1,704 श्लोक",
+        "भागवत पुराण से 727 श्लोक",
+        "हिंदी + अंग्रेज़ी",
+        "चैट + आवाज़",
+      ],
+    },
+  },
+  casual: {
+    en: {
+      eyebrow: "Casual conversation",
+      title: "Talk casually, learn deeply",
+      body: "Divya Vani is not only for difficult problems. You can also talk casually with Krishna AI, ask stories, learn verses, understand bhakti, explore dharma, or simply have a devotional conversation.",
+      prompts: [
+        "Tell me a story about Lord Krishna.",
+        "Explain Bhagavad Gita 2.47 in simple words.",
+        "Why is Krishna called Govinda?",
+        "What is bhakti?",
+        "Tell me something beautiful about Vrindavan.",
+        "How can I remember Krishna while working?",
+      ],
+    },
+    hi: {
+      eyebrow: "सहज बातचीत",
+      title: "सहज बात करें, गहराई से सीखें",
+      body: "दिव्य वाणी केवल कठिन समस्याओं के लिए नहीं है। आप कृष्ण AI से सहज बातचीत कर सकते हैं, कहानियाँ पूछ सकते हैं, श्लोक सीख सकते हैं, भक्ति समझ सकते हैं, धर्म खोज सकते हैं, या बस एक भक्तिमय बातचीत कर सकते हैं।",
+      prompts: [
+        "भगवान कृष्ण की कोई कहानी सुनाइए।",
+        "भगवद्गीता 2.47 को सरल शब्दों में समझाइए।",
+        "कृष्ण को गोविंद क्यों कहा जाता है?",
+        "भक्ति क्या है?",
+        "वृंदावन के बारे में कुछ सुंदर बताइए।",
+        "काम करते हुए मैं कृष्ण को कैसे याद रखूँ?",
+      ],
+    },
   },
   contact: {
     founder: "Krishna Yadav",
@@ -64,6 +122,10 @@ export const BRAND = {
     disclaimer: {
       hi: "श्रीकृष्ण रूप — शास्त्र-आधारित AI",
       en: "AI roleplaying Krishna based on scripture",
+    },
+    voiceGeneratedDisclaimer: {
+      hi: "यह आवाज़ AI-generated है और भगवान कृष्ण की वास्तविक आवाज़ होने का दावा नहीं करती।",
+      en: "The voice is AI-generated and does not claim to be the real voice of Lord Krishna.",
     },
     // Bottom action button labels per phase.
     begin: { hi: "तैयार हो?", en: "Begin" },

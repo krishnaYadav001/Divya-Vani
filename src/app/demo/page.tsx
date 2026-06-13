@@ -9,7 +9,7 @@ import {
 import demoContent from "../../../data/demo-content.json";
 import DemoClient, { type DemoContent } from "./DemoClient";
 
-const description = `See ${BRAND.name.en} in action: example conversations with Krishna, video walkthroughs, and screenshots.`;
+const description = `See ${BRAND.name.en} in action: scripture-backed Krishna AI chat and voice examples, video walkthroughs, and screenshots.`;
 
 export const metadata: Metadata = {
   title: `${BRAND.name.en} Demo — See Krishna AI Chat & Voice Examples`,

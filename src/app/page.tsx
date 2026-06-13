@@ -13,7 +13,7 @@ import {
 // EN/Hindi language toggle.
 
 const homepageDescription =
-  "Chat or speak with Krishna AI and receive scripture-backed reflections from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Hindi and English supported.";
+  "Chat or speak with Krishna AI in Hindi or English. Divya Vani gives scripture-backed reflections grounded in scriptures from a curated scripture corpus.";
 
 export const metadata: Metadata = {
   title: `${BRAND.name.en} — Talk with Krishna AI | Scripture-Backed Chat & Voice`,
@@ -47,7 +47,7 @@ const homepageJsonLd = {
   screenshot: absoluteUrl("/og.jpg"),
   featureList: [
     "Hindi-first Krishna AI chat",
-    "Scripture-grounded verse references",
+    "Scripture-backed reflections grounded in scriptures",
     "Sanskrit, Hindi, and English verse cards",
     "Optional voice conversation mode",
   ],

@@ -35,6 +35,8 @@ export type DemoContent = {
 export default function DemoClient({ content }: { content: DemoContent }) {
   const { lang, t } = useLanguage();
   const td = t.demo;
+  const trustCopy = BRAND.trust[lang];
+  const casualCopy = BRAND.casual[lang];
 
   // CTA + prose fonts switch with language (Devanagari face for Hindi; the
   // English serif/display otherwise — Cormorant/Marcellus have no Devanagari).
@@ -119,6 +121,105 @@ export default function DemoClient({ content }: { content: DemoContent }) {
         </section>
 
         {/* ── Feedback (star rating, near top per founder) ────────── */}
+        <section
+          aria-labelledby="demo-trust-title"
+          className="mt-12 border-t border-[var(--color-ink-line)] pt-8"
+        >
+          <div className="grid gap-8 md:grid-cols-[1fr_0.9fr] md:items-start">
+            <div>
+              <p
+                className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]"
+                    : ""
+                }`}
+              >
+                {trustCopy.eyebrow}
+              </p>
+              <h2
+                id="demo-trust-title"
+                className={`mt-3 text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)]"
+                }`}
+              >
+                {trustCopy.title}
+              </h2>
+              <p
+                className={`mt-4 text-base leading-relaxed text-ink-soft ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-serif)] italic"
+                }`}
+              >
+                {trustCopy.body}
+              </p>
+              <p
+                className={`mt-3 text-sm leading-relaxed text-ink-soft ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-serif)] italic"
+                }`}
+              >
+                {trustCopy.supporting}
+              </p>
+            </div>
+            <div className="border-t border-[var(--color-ink-line)] pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+              <p
+                className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]"
+                    : ""
+                }`}
+              >
+                {casualCopy.eyebrow}
+              </p>
+              <h3
+                className={`mt-3 text-2xl font-normal leading-tight text-ink ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-display)]"
+                }`}
+              >
+                {casualCopy.title}
+              </h3>
+              <p
+                className={`mt-3 text-sm leading-relaxed text-ink-soft ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-serif)] italic"
+                }`}
+              >
+                {casualCopy.body}
+              </p>
+              <ul className="mt-4 space-y-2">
+                {casualCopy.prompts.slice(0, 4).map((prompt) => (
+                  <li
+                    key={prompt}
+                    className={`border-t border-[var(--color-ink-line)] pt-2 text-sm leading-relaxed text-ink-soft ${
+                      lang === "hi"
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-serif)] italic"
+                    }`}
+                  >
+                    {prompt}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p
+            className={`mt-7 max-w-[760px] text-xs leading-relaxed text-ink-faint ${
+              lang === "hi"
+                ? "font-[family-name:var(--font-devanagari)]"
+                : "font-[family-name:var(--font-serif)] italic"
+            }`}
+          >
+            {BRAND.disclaimer[lang]}
+          </p>
+        </section>
+
         <DemoFeedback />
 
         {/* ── Demo videos ─────────────────────────────────────────── */}
