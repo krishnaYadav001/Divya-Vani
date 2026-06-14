@@ -147,16 +147,6 @@ Pricing
               {trustCopy.title}
             </h2>
             <p>{trustCopy.body}</p>
-            <p className="mt-3 text-sm text-brass-dark">
-              {trustCopy.supporting}
-            </p>
-            <ul className="mt-4 grid gap-2 text-sm text-brass-dark sm:grid-cols-2">
-              {trustCopy.facts.map((fact) => (
-                <li key={fact} className="border-t border-brass/20 pt-2">
-                  {fact}
-                </li>
-              ))}
-            </ul>
             <p className="mt-4 text-xs text-brass-dark">
               {BRAND.disclaimer.en}
             </p>

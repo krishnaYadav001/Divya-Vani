@@ -155,15 +155,6 @@ export default function DemoClient({ content }: { content: DemoContent }) {
               >
                 {trustCopy.body}
               </p>
-              <p
-                className={`mt-3 text-sm leading-relaxed text-ink-soft ${
-                  lang === "hi"
-                    ? "font-[family-name:var(--font-devanagari)]"
-                    : "font-[family-name:var(--font-serif)] italic"
-                }`}
-              >
-                {trustCopy.supporting}
-              </p>
             </div>
             <div className="border-t border-[var(--color-ink-line)] pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
               <p

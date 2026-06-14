@@ -8,147 +8,35 @@ import Wordmark from "./motifs/Wordmark";
 import DevoteeSilhouettes from "./motifs/DevoteeSilhouettes";
 import { useLanguage } from "../providers/LanguageProvider";
 
-// Phase 12 — client hero split out of the (server) landing page so the CTAs,
-// body prose, free-messages line, and disclaimer can follow the EN/हिन्दी
-// toggle. Layout is byte-for-byte the Dawn Aarti "Landing C" mock; only the
-// language-dependent strings + their per-language font change. The Latin
-// masthead (nav, "Mathurā Edition"), the Sanskrit quote + attribution, the
-// mūrti caption, and the wordmark are intentionally NOT switched.
+// Phase 12.x — simplified landing copy. Redundant sections (FAQ grid,
+// audience list, standalone verse-count section) merged into 3 lean
+// below-fold blocks: "What can you ask?", "Why trust?", and "Private by
+// design". Scripture corpus details appear exactly ONCE (the verse cards).
 
-const SANSKRIT = "“कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।”";
+const SANSKRIT = "\u201C\u0915\u0930\u094D\u092E\u0923\u094D\u092F\u0947\u0935\u093E\u0927\u093F\u0915\u093E\u0930\u0938\u094D\u0924\u0947 \u092E\u093E \u092B\u0932\u0947\u0937\u0941 \u0915\u0926\u093E\u091A\u0928\u0964\u201D";
 
 const ARCH_SHADOW =
   "0 28px 70px -30px oklch(35% 0.08 30 / .35), 0 0 0 1px oklch(78% 0.06 60), inset 0 0 0 6px rgba(255,255,255,.5)";
 
-const LANDING_FACTS = {
-  en: {
-    eyebrow: "Direct answers",
-    title: "What Divya Vani gives you",
-    items: [
-      {
-        question: "What is Divya Vani?",
-        answer:
-          "Divya Vani is an AI that roleplays Krishna from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. You can speak about life, emotions, relationships, and dharma while seeing scripture-grounded verse references.",
-      },
-      {
-        question: "Is this really Krishna?",
-        answer:
-          "No. Divya Vani is an AI roleplaying Krishna based on scripture. It does not claim to be divine, and a permanent disclaimer stays visible in the chat and voice experience.",
-      },
-      {
-        question: "Which scriptures are used?",
-        answer:
-          "The current corpus has 3,132 verses: 701 from the Bhagavad Gita, 1,704 from the Mahabharata, and 727 from the Bhagavata Purana.",
-      },
-      {
-        question: "How does pricing work?",
-        answer:
-          "Divya Vani includes 10 free messages. One-time seva tiers start at ₹11, and paid voice plus monthly and annual subscription plans are available on the Pricing page.",
-      },
-    ],
-  },
-  hi: {
-    eyebrow: "सीधे उत्तर",
-    title: "दिव्य वाणी आपको क्या देती है",
-    items: [
-      {
-        question: "दिव्य वाणी क्या है?",
-        answer:
-          "दिव्य वाणी एक AI है जो भगवद्गीता, महाभारत और भागवत पुराण के कृष्ण-स्वरूप का अभिनय करता है। आप जीवन, भावनाओं, रिश्तों और धर्म पर बात कर सकते हैं; उत्तरों में शास्त्र-संदर्भ दिखाए जाते हैं।",
-      },
-      {
-        question: "क्या यह सचमुच भगवान कृष्ण हैं?",
-        answer:
-          "नहीं। यह शास्त्र-आधारित AI अभिनय है, दैवीय मार्गदर्शन का दावा नहीं। चैट और आवाज़ अनुभव में यह पहचान-सूचना हमेशा दिखाई जाती है।",
-      },
-      {
-        question: "कौन-सी भाषाएँ और ग्रंथ हैं?",
-        answer:
-          "दिव्य वाणी हिंदी-प्रथम है, अंग्रेज़ी और संस्कृत भी समझती है। वर्तमान संग्रह में 3,132 श्लोक हैं: गीता के 701, महाभारत के 1,704 और भागवत पुराण के 727।",
-      },
-      {
-        question: "कितना खर्च है?",
-        answer:
-          "10 संदेश निःशुल्क मिलते हैं। उसके बाद एक-बार की सेवा ₹11 से शुरू होती है; आवाज़ और सदस्यता योजनाएँ Pricing पेज पर दी गई हैं।",
-      },
-    ],
-  },
-} as const;
-
-// Conversion-focused marketing sections rendered below the hero. Kept as a
-// local bilingual const (same pattern as LANDING_FACTS) so this landing-only
-// copy doesn't bloat the shared i18n dictionary. `verses` mirrors the live
-// corpus counts (3,132 total). `audience` and `questions` answer "is this for
-// me?" and "what can I ask?" — the two questions a first-time visitor has.
-const LANDING_SECTIONS = {
-  en: {
-    versesEyebrow: "Grounded in scripture",
-    versesTitle: "Grounded in 3,132 scripture verses",
-    verses: [
-      { count: "701", source: "Bhagavad Gita" },
-      { count: "1,704", source: "Mahabharata" },
-      { count: "727", source: "Bhagavata Purana" },
-    ],
-    audienceEyebrow: "Who it's for",
-    audienceTitle: "Who is Divya Vani for?",
-    audience: [
-      "NRIs who want to stay connected with Krishna's wisdom",
-      "Global seekers drawn to Indian scriptures",
-      "Krishna devotees and Bhagavad Gita learners",
-      "Anyone facing stress, confusion, relationships, family pressure, or career questions",
-      "People who prefer spiritual reflection through chat or voice",
-    ],
-    questionsEyebrow: "Start anywhere",
-    questionsTitle: "What can you ask Krishna AI?",
-    questions: [
-      "I feel anxious. What should I do?",
-      "How do I stop comparing myself with others?",
-      "What does Krishna say about duty?",
-      "How do I handle family pressure?",
-      "How can I stay calm during failure?",
-      "What does the Gita say about attachment?",
-    ],
-    safetyNote:
-      "Divya Vani is an AI-based spiritual reflection tool. It does not claim to be the real Lord Krishna or divine guidance.",
-  },
-  hi: {
-    versesEyebrow: "शास्त्र पर आधारित",
-    versesTitle: "3,132 श्लोकों पर आधारित",
-    verses: [
-      { count: "701", source: "भगवद्गीता" },
-      { count: "1,704", source: "महाभारत" },
-      { count: "727", source: "भागवत पुराण" },
-    ],
-    audienceEyebrow: "किसके लिए",
-    audienceTitle: "दिव्य वाणी किसके लिए है?",
-    audience: [
-      "कृष्ण की वाणी से जुड़े रहना चाहने वाले प्रवासी भारतीय (NRIs)",
-      "भारतीय शास्त्रों में रुचि रखने वाले विश्व-भर के जिज्ञासु",
-      "कृष्ण-भक्त और गीता के अध्येता",
-      "तनाव, उलझन, रिश्ते, पारिवारिक दबाव या करियर के सवालों से जूझ रहे लोग",
-      "जो चैट या आवाज़ में आध्यात्मिक चिंतन पसंद करते हैं",
-    ],
-    questionsEyebrow: "कहीं से भी शुरू करें",
-    questionsTitle: "कृष्ण AI से क्या पूछ सकते हैं?",
-    questions: [
-      "मन बेचैन है। मैं क्या करूँ?",
-      "दूसरों से अपनी तुलना करना कैसे छोड़ूँ?",
-      "कृष्ण कर्तव्य के बारे में क्या कहते हैं?",
-      "पारिवारिक दबाव को कैसे सँभालूँ?",
-      "असफलता में शांत कैसे रहूँ?",
-      "गीता आसक्ति के बारे में क्या कहती है?",
-    ],
-    safetyNote:
-      "दिव्य वाणी एक AI-आधारित आध्यात्मिक चिंतन साधन है। यह चिकित्सा, कानूनी, वित्तीय, मानसिक-स्वास्थ्य या दैवीय सलाह नहीं है।",
-  },
+// Verse-count cards — the ONE place corpus stats appear on the landing page.
+const VERSE_CARDS = {
+  en: [
+    { count: "701", source: "Bhagavad Gita" },
+    { count: "1,704", source: "Mahabharata" },
+    { count: "727", source: "Bhagavata Purana" },
+  ],
+  hi: [
+    { count: "701", source: "\u092D\u0917\u0935\u0926\u094D\u0917\u0940\u0924\u093E" },
+    { count: "1,704", source: "\u092E\u0939\u093E\u092D\u093E\u0930\u0924" },
+    { count: "727", source: "\u092D\u093E\u0917\u0935\u0924 \u092A\u0941\u0930\u093E\u0923" },
+  ],
 } as const;
 
 export default function LandingClient() {
   const { lang, t } = useLanguage();
-  const facts = LANDING_FACTS[lang];
-  const sections = LANDING_SECTIONS[lang];
   const trustCopy = BRAND.trust[lang];
   const casualCopy = BRAND.casual[lang];
+  const verses = VERSE_CARDS[lang];
 
   // CTA + prose fonts switch with language: Devanagari for Hindi, the English
   // serif for English (rather than rendering Latin in the Devanagari face).
@@ -160,6 +48,10 @@ export default function LandingClient() {
     lang === "hi"
       ? "font-[family-name:var(--font-devanagari)] not-italic"
       : "font-[family-name:var(--font-serif)] italic";
+  const displayFont =
+    lang === "hi"
+      ? "font-[family-name:var(--font-devanagari)]"
+      : "font-[family-name:var(--font-display)]";
 
   return (
     <main className="relative flex-1 overflow-x-hidden overflow-y-auto">
@@ -180,7 +72,7 @@ export default function LandingClient() {
               href="/pricing"
               className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
             >
-              SEVĀ
+              SEV\u0100
             </Link>
             <Link
               href="/demo"
@@ -192,7 +84,7 @@ export default function LandingClient() {
               href="/chat"
               className="inline-flex min-h-9 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-1.5 text-[11px] tracking-[0.2em] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
             >
-              Begin →
+              Begin \u2192
             </Link>
           </nav>
         </header>
@@ -201,7 +93,7 @@ export default function LandingClient() {
 
         {/* Two columns, vertically centered on desktop. */}
         <div className="mt-7 grid grid-cols-1 gap-9 lg:mt-3 lg:flex-1 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-16">
-          {/* ── Arch portal (height-driven on desktop) ──────────── */}
+          {/* \u2500\u2500 Arch portal (height-driven on desktop) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
           <div className="fade-up flex justify-center [animation-delay:0ms] [animation-fill-mode:backwards]">
             <div className="w-full max-w-[280px] lg:w-auto lg:max-w-none">
               <div
@@ -230,16 +122,14 @@ export default function LandingClient() {
                 className="mx-[-7%] h-6 rounded-[4px] bg-linear-to-b from-[oklch(85%_0.06_60)] to-[oklch(75%_0.07_50)] shadow-[0_6px_14px_-6px_oklch(40%_0.08_30_/_0.3)]"
               />
               <p className="mt-4 text-center font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.34em] text-ink-faint">
-                ✦&nbsp;&nbsp;Mūrti · Vrindavan · 1521&nbsp;&nbsp;✦
+                \u2726&nbsp;&nbsp;M\u016Brti \u00B7 Vrindavan \u00B7 1521&nbsp;&nbsp;\u2726
               </p>
             </div>
           </div>
 
-          {/* ── Text composition ────────────────────────────────── */}
+          {/* \u2500\u2500 Text composition \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
           <div className="fade-up min-w-0 [animation-delay:180ms] [animation-fill-mode:backwards]">
-            {/* Conversion-focused headline — tells a first-time visitor what
-                this is in one line. The brand name stays in the masthead
-                wordmark + footer; here the value proposition leads. */}
+            {/* Hero headline */}
             <h1
               className={`text-[clamp(2.5rem,7vw,5.5rem)] font-normal leading-[0.95] text-ink ${
                 lang === "hi"
@@ -250,18 +140,28 @@ export default function LandingClient() {
               {t.landing.headline}
             </h1>
 
-            {/* Direct explanation — what you can ask + which scriptures. */}
+            {/* Subheadline */}
             <p
               className={`mt-5 max-w-[480px] text-base leading-relaxed text-ink-soft lg:text-lg ${proseFont}`}
             >
               {t.landing.subheadline}
             </p>
 
-            {/* At-a-glance trust row — verses · languages · modes · free tier.
-                Latin uses the tracked display caps; Devanagari switches to the
-                Tiro face at normal case (tracking + uppercase break matras). */}
+            {/* Supporting copy */}
             <p
-              className={`mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-faint ${
+              className={`mt-4 max-w-[480px] text-sm leading-relaxed text-ink-faint ${proseFont}`}
+            >
+              {t.landing.body}
+            </p>
+
+            {/* Trust + feature lines */}
+            <p
+              className={`mt-4 max-w-[480px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
+            >
+              {t.landing.trustLine}
+            </p>
+            <p
+              className={`mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-faint ${
                 lang === "hi"
                   ? "font-[family-name:var(--font-devanagari)] text-[13px] leading-relaxed"
                   : "font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.16em]"
@@ -271,11 +171,10 @@ export default function LandingClient() {
                 aria-hidden
                 className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(78%_0.1_12)]"
               />
-              {t.landing.trustLine}
+              {t.landing.featureLine}
             </p>
 
-            {/* CTA — consistent labels across the site: Start Chatting /
-                Try Voice / See Examples. */}
+            {/* CTAs */}
             <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
               <Link
                 href="/chat"
@@ -283,12 +182,11 @@ export default function LandingClient() {
               >
                 {t.landing.ctaAsk}
               </Link>
-              {/* Phase 10.5 — voice-to-voice mode entry (now live). */}
               <Link
                 href="/voice"
                 className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
               >
-                🎤&nbsp;{t.landing.ctaTalk}
+                \uD83C\uDFA4&nbsp;{t.landing.ctaTalk}
               </Link>
               <Link
                 href="/demo"
@@ -298,52 +196,17 @@ export default function LandingClient() {
               </Link>
             </div>
 
-            {/* Poetic line — kept, but now BELOW the direct explanation so it
-                reads as flavour, not the primary description. */}
-            <p
-              className={`mt-6 max-w-[460px] text-sm leading-relaxed text-ink-faint ${proseFont}`}
-            >
-              {t.landing.body}
-            </p>
-
-            {/* Verse-citation proof — the credibility hook for the
-                scripture-literate visitor. Kept understated (smaller, soft)
-                so it reads as a credential, not a second tagline. */}
-            <p
-              className={`mt-2 max-w-[460px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
-            >
-              {t.landing.proof}
-            </p>
-
-            {/* Privacy Card */}
-            <div className="mt-8 flex items-start gap-3 rounded-[20px] border border-[oklch(85%_0.02_50)] bg-white/40 p-4 shadow-[0_4px_20px_-8px_oklch(50%_0.1_30_/_0.15)] backdrop-blur lg:max-w-[480px]">
-              <div className="mt-0.5 shrink-0 rounded-full bg-[oklch(94%_0.03_60)] p-1.5 text-[oklch(78%_0.1_12)] shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
-              <div>
-                <p className={`text-[14px] font-medium text-ink ${ctaFont}`}>
-                  {t.landing.dataTitle}
-                </p>
-                <p className={`mt-0.5 text-[13px] leading-relaxed text-ink-soft ${proseFont}`}>
-                  {t.landing.dataDisclaimer}
-                </p>
-              </div>
-            </div>
-
             {/* Sanskrit quote */}
             <div className="mt-8 border-t border-[var(--color-ink-line)] pt-4">
               <p className="font-[family-name:var(--font-devanagari)] text-lg italic leading-[1.55] text-ink-soft">
                 {SANSKRIT}
               </p>
               <p className="mt-1.5 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.3em] text-ink-faint">
-                — Bhagavad Gita 2.47
+                \u2014 Bhagavad Gita 2.47
               </p>
             </div>
 
-            {/* Subtle identity line (Locked Decision #1) — follows the
-                language toggle; BRAND.disclaimer carries both en + hi. */}
+            {/* Subtle identity line (Locked Decision #1) */}
             <p
               className={`mt-5 text-xs leading-relaxed text-ink-faint ${proseFont}`}
             >
@@ -352,9 +215,57 @@ export default function LandingClient() {
           </div>
         </div>
 
+        {/* \u2500\u2500 What can you ask? \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
         <section
-          aria-labelledby="landing-facts-title"
+          aria-labelledby="landing-questions-title"
           className="fade-up mt-14 border-t border-[var(--color-ink-line)] pt-8 [animation-delay:360ms] [animation-fill-mode:backwards] lg:mt-10"
+        >
+          <p
+            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
+            }`}
+          >
+            {casualCopy.eyebrow}
+          </p>
+          <h2
+            id="landing-questions-title"
+            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${displayFont}`}
+          >
+            {casualCopy.title}
+          </h2>
+          <p
+            className={`mt-4 max-w-[760px] text-base leading-relaxed text-ink-soft ${proseFont}`}
+          >
+            {casualCopy.body}
+          </p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            {casualCopy.prompts.map((q, i) => (
+              <p
+                key={i}
+                className={`rounded-2xl border border-[oklch(86%_0.04_70)] bg-white/45 px-5 py-3.5 text-base leading-relaxed text-ink backdrop-blur ${
+                  lang === "hi"
+                    ? "font-[family-name:var(--font-devanagari)]"
+                    : "font-[family-name:var(--font-serif)] italic"
+                }`}
+              >
+                <span aria-hidden className="text-[var(--color-gold-leaf)]">\u201C</span>
+                {q}
+                <span aria-hidden className="text-[var(--color-gold-leaf)]">\u201D</span>
+              </p>
+            ))}
+          </div>
+          {/* "You don't need to be a scripture expert" */}
+          <p
+            className={`mt-5 max-w-[520px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
+          >
+            {t.landing.naturalLine}
+          </p>
+        </section>
+
+        {/* \u2500\u2500 Why trust Divya Vani? \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <section
+          aria-labelledby="landing-trust-title"
+          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
         >
           <p
             className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
@@ -364,86 +275,19 @@ export default function LandingClient() {
             {trustCopy.eyebrow}
           </p>
           <h2
-            id="landing-facts-title"
-            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-display)]"
-            }`}
+            id="landing-trust-title"
+            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${displayFont}`}
           >
             {trustCopy.title}
           </h2>
           <p
-            className={`mt-4 max-w-[760px] text-base leading-relaxed text-ink-soft ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-serif)] italic"
-            }`}
+            className={`mt-4 max-w-[760px] text-base leading-relaxed text-ink-soft ${proseFont}`}
           >
             {trustCopy.body}
           </p>
-          <p
-            className={`mt-3 max-w-[760px] text-sm leading-relaxed text-ink-soft ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-serif)] italic"
-            }`}
-          >
-            {trustCopy.supporting}
-          </p>
-          <div className="mt-7 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {facts.items.map((item) => (
-              <article
-                key={item.question}
-                className="border-t border-[var(--color-ink-line)] pt-4"
-              >
-                <h3
-                  className={`text-lg font-normal leading-snug text-ink ${
-                    lang === "hi"
-                      ? "font-[family-name:var(--font-devanagari)]"
-                      : "font-[family-name:var(--font-display)]"
-                  }`}
-                >
-                  {item.question}
-                </h3>
-                <p
-                  className={`mt-2 text-sm leading-relaxed text-ink-soft ${
-                    lang === "hi"
-                      ? "font-[family-name:var(--font-devanagari)]"
-                      : "font-[family-name:var(--font-serif)] italic"
-                  }`}
-                >
-                  {item.answer}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Trust badge — corpus breakdown (3,132 verses) ──────────── */}
-        <section
-          aria-labelledby="landing-verses-title"
-          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
-        >
-          <p
-            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
-              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
-            }`}
-          >
-            {sections.versesEyebrow}
-          </p>
-          <h2
-            id="landing-verses-title"
-            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-display)]"
-            }`}
-          >
-            {sections.versesTitle}
-          </h2>
+          {/* Verse-count cards — the single place corpus breakdown appears. */}
           <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {sections.verses.map((v) => (
+            {verses.map((v) => (
               <div
                 key={v.source}
                 className="rounded-[20px] border border-[oklch(86%_0.04_70)] bg-white/55 px-6 py-6 text-center shadow-[0_8px_24px_-16px_oklch(40%_0.08_30_/_0.25)] backdrop-blur"
@@ -463,104 +307,36 @@ export default function LandingClient() {
               </div>
             ))}
           </div>
+          {/* Goal line */}
+          <p
+            className={`mt-6 max-w-[520px] text-sm leading-relaxed text-ink-soft ${proseFont}`}
+          >
+            {t.landing.goalLine}
+          </p>
         </section>
 
-        {/* ── Who is this for ────────────────────────────────────────── */}
-        <section
-          aria-labelledby="landing-audience-title"
-          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
-        >
-          <p
-            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
-              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
-            }`}
-          >
-            {sections.audienceEyebrow}
-          </p>
-          <h2
-            id="landing-audience-title"
-            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-display)]"
-            }`}
-          >
-            {sections.audienceTitle}
-          </h2>
-          <div className="mt-7 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {sections.audience.map((item, i) => (
-              <article
-                key={i}
-                className="flex gap-3 border-t border-[var(--color-ink-line)] pt-4"
-              >
-                <span
-                  aria-hidden
-                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45 bg-[oklch(78%_0.1_12)]"
-                />
-                <p
-                  className={`text-base leading-relaxed text-ink-soft ${
-                    lang === "hi"
-                      ? "font-[family-name:var(--font-devanagari)]"
-                      : "font-[family-name:var(--font-serif)] italic"
-                  }`}
-                >
-                  {item}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* ── What can you ask — example questions (display only; /chat
-            has no prefill, so these are illustrative, with a Start
-            Chatting CTA below) ───────────────────────────────────────── */}
-        <section
-          aria-labelledby="landing-questions-title"
-          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
-        >
-          <p
-            className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
-              lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
-            }`}
-          >
-            {casualCopy.eyebrow}
-          </p>
-          <h2
-            id="landing-questions-title"
-            className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-display)]"
-            }`}
-          >
-            {casualCopy.title}
-          </h2>
-          <p
-            className={`mt-4 max-w-[760px] text-base leading-relaxed text-ink-soft ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-serif)] italic"
-            }`}
-          >
-            {casualCopy.body}
-          </p>
-          <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            {casualCopy.prompts.map((q, i) => (
-              <p
-                key={i}
-                className={`rounded-2xl border border-[oklch(86%_0.04_70)] bg-white/45 px-5 py-3.5 text-base leading-relaxed text-ink backdrop-blur ${
-                  lang === "hi"
-                    ? "font-[family-name:var(--font-devanagari)]"
-                    : "font-[family-name:var(--font-serif)] italic"
-                }`}
-              >
-                <span aria-hidden className="text-[var(--color-gold-leaf)]">“</span>
-                {q}
-                <span aria-hidden className="text-[var(--color-gold-leaf)]">”</span>
+        {/* \u2500\u2500 Private by design \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <section className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12">
+          <div className="flex items-start gap-3 rounded-[20px] border border-[oklch(85%_0.02_50)] bg-white/40 p-5 shadow-[0_4px_20px_-8px_oklch(50%_0.1_30_/_0.15)] backdrop-blur lg:max-w-[560px]">
+            <div className="mt-0.5 shrink-0 rounded-full bg-[oklch(94%_0.03_60)] p-1.5 text-[oklch(78%_0.1_12)] shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <div>
+              <p className={`text-[14px] font-medium text-ink ${ctaFont}`}>
+                {t.landing.dataTitle}
               </p>
-            ))}
+              <p className={`mt-0.5 text-[13px] leading-relaxed text-ink-soft ${proseFont}`}>
+                {t.landing.dataDisclaimer}
+              </p>
+            </div>
           </div>
-          <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
+        </section>
+
+        {/* \u2500\u2500 Bottom CTAs + Disclaimer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        <section className="mt-10 border-t border-[var(--color-ink-line)] pt-8 lg:mt-10">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <Link
               href="/chat"
               className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
@@ -571,7 +347,7 @@ export default function LandingClient() {
               href="/voice"
               className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
             >
-              🎤&nbsp;{t.landing.ctaTalk}
+              \uD83C\uDFA4&nbsp;{t.landing.ctaTalk}
             </Link>
             <Link
               href="/pricing"
@@ -581,15 +357,15 @@ export default function LandingClient() {
             </Link>
           </div>
 
-          {/* Safety / scope disclaimer — visible but calm. */}
+          {/* Full disclaimer — visible, calm */}
           <p
-            className={`mt-10 max-w-[680px] text-xs leading-relaxed text-ink-faint ${
-              lang === "hi"
-                ? "font-[family-name:var(--font-devanagari)]"
-                : "font-[family-name:var(--font-serif)] italic"
-            }`}
+            className={`mt-8 max-w-[680px] text-xs leading-relaxed text-ink-faint ${proseFont}`}
           >
             {BRAND.disclaimer[lang]}
+            {" "}
+            {lang === "hi"
+              ? "यह चिकित्सा, कानूनी, वित्तीय या मानसिक-स्वास्थ्य सलाह नहीं है।"
+              : "It is not therapy, medical, legal, or financial advice."}
           </p>
         </section>
       </div>

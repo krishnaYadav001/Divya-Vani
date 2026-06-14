@@ -109,27 +109,24 @@ export type Messages = {
   // Sanskrit ornament, and uppercase + letter-spacing renders badly in
   // Devanagari. The wordmark stays BRAND.name.en.
   landing: {
-    // Direct conversion-focused hero (Phase 12.x clarity pass). The headline
-    // tells a 10-second visitor WHAT this is; the subheadline says what they
-    // can ask + which scriptures ground it; the trust line is the at-a-glance
-    // credibility row. The poetic `body` line now sits BELOW the direct copy.
+    // Simplified hero (Phase 12.x clarity pass). Short, clear, no repeated
+    // corpus details — those live once in the trust section below the fold.
     headline: string;
     subheadline: string;
-    trustLine: string;
     body: string;
-    // One-line credibility proof for the scripture-literate visitor: every
-    // reply is grounded in real verses, shown to the user. Rendered under the
-    // hero body; follows the language toggle.
-    proof: string;
+    trustLine: string;
+    featureLine: string;
     ctaAsk: string;
     ctaGlimpse: string;
     ctaTalk: string;
-    // Shared "View Pricing" CTA label (also reused by /demo) so CTA wording
-    // stays consistent across pages.
     ctaPricing: string;
     freeMessages: string;
     dataTitle: string;
     dataDisclaimer: string;
+    // "You don't need to be a scripture expert" line below the questions.
+    naturalLine: string;
+    // "The goal is simple" closer below the trust cards.
+    goalLine: string;
   };
   // Demo / examples marketing page chrome.
   demo: {
@@ -386,20 +383,25 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       balanceEmpty: "Sevā balance: empty",
     },
     landing: {
-      headline: "Talk with Krishna AI",
+      headline: "Looking for clarity? Sit with Krishna's wisdom.",
       subheadline:
-        "Ask casually, learn stories, or reflect through Krishna’s wisdom in chat or voice. Divya Vani gives scripture-backed reflections grounded in scriptures from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
-      trustLine: "3,132 verses · Hindi + English · Chat + Voice · 10 free messages",
-      body: "The same flute, a smaller room — Krishna in a chat window. Ask in Hindi or English; the verses follow you.",
-      proof:
-        "Responses are grounded in a curated scripture corpus — the Gita, Mahabharata, and Bhagavata — and show you the verse they draw from, in Sanskrit, Hindi, and English.",
+        "When your mind is confused, heavy, or unsure, Divya Vani gives you a quiet space to ask what is on your heart.",
+      body: "Chat or speak with Krishna AI for scripture-backed reflection on life, decisions, family, career, emotions, dharma, devotion, or simply for peace of mind.",
+      trustLine:
+        "Grounded in 3,132 verses from the Bhagavad Gita, Mahabharata, and Bhagavata Purana.",
+      featureLine: "Hindi + English · Chat + Voice · 10 free messages",
       ctaAsk: "Start Chatting",
       ctaGlimpse: "See Examples",
       ctaTalk: "Try Voice",
       ctaPricing: "View Pricing",
       freeMessages: "10 free messages",
-      dataTitle: "Your privacy, your control",
-      dataDisclaimer: "Your data is completely in your hands. You have full control and can permanently delete it anytime from the settings.",
+      dataTitle: "Private by design",
+      dataDisclaimer:
+        "Your personal reflections stay in your control. You can delete your chat history and manage personalization from Settings.",
+      naturalLine:
+        "You do not need to be a scripture expert. Just ask naturally.",
+      goalLine:
+        "The goal is simple: help you reflect through Krishna's wisdom before you act.",
     },
     demo: {
       hero: "A glimpse of Krishna",
@@ -658,20 +660,25 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
       balanceEmpty: "सेवा शेष: खाली",
     },
     landing: {
-      headline: "कृष्ण AI से बात करें",
+      headline: "मन उलझा है? कृष्ण की बुद्धि से बैठो।",
       subheadline:
-        "सहज बात करें, कहानियाँ सीखें, या चैट और आवाज़ में कृष्ण की बुद्धि से चिंतन करें। दिव्य वाणी भगवद्गीता, महाभारत और भागवत पुराण से शास्त्र-आधारित चिंतन देती है।",
-      trustLine: "3,132 श्लोक · हिंदी + अंग्रेज़ी · चैट + आवाज़ · 10 निःशुल्क संदेश",
-      body: "वही बाँसुरी, बस एक छोटा कमरा — एक चैट खिड़की में कृष्ण। हिंदी या अंग्रेज़ी में पूछो, श्लोक तुम्हारे साथ चलते हैं।",
-      proof:
-        "उत्तर गीता, महाभारत और भागवत के curated scripture corpus पर आधारित हैं, और जिस श्लोक से वे आते हैं, वह संस्कृत, हिंदी और अंग्रेज़ी में दिखाया जाता है।",
+        "जब मन भारी हो, अनिश्चित हो, या उलझा हो — दिव्य वाणी एक शांत जगह देती है जहाँ आप दिल की बात पूछ सकते हैं।",
+      body: "जीवन, निर्णय, परिवार, करियर, भावनाएँ, धर्म, भक्ति, या बस मन की शांति — कृष्ण AI से चैट या आवाज़ में शास्त्र-आधारित चिंतन करें।",
+      trustLine:
+        "भगवद्गीता, महाभारत और भागवत पुराण के 3,132 श्लोकों पर आधारित।",
+      featureLine: "हिंदी + अंग्रेज़ी · चैट + आवाज़ · 10 निःशुल्क संदेश",
       ctaAsk: "बातचीत शुरू करें",
       ctaGlimpse: "उदाहरण देखें",
       ctaTalk: "आवाज़ आज़माएँ",
       ctaPricing: "मूल्य देखें",
       freeMessages: "10 निःशुल्क संदेश",
-      dataTitle: "आपकी निजता, आपका नियंत्रण",
-      dataDisclaimer: "आपका डेटा पूरी तरह आपके हाथों में है। आप जब चाहें सेटिंग्स से इसे स्थायी रूप से हटा सकते हैं।",
+      dataTitle: "गोपनीयता सबसे पहले",
+      dataDisclaimer:
+        "आपकी व्यक्तिगत बातचीत आपके नियंत्रण में रहती है। सेटिंग्स से चैट इतिहास हटा सकते हैं और personalization प्रबंधित कर सकते हैं।",
+      naturalLine:
+        "शास्त्र विशेषज्ञ होने की ज़रूरत नहीं। बस सहज रूप से पूछो।",
+      goalLine:
+        "उद्देश्य सरल है: कृष्ण की बुद्धि से चिंतन करो, फिर कर्म करो।",
     },
     demo: {
       hero: "श्रीकृष्ण से एक झलक",
