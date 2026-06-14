@@ -13,8 +13,6 @@ import { useLanguage } from "../providers/LanguageProvider";
 // below-fold blocks: "What can you ask?", "Why trust?", and "Private by
 // design". Scripture corpus details appear exactly ONCE (the verse cards).
 
-const SANSKRIT = "\u201C\u0915\u0930\u094D\u092E\u0923\u094D\u092F\u0947\u0935\u093E\u0927\u093F\u0915\u093E\u0930\u0938\u094D\u0924\u0947 \u092E\u093E \u092B\u0932\u0947\u0937\u0941 \u0915\u0926\u093E\u091A\u0928\u0964\u201D";
-
 const ARCH_SHADOW =
   "0 28px 70px -30px oklch(35% 0.08 30 / .35), 0 0 0 1px oklch(78% 0.06 60), inset 0 0 0 6px rgba(255,255,255,.5)";
 
@@ -72,7 +70,7 @@ export default function LandingClient() {
               href="/pricing"
               className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
             >
-              SEV\u0100
+              SEVĀ
             </Link>
             <Link
               href="/demo"
@@ -84,7 +82,7 @@ export default function LandingClient() {
               href="/chat"
               className="inline-flex min-h-9 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-1.5 text-[11px] tracking-[0.2em] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
             >
-              Begin \u2192
+              Begin →
             </Link>
           </nav>
         </header>
@@ -122,7 +120,7 @@ export default function LandingClient() {
                 className="mx-[-7%] h-6 rounded-[4px] bg-linear-to-b from-[oklch(85%_0.06_60)] to-[oklch(75%_0.07_50)] shadow-[0_6px_14px_-6px_oklch(40%_0.08_30_/_0.3)]"
               />
               <p className="mt-4 text-center font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.34em] text-ink-faint">
-                \u2726&nbsp;&nbsp;M\u016Brti \u00B7 Vrindavan \u00B7 1521&nbsp;&nbsp;\u2726
+                ✦&nbsp;&nbsp;Mūrti · Vrindavan · 1521&nbsp;&nbsp;✦
               </p>
             </div>
           </div>
@@ -186,7 +184,7 @@ export default function LandingClient() {
                 href="/voice"
                 className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
               >
-                \uD83C\uDFA4&nbsp;{t.landing.ctaTalk}
+                🎤&nbsp;{t.landing.ctaTalk}
               </Link>
               <Link
                 href="/demo"
@@ -196,22 +194,24 @@ export default function LandingClient() {
               </Link>
             </div>
 
-            {/* Sanskrit quote */}
-            <div className="mt-8 border-t border-[var(--color-ink-line)] pt-4">
-              <p className="font-[family-name:var(--font-devanagari)] text-lg italic leading-[1.55] text-ink-soft">
-                {SANSKRIT}
-              </p>
-              <p className="mt-1.5 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.3em] text-ink-faint">
-                \u2014 Bhagavad Gita 2.47
-              </p>
+            {/* Private by design */}
+            <div className="mt-8 border-t border-[var(--color-ink-line)] pt-6">
+              <div className="flex items-start gap-3 rounded-[20px] border border-[oklch(85%_0.02_50)] bg-white/40 p-5 shadow-[0_4px_20px_-8px_oklch(50%_0.1_30_/_0.15)] backdrop-blur lg:max-w-[560px]">
+                <div className="mt-0.5 shrink-0 rounded-full bg-[oklch(94%_0.03_60)] p-1.5 text-[oklch(78%_0.1_12)] shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className={`text-[14px] font-medium text-ink ${ctaFont}`}>
+                    {t.landing.dataTitle}
+                  </p>
+                  <p className={`mt-0.5 text-[13px] leading-relaxed text-ink-soft ${proseFont}`}>
+                    {t.landing.dataDisclaimer}
+                  </p>
+                </div>
+              </div>
             </div>
-
-            {/* Subtle identity line (Locked Decision #1) */}
-            <p
-              className={`mt-5 text-xs leading-relaxed text-ink-faint ${proseFont}`}
-            >
-              {BRAND.disclaimer[lang]}
-            </p>
           </div>
         </div>
 
@@ -248,9 +248,9 @@ export default function LandingClient() {
                     : "font-[family-name:var(--font-serif)] italic"
                 }`}
               >
-                <span aria-hidden className="text-[var(--color-gold-leaf)]">\u201C</span>
+                <span aria-hidden className="text-[var(--color-gold-leaf)]">“</span>
                 {q}
-                <span aria-hidden className="text-[var(--color-gold-leaf)]">\u201D</span>
+                <span aria-hidden className="text-[var(--color-gold-leaf)]">”</span>
               </p>
             ))}
           </div>
@@ -315,26 +315,7 @@ export default function LandingClient() {
           </p>
         </section>
 
-        {/* \u2500\u2500 Private by design \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
-        <section className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12">
-          <div className="flex items-start gap-3 rounded-[20px] border border-[oklch(85%_0.02_50)] bg-white/40 p-5 shadow-[0_4px_20px_-8px_oklch(50%_0.1_30_/_0.15)] backdrop-blur lg:max-w-[560px]">
-            <div className="mt-0.5 shrink-0 rounded-full bg-[oklch(94%_0.03_60)] p-1.5 text-[oklch(78%_0.1_12)] shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </div>
-            <div>
-              <p className={`text-[14px] font-medium text-ink ${ctaFont}`}>
-                {t.landing.dataTitle}
-              </p>
-              <p className={`mt-0.5 text-[13px] leading-relaxed text-ink-soft ${proseFont}`}>
-                {t.landing.dataDisclaimer}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* \u2500\u2500 Bottom CTAs + Disclaimer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+        {/* ────── Bottom CTAs + Disclaimer ─────────────────────────── */}
         <section className="mt-10 border-t border-[var(--color-ink-line)] pt-8 lg:mt-10">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <Link
@@ -347,7 +328,7 @@ export default function LandingClient() {
               href="/voice"
               className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
             >
-              \uD83C\uDFA4&nbsp;{t.landing.ctaTalk}
+              🎤&nbsp;{t.landing.ctaTalk}
             </Link>
             <Link
               href="/pricing"
