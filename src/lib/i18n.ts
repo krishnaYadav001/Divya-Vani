@@ -82,6 +82,24 @@ export type Messages = {
       vad_load_failed: string;
       transcription_failed: string;
     };
+    // Phase-1 engagement actions rendered under each Krishna reply.
+    // *Label fields are the button text; *Prompt fields are the text
+    // prefilled into the composer (sent as the user's next message, so
+    // they follow the user's input language per locked decision #12).
+    actions: {
+      copy: string;
+      copied: string;
+      explainSimply: string;
+      gitaVerse: string;
+      stepByStep: string;
+      followUp: string;
+      share: string;
+      explainSimplyPrompt: string;
+      gitaVersePrompt: string;
+      stepByStepPrompt: string;
+      followUpPrompt: string;
+      shareText: string;
+    };
   };
   // Seva paywall invitation line (the eyebrow "Seva · सेवा" stays a fixed
   // bilingual brand label and is not keyed) + the pre-checkout consent gate.
@@ -364,6 +382,20 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
           "Voice feature failed to load. Please try again in a moment.",
         transcription_failed: "Transcription unavailable right now. Try again.",
       },
+      actions: {
+        copy: "Copy",
+        copied: "Copied",
+        explainSimply: "Explain simply",
+        gitaVerse: "Give me a Gita verse",
+        stepByStep: "Guide me step by step",
+        followUp: "Ask follow-up",
+        share: "Share",
+        explainSimplyPrompt: "Explain this in simpler words.",
+        gitaVersePrompt: "Give me a relevant Gita verse for this.",
+        stepByStepPrompt: "Guide me step by step.",
+        followUpPrompt: "I want to ask a follow-up about this.",
+        shareText: "A reflection from Divya Vani — a quiet conversation with Krishna.",
+      },
     },
     paywall: {
       tagline:
@@ -640,6 +672,20 @@ export const UI_MESSAGES: Record<Lang, Messages> = {
         vad_load_failed: "Voice feature load नहीं हुआ। थोड़ी देर बाद try करो।",
         transcription_failed:
           "अभी बातचीत transcribe नहीं हो पा रही। थोड़ी देर बाद try करो।",
+      },
+      actions: {
+        copy: "कॉपी करें",
+        copied: "कॉपी हो गया",
+        explainSimply: "आसान शब्दों में समझाएँ",
+        gitaVerse: "गीता का एक श्लोक दो",
+        stepByStep: "कदम-दर-कदम बताओ",
+        followUp: "और पूछें",
+        share: "साझा करें",
+        explainSimplyPrompt: "इसे आसान शब्दों में समझाओ।",
+        gitaVersePrompt: "इसके लिए गीता का एक श्लोक दो।",
+        stepByStepPrompt: "मुझे कदम-दर-कदम मार्गदर्शन दो।",
+        followUpPrompt: "मैं इस बारे में एक और प्रश्न पूछना चाहता हूँ।",
+        shareText: "दिव्य वाणी से एक चिंतन — कृष्ण के साथ एक शांत बातचीत।",
       },
     },
     paywall: {

@@ -59,7 +59,10 @@ const SOCIAL_LINKS = [
 export default function SiteFooter() {
   const pathname = usePathname();
   const { lang, toggle, t } = useLanguage();
-  if (pathname === "/voice") return null;
+  // The chat and voice surfaces are full-height app shells with their own
+  // bottom chrome (composer / mic). A site footer below them adds clutter
+  // and competes with the input row, so it's suppressed on both.
+  if (pathname === "/voice" || pathname === "/chat") return null;
 
   return (
     <footer className="shrink-0 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom,0px))] text-center text-sm text-brass-dark">

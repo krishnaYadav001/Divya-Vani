@@ -436,6 +436,18 @@ body {
   background: transparent;
 }
 
+/* Phase-1 engagement action row — horizontally scrollable on narrow
+   mobile widths without a visible scrollbar so the chat surface stays
+   clean. The row still scrolls via touch/trackpad; only the bar chrome
+   is hidden. */
+.dv-action-row {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+.dv-action-row::-webkit-scrollbar {
+  display: none; /* Chromium / WebKit */
+}
+
 /* ── Night theme — /voice (Krishna at his flute) ──────────────────────
    The voice page is the NIGHT counterpart of the Dawn pastel system:
    a deep midnight ground, a quiet starfield, the Krishna-with-flute
