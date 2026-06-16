@@ -51,6 +51,7 @@ import {
   MODERATION_THRESHOLD,
   type ModerationFlag,
 } from "@/lib/moderation";
+import { attributeReferral, qualifyAndCreditReferral } from "@/lib/referral";
 
 const client = new Anthropic();
 const USER_COOKIE = "god_messenger_uid";
@@ -497,6 +498,8 @@ export async function POST(req: Request) {
   const body = (await req.json()) as {
     message?: unknown;
     freshTopic?: unknown;
+    ref?: unknown;
+    refStoredAt?: unknown;
   };
   const rawMessage = body.message;
   const freshTopic = body.freshTopic === true;
@@ -570,6 +573,31 @@ export async function POST(req: Request) {
   const priorCount = priorMemory?.message_count ?? 0;
   const sevaBalance = priorMemory?.seva_balance ?? 0;
   const isFirstTime = priorMemory?.is_first_time !== false;
+
+  // Referral attribution — for a referred user who has not chatted yet and is
+  // carrying a stored ref. The gate is priorCount === 0 (no completed turns),
+  // NOT isNewUser: page-load routes (/api/visits, /api/voice/bootstrap, /api/me)
+  // can mint the god_messenger_uid cookie before the first chat message, so by
+  // the time the referred person actually sends a message isNewUser is already
+  // false. Anyone with priorCount > 0 has genuinely chatted before and is
+  // rejected server-side by attributeReferral's pre-existing-user guard.
+  // Fully isolated: any failure must never affect the chat response. Runs before
+  // the heavy AI work so the pending referral exists before qualification could
+  // ever fire in persistTurnState.
+  if (priorCount === 0 && typeof body.ref === "string" && body.ref.length > 0) {
+    const refCode = body.ref;
+    const refStoredAt =
+      typeof body.refStoredAt === "string" ? body.refStoredAt : undefined;
+    try {
+      await attributeReferral({
+        referrerCode: refCode,
+        referredUserId: userId,
+        refStoredAt,
+      });
+    } catch (e) {
+      console.error("[referral] attribution hook threw:", e);
+    }
+  }
 
   // Charge precedence (Phase 9): free pool → active subscription → seva.
   //   • onFreePool: still inside the free allowance (bump message_count).
@@ -979,6 +1007,16 @@ export async function POST(req: Request) {
           console.warn("[chat_logs] background insert failed:", err);
         }),
       );
+    }
+
+    // Referral qualification — when the referred user reaches the 3-message
+    // threshold, credit the referrer exactly once. Idempotent + isolated.
+    if (onFreePool && typeof nextMessageCount === "number" && nextMessageCount >= 3) {
+      try {
+        await qualifyAndCreditReferral(userId);
+      } catch (e) {
+        console.error("[referral] qualification hook threw:", e);
+      }
     }
   }
 

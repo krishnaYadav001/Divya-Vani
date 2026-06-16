@@ -18,6 +18,8 @@ import { track } from "@/lib/tracking";
 const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import SevaPaywall from "./SevaPaywall";
 import SevaHubModal from "./SevaHubModal";
+import ShareDivyaVani from "./ShareDivyaVani";
+import { readStoredRef, clearStoredRef } from "@/lib/referralCapture";
 import MorningQuoteCard from "./MorningQuoteCard";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
@@ -26,6 +28,7 @@ import DiyaIcon from "./motifs/DiyaIcon";
 import PeacockFeather from "./motifs/PeacockFeather";
 import Atmosphere from "./Atmosphere";
 import { useLanguage } from "../providers/LanguageProvider";
+import type { Messages } from "@/lib/i18n";
 
 
 export default function ChatUI() {
@@ -121,6 +124,11 @@ export default function ChatUI() {
   const [disclaimerExpanded, setDisclaimerExpanded] = useState(true);
   // Phase 9 — the seva/plans hub modal (opened from the header diya icon).
   const [hubOpen, setHubOpen] = useState(false);
+  // Referral_Reward_System — the Share Divya Vani panel (opened from the
+  // header gift icon, sibling to the Settings gear / seva diya). Renders
+  // <ShareDivyaVani /> (self-contained, reads /api/referral) in a simple
+  // fixed overlay that closes on backdrop click or the close control.
+  const [showShare, setShowShare] = useState(false);
   // Morning-quote opt-in card. Shows after 5 messages to engaged users.
   // mqEligible is set once from localStorage on mount; stays false if the
   // user already subscribed or dismissed within the last 7 days.
@@ -322,18 +330,6 @@ export default function ChatUI() {
     }
   }, [messages, isSending, userId]);
 
-  function handleStartFresh() {
-    if (isSending) return;
-    freshTopicNextRef.current = true;
-    if (isListening) stopSession();
-    dismissMicError();
-    setServerModerationWarning(null);
-    setInput("");
-    setMessages([]);
-    if (userId) clearSession(userId);
-    track("chat_start_fresh");
-  }
-
   function focusComposer() {
     textareaRef.current?.focus();
     requestAnimationFrame(() => textareaRef.current?.focus());
@@ -347,6 +343,45 @@ export default function ChatUI() {
     if (prompt.trim()) setInput(prompt);
     focusComposer();
     track("chat_prompt_selected", { label });
+  }
+
+  // Phase-1 engagement actions (rendered under each Krishna reply by
+  // MessageCard). Prefill drops a canned next-step into the composer
+  // and focuses it — it does NOT auto-send, so the user can edit or
+  // cancel. Reuses the same guards as handlePromptCategory (no-op while
+  // sending, stops an active mic session, clears stale warnings).
+  function handleActionPrefill(prompt: string, action: string) {
+    if (isSending) return;
+    if (isListening) stopSession();
+    dismissMicError();
+    setServerModerationWarning(null);
+    if (prompt.trim()) setInput(prompt);
+    focusComposer();
+    track("chat_action", { action });
+  }
+
+  // Native share when available (mobile), else copy share text + URL to
+  // clipboard. Both paths silent-fail (e.g. user dismisses the share
+  // sheet → AbortError) so a cancelled share never surfaces an error.
+  async function handleActionShare(text: string) {
+    const url = typeof window !== "undefined" ? window.location.href : BRAND.url;
+    const shareText = `${t.chat.actions.shareText}\n\n${text}`;
+    track("chat_action", { action: "share" });
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({
+          title: BRAND.name.en,
+          text: shareText,
+          url,
+        });
+        return;
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(`${shareText}\n\n${url}`);
+      }
+    } catch {
+      /* user cancelled share sheet or clipboard denied — silent */
+    }
   }
 
   async function sendMessage(textOverride?: string) {
@@ -372,6 +407,13 @@ export default function ChatUI() {
     if (isFirstTime) setIsFirstTime(false);
 
     try {
+      // Referral_Reward_System — read the stored invite code ONCE just
+      // before the request. When present, it rides along on this chat
+      // POST as { ref, refStoredAt }; server-side attribution applies only
+      // to brand-new identities. We clear it immediately after the fetch
+      // resolves (below) so it is sent at most once (Req 3.1, 4.1).
+      const storedRef = readStoredRef();
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -383,8 +425,21 @@ export default function ChatUI() {
           // at the top of src/app/api/chat/route.ts.
           Accept: "application/x-ndjson",
         },
-        body: JSON.stringify({ message: text, freshTopic }),
+        body: JSON.stringify({
+          message: text,
+          freshTopic,
+          ...(storedRef
+            ? { ref: storedRef.code, refStoredAt: storedRef.stored_at }
+            : {}),
+        }),
       });
+
+      // Consume the stored ref now that the request was actually issued
+      // (a network failure throws above and skips this, leaving the ref in
+      // place so a retry can still carry it). Clearing on a non-new user is
+      // fine — attribution is server-side and only applies to brand-new
+      // identities; the code is consumed at first chat submission per design.
+      if (storedRef) clearStoredRef();
 
       if (!res.ok) {
         // Phase 7.0 — 400 {error:"moderation"} from the server-side
@@ -1230,6 +1285,23 @@ export default function ChatUI() {
             >
               <SettingsIcon className="h-6 w-6" />
             </Link>
+            {/* Referral_Reward_System — Share Divya Vani entry. Sits beside
+                the Settings gear / seva diya, same icon-button idiom (44×44
+                tap target, gold-leaf text-devotional, focus ring). Opens a
+                lightweight overlay hosting <ShareDivyaVani /> (which fetches
+                /api/referral itself). aria-label keeps it discoverable with
+                no visible text, matching the sibling controls. */}
+            <button
+              type="button"
+              onClick={() => setShowShare(true)}
+              aria-label="Share Divya Vani"
+              title="Share Divya Vani"
+              aria-haspopup="dialog"
+              aria-expanded={showShare}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
+            >
+              <GiftIcon className="h-6 w-6" />
+            </button>
             {/* Seva / Plans — the single monetization hub (Phase 9, founder
                 2026-05-27). Opens the SevaHubModal (Plans + Seva tabs); all
                 payment lives here now, not in Settings. The in-chat SevaPaywall
@@ -1255,6 +1327,50 @@ export default function ChatUI() {
         onClose={() => setHubOpen(false)}
         initialTab="seva"
       />
+
+      {/* Referral_Reward_System — Share Divya Vani overlay. A simple fixed
+          backdrop that closes on click; the inner panel (stopPropagation so
+          taps inside don't dismiss) hosts the self-contained <ShareDivyaVani />
+          plus a labelled close control. Scrollable + max-h capped so it stays
+          usable on a 360px viewport. Dawn Aarti tokens (ink-line / parchment)
+          match the rest of the chrome. */}
+      {showShare && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Share Divya Vani"
+          onClick={() => setShowShare(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-h-[90vh] w-full max-w-md overflow-y-auto"
+          >
+            <button
+              type="button"
+              onClick={() => setShowShare(false)}
+              aria-label="Close"
+              title="Close"
+              className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-ink-soft transition-colors hover:bg-white/60 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-leaf/40"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <ShareDivyaVani />
+          </div>
+        </div>
+      )}
 
       {/* Disclaimer — full bilingual bar auto-shows on every mount for
           5s (the legally load-bearing exposure — UNCHANGED), then the
@@ -1361,6 +1477,15 @@ export default function ChatUI() {
                   message={m}
                   userLang={resolveUserLang(messages, i)}
                   onPaywallSuccess={() => handlePaywallSuccess(m.id)}
+                  actionLabels={t.chat.actions}
+                  // Hide the action row while this exact message is still
+                  // streaming (last bubble + isSending) so buttons don't
+                  // flicker in mid-token. They appear once the turn lands.
+                  showActions={
+                    !(isSending && i === messages.length - 1)
+                  }
+                  onPrefill={handleActionPrefill}
+                  onShare={handleActionShare}
                 />
               ))}
               {isSending && messages[messages.length - 1]?.role === "user" && (
@@ -1398,23 +1523,6 @@ export default function ChatUI() {
           </div>
 
           <div className="relative z-10 border-t border-brass/30 bg-parchment/70 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
-            {messages.length > 0 && (
-              <div className="mb-2 flex justify-center">
-                <button
-                  type="button"
-                  onClick={handleStartFresh}
-                  disabled={isSending}
-                  className={`inline-flex min-h-10 items-center gap-2 rounded-full border border-gold/25 bg-ink2/50 px-4 py-2 text-xs text-gold-dim shadow-[0_1px_0_rgba(0,0,0,0.25)_inset] transition-colors hover:border-gold/45 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold/35 disabled:cursor-not-allowed disabled:opacity-45 ${
-                    lang === "hi"
-                      ? "font-devanagari"
-                      : "font-[family-name:var(--font-serif)] italic"
-                  }`}
-                >
-                  <FreshTopicIcon className="h-4 w-4" />
-                  <span>{t.chat.ariaStartFresh}</span>
-                </button>
-              </div>
-            )}
             {inputBlock}
           </div>
         </>
@@ -1459,10 +1567,18 @@ function MessageCard({
   message,
   userLang,
   onPaywallSuccess,
+  actionLabels,
+  showActions,
+  onPrefill,
+  onShare,
 }: {
   message: Message;
   userLang: "hi" | "en";
   onPaywallSuccess: () => void;
+  actionLabels: Messages["chat"]["actions"];
+  showActions: boolean;
+  onPrefill: (prompt: string, action: string) => void;
+  onShare: (text: string) => void;
 }) {
   const isUser = message.role === "user";
   const hasVerses =
@@ -1537,6 +1653,21 @@ function MessageCard({
             <VerseCardList verses={message.verses!} lang={userLang} />
           </div>
         )}
+        {/* Phase-1 engagement actions — only under a landed Krishna reply
+            that has text and isn't a paywall card. Kept on a single
+            horizontally-scrollable row so the mobile chat stays clean. */}
+        {!isUser &&
+          showActions &&
+          !showPaywall &&
+          message.content.trim().length > 0 && (
+            <MessageActions
+              text={message.content}
+              labels={actionLabels}
+              isHi={contentLang === "hi"}
+              onPrefill={onPrefill}
+              onShare={onShare}
+            />
+          )}
         {!isUser && message.safety_card && (
           <SafetyCardView card={message.safety_card} />
         )}
@@ -1544,6 +1675,117 @@ function MessageCard({
           <SevaPaywall tiers={message.tiers!} onSuccess={onPaywallSuccess} />
         )}
       </div>
+    </div>
+  );
+}
+
+// Phase-1 engagement action row. Lives under each landed Krishna reply.
+// One horizontally-scrollable row of compact pill buttons so the mobile
+// chat surface stays uncluttered (no wrapping into tall blocks). Copy
+// shows a transient "Copied" confirmation; Share sits right beside Copy
+// (the two "do something with THIS reply" actions grouped together) and
+// wears a calmer peacock-teal accent so it reads as distinct-but-soft
+// against the gold prompt pills. Speak this is intentionally omitted —
+// no TTS system exists in v1 (locked decision #9: TTS is Phase 10). All
+// prefill actions route through onPrefill (drop text into composer, no
+// auto-send). "Start new topic" was removed from this row: it duplicated
+// the dedicated "Start fresh" pill above the composer (both call the same
+// handleStartFresh) — one control is kept to avoid redundancy.
+function MessageActions({
+  text,
+  labels,
+  isHi,
+  onPrefill,
+  onShare,
+}: {
+  text: string;
+  labels: Messages["chat"]["actions"];
+  isHi: boolean;
+  onPrefill: (prompt: string, action: string) => void;
+  onShare: (text: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  async function handleCopy() {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+        track("chat_action", { action: "copy" });
+      }
+    } catch {
+      /* clipboard denied (insecure context / permission) — silent */
+    }
+  }
+
+  const fontClass = isHi
+    ? "font-devanagari"
+    : "font-[family-name:var(--font-serif)] italic";
+  const pill =
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gold-faint bg-ink2/50 px-3 py-1.5 text-xs text-gold-dim transition-colors hover:border-gold/45 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold/35 " +
+    fontClass;
+  // Share — calming peacock-teal accent, soft tinted fill. Distinct from
+  // the gold prompt pills (so the "share this reply" action stands out)
+  // without a loud/jarring colour; peacock-deep text passes contrast on
+  // the light mist surface.
+  const sharePill =
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-peacock/35 bg-peacock/10 px-3 py-1.5 text-xs text-peacock-deep transition-colors hover:border-peacock/55 hover:bg-peacock/15 focus:outline-none focus:ring-2 focus:ring-peacock/35 " +
+    fontClass;
+
+  return (
+    <div
+      className="dv-action-row mt-2 flex w-full items-center gap-1.5 overflow-x-auto pb-0.5"
+      role="group"
+    >
+      <button type="button" onClick={handleCopy} className={pill}>
+        {copied ? labels.copied : labels.copy}
+      </button>
+      <button
+        type="button"
+        onClick={() => onShare(text)}
+        className={sharePill}
+      >
+        {labels.share}
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onPrefill(labels.explainSimplyPrompt, "explain_simply")
+        }
+        className={pill}
+      >
+        {labels.explainSimply}
+      </button>
+      <button
+        type="button"
+        onClick={() => onPrefill(labels.gitaVersePrompt, "gita_verse")}
+        className={pill}
+      >
+        {labels.gitaVerse}
+      </button>
+      <button
+        type="button"
+        onClick={() => onPrefill(labels.stepByStepPrompt, "step_by_step")}
+        className={pill}
+      >
+        {labels.stepByStep}
+      </button>
+      <button
+        type="button"
+        onClick={() => onPrefill(labels.followUpPrompt, "follow_up")}
+        className={pill}
+      >
+        {labels.followUp}
+      </button>
     </div>
   );
 }
@@ -1754,27 +1996,6 @@ function AlertTriangleIcon({ className }: { className?: string }) {
   );
 }
 
-// Chat utility icon for "Start fresh". Same 24x24 outline vocabulary as the
-// mic/send/settings icons already used in this file.
-function FreshTopicIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-      <path d="M5 5h14v14H5z" />
-    </svg>
-  );
-}
-
 // Phase 8 pre-launch — inline settings (cog) icon for the chat header.
 // Feather/Lucide-style outline, same vocabulary as MicIcon + SendIcon
 // (currentColor stroke at strokeWidth 2, 24×24 viewBox, className API,
@@ -1794,6 +2015,31 @@ function SettingsIcon({ className }: { className?: string }) {
     >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+// Referral_Reward_System — gift icon for the chat header Share entry.
+// Same line-art vocabulary as SettingsIcon / MicIcon / SendIcon
+// (currentColor stroke at strokeWidth 2, 24×24 viewBox, className API,
+// aria-hidden). Opens the Share Divya Vani overlay.
+function GiftIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <polyline points="20 12 20 22 4 22 4 12" />
+      <rect x="2" y="7" width="20" height="5" />
+      <line x1="12" y1="22" x2="12" y2="7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
     </svg>
   );
 }

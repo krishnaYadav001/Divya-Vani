@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BRAND } from "@/lib/brand";
+import { captureRefFromUrl } from "@/lib/referralCapture";
 import Atmosphere from "./Atmosphere";
 import Wordmark from "./motifs/Wordmark";
 import DevoteeSilhouettes from "./motifs/DevoteeSilhouettes";
@@ -35,6 +37,13 @@ export default function LandingClient() {
   const trustCopy = BRAND.trust[lang];
   const casualCopy = BRAND.casual[lang];
   const verses = VERSE_CARDS[lang];
+
+  // Referral_Reward_System (Req 3.1, 3.3, 3.4): capture the `?ref` invite code
+  // once on mount. captureRefFromUrl is silent-fail and guards typeof window,
+  // so this side effect never throws and never blocks render.
+  useEffect(() => {
+    captureRefFromUrl();
+  }, []);
 
   // CTA + prose fonts switch with language: Devanagari for Hindi, the English
   // serif for English (rather than rendering Latin in the Devanagari face).

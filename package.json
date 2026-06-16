@@ -63,6 +63,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "fast-check": "^4.8.0",
     "lighthouse": "^13.2.0",
     "p-limit": "^7.3.0",
     "tailwindcss": "^4",
