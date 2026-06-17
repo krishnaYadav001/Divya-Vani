@@ -181,7 +181,7 @@ function createFakeClient(messageCount: number) {
     async rpc(fn: string, args: Record<string, unknown>) {
       if (fn === "credit_voice_seconds") {
         const userId = String(args.p_user_id);
-        const amount = Number(args.p_amount);
+        const amount = Number(args.p_seconds);
         wallet[userId] = (wallet[userId] ?? 0) + amount;
         return { data: null, error: null };
       }

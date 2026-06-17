@@ -167,7 +167,7 @@ function createFakeClient(referrerUserId: string, referredUserId: string) {
     async rpc(fn: string, params: Record<string, unknown>) {
       if (fn === "credit_voice_seconds") {
         const userId = String(params.p_user_id);
-        const amount = Number(params.p_amount);
+        const amount = Number(params.p_seconds);
         const next = (wallet.get(userId) ?? 0) + amount;
         wallet.set(userId, next);
         return { data: next, error: null };

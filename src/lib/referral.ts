@@ -250,7 +250,7 @@ export async function attributeReferral(args: {
     //    noop, no record created (Req 4.6, 8.6).
     const { data: owner, error: ownerError } = await client
       .from("users_memory")
-      .select("user_id, created_at, message_count")
+      .select("user_id, message_count")
       .eq("referral_code", referrerCode)
       .maybeSingle();
     if (ownerError) {

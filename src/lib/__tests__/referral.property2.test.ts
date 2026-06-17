@@ -145,7 +145,7 @@ function createFakeClient(referredUserId: string, startingBalance: number) {
     async rpc(fn: string, args: Record<string, unknown>) {
       if (fn === "credit_voice_seconds") {
         const userId = String(args.p_user_id);
-        const amount = Number(args.p_amount);
+        const amount = Number(args.p_seconds);
         const prior = wallets[userId] ?? 0;
         const newBalance = clampCredit(prior, amount);
         wallets[userId] = newBalance;

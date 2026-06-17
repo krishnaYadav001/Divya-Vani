@@ -173,10 +173,10 @@ function createFakeClient(referredUserIds: readonly string[]) {
     from(table: string) {
       return makeBuilder(table);
     },
-    async rpc(_fn: string, args: { p_user_id: string; p_amount: number }) {
+    async rpc(_fn: string, args: { p_user_id: string; p_seconds: number }) {
       wallet.set(
         args.p_user_id,
-        (wallet.get(args.p_user_id) ?? 0) + args.p_amount,
+        (wallet.get(args.p_user_id) ?? 0) + args.p_seconds,
       );
       return { data: null, error: null };
     },

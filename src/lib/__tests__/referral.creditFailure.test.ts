@@ -174,13 +174,13 @@ function createFakeClient(opts: FakeOptions = {}) {
     from(table: string) {
       return makeBuilder(table);
     },
-    async rpc(fn: string, args: { p_user_id: string; p_amount: number }) {
+    async rpc(fn: string, args: { p_user_id: string; p_seconds: number }) {
       if (fn === "credit_voice_seconds") {
         if (creditError) {
           return { data: null, error: creditError };
         }
         creditCallCount += 1;
-        walletBalance += args.p_amount;
+        walletBalance += args.p_seconds;
         return { data: null, error: null };
       }
       return { data: null, error: null };
