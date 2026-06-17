@@ -1227,37 +1227,6 @@ export default function ChatUI() {
               and slides down directly under the diya icon exactly as
               before — no seva-flow behaviour change. */}
           <div className="relative flex shrink-0 items-center gap-1">
-            {/* Disclaimer collapsed → permanent labelled ⓘ control,
-                here in the identity header beside the avatar/wordmark
-                (Locked Decision #1: "permanent disclaimer near the
-                avatar" — the full bar still auto-shows every mount;
-                this is the always-present re-open affordance). Only
-                rendered while collapsed, mirroring the prior chip's
-                conditional. Rose tone marks it as the identity cue vs
-                the gold utility icons; same min-h/min-w box so the
-                cluster stays aligned. aria-label + title keep it
-                discoverable with no visible text, per founder request
-                2026-05-17. */}
-            {!disclaimerExpanded && (
-              <button
-                type="button"
-                onClick={() => setDisclaimerExpanded(true)}
-                aria-label={t.chat.ariaDisclaimer}
-                title={t.chat.ariaDisclaimer}
-                aria-expanded={disclaimerExpanded}
-                aria-controls="dv-disclaimer"
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-[#d49a8e] transition-colors hover:bg-red-seal/15 focus:outline-none focus:ring-2 focus:ring-red-seal/40"
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  className="h-5 w-5"
-                  fill="currentColor"
-                  aria-hidden
-                >
-                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 12.5A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 0 11zM8 6.5a.75.75 0 0 0-.75.75v3.5a.75.75 0 0 0 1.5 0v-3.5A.75.75 0 0 0 8 6.5zm0-2a.875.875 0 1 0 0 1.75A.875.875 0 0 0 8 4.5z" />
-                </svg>
-              </button>
-            )}
             {/* Phase 10.5 — /voice link. Icon-only sound-wave glyph in
                 gold-leaf (text-devotional) opening voice-to-voice mode.
                 44×44 tap target; sits beside the /demo affordance in the

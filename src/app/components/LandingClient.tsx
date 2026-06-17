@@ -8,6 +8,7 @@ import { captureRefFromUrl } from "@/lib/referralCapture";
 import Atmosphere from "./Atmosphere";
 import Wordmark from "./motifs/Wordmark";
 import DevoteeSilhouettes from "./motifs/DevoteeSilhouettes";
+import { SiteFooterContent } from "./SiteFooter";
 import { useLanguage } from "../providers/LanguageProvider";
 
 // Phase 12.x — simplified landing copy. Redundant sections (FAQ grid,
@@ -358,6 +359,16 @@ export default function LandingClient() {
               : "It is not therapy, medical, legal, or financial advice."}
           </p>
         </section>
+
+        {/* ────── Site footer — in normal page flow (NOT a pinned strip) ──
+            The global SiteFooter is suppressed on "/" (see SiteFooter.tsx)
+            because the h-dvh app-shell layout would pin it over the hero.
+            Here the same footer content sits at the END of the scrollable
+            landing page like a conventional website footer. relative z-10
+            keeps the links legible above the decorative silhouette band. */}
+        <footer className="relative z-10 mt-12 border-t border-[var(--color-ink-line)] pt-6 pb-2 text-center text-sm text-brass-dark">
+          <SiteFooterContent />
+        </footer>
       </div>
 
       <DevoteeSilhouettes height={84} opacity={0.28} />

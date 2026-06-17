@@ -58,14 +58,35 @@ const SOCIAL_LINKS = [
 
 export default function SiteFooter() {
   const pathname = usePathname();
-  const { lang, toggle, t } = useLanguage();
   // The chat and voice surfaces are full-height app shells with their own
   // bottom chrome (composer / mic). A site footer below them adds clutter
   // and competes with the input row, so it's suppressed on both.
-  if (pathname === "/voice" || pathname === "/chat") return null;
+  //
+  // The landing page ("/") renders its own footer INLINE at the end of its
+  // scrollable content (so it reads as a normal end-of-page footer, not a
+  // strip pinned over the hero by the h-dvh app-shell layout). The global
+  // pinned footer is therefore suppressed there too — see LandingClient.
+  if (pathname === "/voice" || pathname === "/chat" || pathname === "/")
+    return null;
 
   return (
     <footer className="shrink-0 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom,0px))] text-center text-sm text-brass-dark">
+      <SiteFooterContent />
+    </footer>
+  );
+}
+
+// Footer body (links + © + language toggle + socials). Extracted so the
+// landing page can render the SAME content inline at the end of its page
+// flow (in-flow, not pinned) without duplicating the markup. The `<footer>`
+// landmark wrapper is supplied by each caller: SiteFooter wraps it as the
+// pinned app-shell strip; LandingClient wraps it as a normal end-of-page
+// footer block.
+export function SiteFooterContent() {
+  const { lang, toggle, t } = useLanguage();
+
+  return (
+    <>
       <Link href="/demo" className={LINK_CLASS}>
         {t.footer.examples}
       </Link>
@@ -132,6 +153,6 @@ export default function SiteFooter() {
           </a>
         ))}
       </div>
-    </footer>
+    </>
   );
 }

@@ -35,7 +35,7 @@ export default function MorningQuoteCard({ onSubscribed, onDismiss }: Props) {
     <div
       className="fade-up mx-auto my-2 w-full max-w-[480px] rounded-2xl border border-[var(--color-gold-leaf)]/30 bg-[var(--color-parchment)] px-5 py-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)] [animation-delay:120ms] [animation-fill-mode:backwards]"
       role="complementary"
-      aria-label="प्रातःकालीन आशीर्वाद"
+      aria-label="Morning blessing"
     >
       {status === "done" ? (
         // Success state
@@ -43,11 +43,11 @@ export default function MorningQuoteCard({ onSubscribed, onDismiss }: Props) {
           <span className="text-xl" aria-hidden>
             🌅
           </span>
-          <p className="font-devanagari text-sm leading-relaxed text-[var(--color-ink)]">
-            हर सुबह Krishna का संदेश आपके inbox में मिलेगा।
+          <p className="font-[family-name:var(--font-serif)] text-sm leading-relaxed text-[var(--color-ink)]">
+            A message from Krishna will reach your inbox every morning.
           </p>
           <p className="font-[family-name:var(--font-serif)] text-xs italic text-[var(--color-ink-faint)]">
-            हरे कृष्ण 🙏
+            Hare Krishna 🙏
           </p>
         </div>
       ) : (
@@ -63,18 +63,18 @@ export default function MorningQuoteCard({ onSubscribed, onDismiss }: Props) {
                 🌅
               </span>
               <div>
-                <p className="font-devanagari text-sm font-medium leading-snug text-[var(--color-ink)]">
-                  प्रातःकालीन आशीर्वाद
+                <p className="font-[family-name:var(--font-serif)] text-sm font-medium leading-snug text-[var(--color-ink)]">
+                  Morning Blessing
                 </p>
-                <p className="font-devanagari text-xs leading-snug text-[var(--color-ink-soft)]">
-                  हर सुबह Krishna का एक संदेश
+                <p className="font-[family-name:var(--font-serif)] text-xs leading-snug text-[var(--color-ink-soft)]">
+                  A daily message from Krishna
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={onDismiss}
-              aria-label="बंद करें"
+              aria-label="Close"
               className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-mist-2)] hover:text-[var(--color-ink-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-leaf)]/40"
             >
               <span aria-hidden className="text-base leading-none">
@@ -99,7 +99,7 @@ export default function MorningQuoteCard({ onSubscribed, onDismiss }: Props) {
                 setEmail(e.target.value);
                 if (status === "error") setStatus("idle");
               }}
-              placeholder="आपका email"
+              placeholder="Your email"
               required
               aria-label="Email address"
               className={`min-w-0 flex-1 rounded-xl border bg-[var(--color-mist-2)]/60 px-3 py-2 font-[family-name:var(--font-serif)] text-sm italic text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-leaf)]/40 ${
@@ -111,18 +111,18 @@ export default function MorningQuoteCard({ onSubscribed, onDismiss }: Props) {
             <button
               type="submit"
               disabled={status === "loading"}
-              className="shrink-0 rounded-xl bg-[var(--color-gold-leaf)] px-4 py-2 font-devanagari text-sm text-[var(--color-parchment)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-leaf)]/60 disabled:opacity-60"
+              className="shrink-0 rounded-xl bg-[var(--color-gold-leaf)] px-4 py-2 font-[family-name:var(--font-serif)] text-sm text-[var(--color-parchment)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-leaf)]/60 disabled:opacity-60"
             >
-              {status === "loading" ? "…" : "पाएं"}
+              {status === "loading" ? "…" : "Get it"}
             </button>
           </form>
 
           {status === "error" && (
             <p
               role="alert"
-              className="mt-2 font-devanagari text-xs text-[var(--color-vermillion)]"
+              className="mt-2 font-[family-name:var(--font-serif)] text-xs text-[var(--color-vermillion)]"
             >
-              कुछ गड़बड़ हुई। दोबारा कोशिश करें।
+              Something went wrong. Please try again.
             </p>
           )}
 
