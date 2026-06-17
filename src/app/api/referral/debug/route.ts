@@ -91,6 +91,36 @@ export async function GET(req: Request) {
     }
   }
 
+  // &raw=1 → bypass attributeReferral entirely and perform the referrals INSERT
+  // directly, returning the VERBATIM Supabase error + data. This surfaces the
+  // raw DB error that attributeReferral swallows via console.error (invisible in
+  // prod), which is what turns a WOULD_CREATE_PENDING verdict into a noop.
+  let rawInsert: unknown = null;
+  const doRaw = url.searchParams.get("raw") === "1";
+  if (doRaw && cookieUserId && ref && owner && owner.user_id !== cookieUserId) {
+    const { data, error } = await client
+      .from("referrals")
+      .insert({
+        referrer_user_id: owner.user_id,
+        referred_user_id: cookieUserId,
+        referral_code: ref,
+        status: "pending",
+      })
+      .select("*")
+      .maybeSingle();
+    rawInsert = {
+      inserted: data ?? null,
+      error: error
+        ? {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+          }
+        : null,
+    };
+  }
+
   return NextResponse.json({
     cookieUserId,
     refParam: ref,
@@ -99,5 +129,6 @@ export async function GET(req: Request) {
     existingReferral,
     verdict,
     writeOutcome,
+    rawInsert,
   });
 }
