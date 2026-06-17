@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { attributeReferral } from "@/lib/referral";
 
 const USER_COOKIE = "god_messenger_uid";
 
-// TEMP DIAGNOSTIC — read-only. Reports why referral attribution would or would
-// not happen for the CURRENT cookie identity given a ?ref=CODE. It does NOT
-// write anything. Open on the REFERRED browser (the one that clicked the
-// invite) as:  /api/referral/debug?ref=THE_CODE
+// TEMP DIAGNOSTIC — reports why referral attribution would or would not happen
+// for the CURRENT cookie identity given a ?ref=CODE.
 //
-// It answers the only three questions that matter when `referrals` stays empty:
-//   1. Is the cookie present?            (no cookie → attribution can't run)
-//   2. Does the ref resolve to an owner? (unknown code → noop, no row)
-//   3. Is this user eligible?            (self-referral, or message_count>0
-//                                         → rejected/skipped, no pending row)
-// Remove once the root cause is fixed.
+//   /api/referral/debug?ref=CODE          → DRY RUN (read-only verdict)
+//   /api/referral/debug?ref=CODE&write=1  → actually calls attributeReferral
+//                                            and returns its real outcome
+//
+// The &write=1 mode removes every client-side variable (localStorage, the chat
+// POST body, cookie timing) and tests the attribution LOGIC directly against
+// the live DB. Open it on the REFERRED browser (the invitee's cookie).
+// Remove this route once the root cause is fixed.
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const ref = url.searchParams.get("ref");
+  const doWrite = url.searchParams.get("write") === "1";
 
   const jar = await cookies();
   const cookieUserId = jar.get(USER_COOKIE)?.value ?? null;
@@ -76,6 +78,19 @@ export async function GET(req: Request) {
     verdict = `PRE_EXISTING_USER — this user already chatted (message_count=${myRow.message_count}) → rejected, no pending row`;
   else verdict = "WOULD_CREATE_PENDING — a fresh, eligible referral would be created on the next chat message carrying this ref";
 
+  // &write=1 → actually run the real attributeReferral and report its outcome.
+  let writeOutcome: unknown = null;
+  if (doWrite && cookieUserId && ref) {
+    try {
+      writeOutcome = await attributeReferral({
+        referrerCode: ref,
+        referredUserId: cookieUserId,
+      });
+    } catch (e) {
+      writeOutcome = { threw: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   return NextResponse.json({
     cookieUserId,
     refParam: ref,
@@ -83,5 +98,6 @@ export async function GET(req: Request) {
     owner,
     existingReferral,
     verdict,
+    writeOutcome,
   });
 }

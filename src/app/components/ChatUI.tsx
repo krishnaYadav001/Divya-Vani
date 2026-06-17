@@ -19,7 +19,7 @@ const [BRAND_HEAD, ...BRAND_TAIL] = BRAND.name.en.split(" ");
 import SevaPaywall from "./SevaPaywall";
 import SevaHubModal from "./SevaHubModal";
 import ShareDivyaVani from "./ShareDivyaVani";
-import { readStoredRef, clearStoredRef } from "@/lib/referralCapture";
+import { readStoredRef, clearStoredRef, captureRefFromUrl } from "@/lib/referralCapture";
 import MorningQuoteCard from "./MorningQuoteCard";
 import { VerseCardList } from "./VerseCard";
 import Flute from "./motifs/Flute";
@@ -250,6 +250,15 @@ export default function ChatUI() {
         clearTimeout(micErrorTimerRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    // Referral_Reward_System — defensively capture the `?ref` invite code on
+    // the chat surface too (not only the landing page). Covers a referred user
+    // who lands directly on /chat?ref=CODE, or any case where the landing-page
+    // capture didn't run. captureRefFromUrl is silent-fail + first-write-wins,
+    // so this never overwrites an existing stored ref and never throws.
+    captureRefFromUrl();
   }, []);
 
   useEffect(() => {
