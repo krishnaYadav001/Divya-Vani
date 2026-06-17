@@ -99,6 +99,24 @@ export async function getOrCreateReferralCode(
       return existing.referral_code;
     }
 
+    // Ensure a users_memory row exists for this user before the guarded UPDATE.
+    // A bare cookie identity that has never chatted — or one freshly rotated by
+    // /api/delete-account — has NO row yet, so an UPDATE would touch 0 rows and
+    // the share panel would fail to load. Upsert an empty row (ignore-on-
+    // conflict so an existing row is untouched, preserving any code/balance).
+    if (!existing) {
+      const { error: ensureError } = await client
+        .from("users_memory")
+        .upsert({ user_id: userId }, { onConflict: "user_id", ignoreDuplicates: true });
+      if (ensureError) {
+        console.error(
+          "[referral] getOrCreateReferralCode ensure-row error:",
+          ensureError,
+        );
+        return null;
+      }
+    }
+
     // No code yet — generate + persist, retrying on unique-violation (Req 1.7).
     for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
       const code = generateCode();

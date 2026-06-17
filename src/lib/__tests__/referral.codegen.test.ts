@@ -28,15 +28,17 @@ type DbResult = { data: unknown; error: { code?: string } | null };
  * test can assert whether a retry happened or whether any UPDATE was issued.
  */
 function createFakeClient() {
-  const calls = { from: 0, select: 0, update: 0, maybeSingle: 0 };
+  const calls = { from: 0, select: 0, update: 0, maybeSingle: 0, upsert: 0 };
   let selectHandler: () => DbResult = () => ({ data: null, error: null });
   let updateHandler: (payload: Record<string, unknown>) => DbResult = () => ({
     data: null,
     error: null,
   });
+  let upsertHandler: (payload: Record<string, unknown>) => { error: { code?: string } | null } =
+    () => ({ error: null });
 
   function makeBuilder() {
-    const state: { op: "select" | "update"; payload: Record<string, unknown> } =
+    const state: { op: "select" | "update" | "upsert"; payload: Record<string, unknown> } =
       { op: "select", payload: {} };
     const builder = {
       select(_cols?: string) {
@@ -48,6 +50,11 @@ function createFakeClient() {
         state.op = "update";
         state.payload = payload;
         return builder;
+      },
+      // Awaited directly (no .maybeSingle()) by the ensure-row step.
+      upsert(payload: Record<string, unknown>) {
+        calls.upsert++;
+        return upsertHandler(payload);
       },
       eq(_col: string, _val: unknown) {
         return builder;
@@ -72,6 +79,9 @@ function createFakeClient() {
     },
     setUpdateHandler(fn: (payload: Record<string, unknown>) => DbResult) {
       updateHandler = fn;
+    },
+    setUpsertHandler(fn: (payload: Record<string, unknown>) => { error: { code?: string } | null }) {
+      upsertHandler = fn;
     },
     from(_table: string) {
       calls.from++;
@@ -151,4 +161,32 @@ test("stability: an existing code is returned unchanged with no UPDATE", async (
 
   assert.equal(code, existing);
   assert.equal(fake.calls.update, 0);
+});
+
+test("no row yet (post-deletion / never chatted): upserts a row, then generates a code", async () => {
+  // The SELECT returns no row at all (data: null) — this is the freshly-rotated
+  // identity after /api/delete-account, or a bare cookie that has never chatted.
+  // Without the ensure-row upsert, the guarded UPDATE would touch 0 rows and the
+  // share panel would fail to load (Req 1.1).
+  let rowExists = false;
+  fake.setSelectHandler(() => ({
+    data: rowExists ? { referral_code: null } : null,
+    error: null,
+  }));
+  fake.setUpsertHandler(() => {
+    rowExists = true; // the upsert creates the empty row
+    return { error: null };
+  });
+  // After the row exists, the guarded UPDATE sets the generated code.
+  fake.setUpdateHandler((payload) => ({
+    data: { referral_code: payload.referral_code },
+    error: null,
+  }));
+
+  const code = await getOrCreateReferralCode("rotated-user");
+
+  assert.equal(typeof code, "string");
+  assert.match(code as string, CODE_RE);
+  // The ensure-row upsert was issued exactly once before the UPDATE.
+  assert.equal(fake.calls.upsert, 1);
 });
