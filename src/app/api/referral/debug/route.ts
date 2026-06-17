@@ -29,26 +29,29 @@ export async function GET(req: Request) {
   }
   const client = createClient(supaUrl, supaKey, { auth: { persistSession: false } });
 
+  type MyRow = { user_id: string; message_count: number | null; referral_code: string | null };
+  type OwnerRow = { user_id: string; message_count: number | null };
+
   // Current user's state (the prospective REFERRED user).
-  let myRow: { user_id: string; message_count: number | null; referral_code: string | null } | null = null;
+  let myRow: MyRow | null = null;
   if (cookieUserId) {
     const { data } = await client
       .from("users_memory")
       .select("user_id, message_count, referral_code")
       .eq("user_id", cookieUserId)
       .maybeSingle();
-    myRow = (data as typeof myRow) ?? null;
+    myRow = (data as unknown as MyRow | null) ?? null;
   }
 
   // Resolve the ref code to its owner (the prospective REFERRER).
-  let owner: { user_id: string; message_count: number | null } | null = null;
+  let owner: OwnerRow | null = null;
   if (ref) {
     const { data } = await client
       .from("users_memory")
       .select("user_id, message_count")
       .eq("referral_code", ref)
       .maybeSingle();
-    owner = (data as typeof owner) ?? null;
+    owner = (data as unknown as OwnerRow | null) ?? null;
   }
 
   // Any existing referral row for this referred user?

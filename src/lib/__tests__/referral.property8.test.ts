@@ -71,6 +71,19 @@ function createFakeClient(
       filters: Record<string, unknown>;
     } = { op: "select", payload: {}, filters: {} };
 
+    // Models the UNIQUE(referred_user_id) constraint for referrals inserts.
+    // Standalone closure (not a builder method) so it is strongly typed and
+    // callable from both maybeSingle() and then().
+    const runInsert = (): { data: unknown; error: { code?: string } | null } => {
+      const referredId = state.payload.referred_user_id as string;
+      if (referrals.has(referredId)) {
+        // Existing association — reject the duplicate, leave the row intact.
+        return { data: null, error: { code: "23505" } };
+      }
+      referrals.set(referredId, state.payload as ReferralRowShape);
+      return { data: state.payload, error: null };
+    };
+
     const builder: Record<string, unknown> = {
       select(_cols?: string) {
         return builder;
@@ -88,18 +101,10 @@ function createFakeClient(
         return builder;
       },
       // Models the UNIQUE(referred_user_id) constraint for referrals inserts.
-      runInsert(): { data: unknown; error: { code?: string } | null } {
-        const referredId = state.payload.referred_user_id as string;
-        if (referrals.has(referredId)) {
-          // Existing association — reject the duplicate, leave the row intact.
-          return { data: null, error: { code: "23505" } };
-        }
-        referrals.set(referredId, state.payload as ReferralRowShape);
-        return { data: state.payload, error: null };
-      },
+      runInsert,
       async maybeSingle() {
         if (state.op === "insert") {
-          return builder.runInsert();
+          return runInsert();
         }
         if (table === "users_memory") {
           if ("referral_code" in state.filters) {
@@ -129,7 +134,7 @@ function createFakeClient(
       ) {
         const value =
           state.op === "insert"
-            ? builder.runInsert()
+            ? runInsert()
             : { data: null, error: null };
         return Promise.resolve(value).then(resolve, reject);
       },
