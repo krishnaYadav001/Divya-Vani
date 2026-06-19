@@ -11,10 +11,9 @@ import {
   markPaymentRefunded,
   creditSevaBalance,
   creditVoiceSeconds,
+  debitSevaBalance,
   hasProcessedEvent,
   recordEvent,
-  fetchMemory,
-  saveMemory,
   touchActivity,
   updateSubscriptionStatus,
   resetSubscriptionCycleUsage,
@@ -278,15 +277,12 @@ export async function POST(req: Request) {
         // Partial refunds are logged but not debited (proportional
         // partial-refund logic is Phase 7+).
         //
-        // Read-modify-write debit. The race window is vanishingly
-        // small — refunds are operator-triggered events serialized via
-        // webhook; the same user is unlikely to be purchasing/messaging
-        // at the millisecond their refund webhook lands. Atomicity via
-        // a debit_seva_balance stored proc would be cleaner but
-        // requires a SQL migration; deferred to Phase 7+ if telemetry
-        // shows races. The whole block sits inside the case after the
-        // hasProcessedEvent idempotency check at line 73, so it runs
-        // at most once per refund event.
+        // ATOMIC debit via debit_seva_balance RPC (clamped at 0) — replaces
+        // the prior read-modify-write (fetchMemory → compute → saveMemory),
+        // which could lose a concurrent purchase/decrement between the read
+        // and the write. The whole block sits inside the case after the
+        // hasProcessedEvent idempotency check, so it runs at most once per
+        // refund event.
         const refundAmountPaise =
           typeof refund.amount === "number" ? refund.amount : null;
         if (
@@ -303,18 +299,14 @@ export async function POST(req: Request) {
             );
             break;
           }
-          const memory = await fetchMemory(row.user_id);
-          const currentBalance = memory?.seva_balance ?? 0;
-          const newBalance = Math.max(0, currentBalance - tier.messages);
-          await saveMemory(row.user_id, { seva_balance: newBalance });
+          const newBalance = await debitSevaBalance(row.user_id, tier.messages);
           console.log(
-            "[razorpay/webhook] full refund — auto-debited seva:",
+            "[razorpay/webhook] full refund — auto-debited seva (atomic):",
             {
               user_id: row.user_id,
               refundId,
               tier: tier.id,
               debited: tier.messages,
-              previousBalance: currentBalance,
               newBalance,
             },
           );

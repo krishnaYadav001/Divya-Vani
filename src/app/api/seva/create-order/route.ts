@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getTier, getTierAmount } from "@/lib/seva";
 import type { Currency } from "@/lib/subscriptions";
 import { insertPayment } from "@/lib/supabase";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 
 const USER_COOKIE = "god_messenger_uid";
 
@@ -31,6 +32,23 @@ export async function POST(req: Request) {
       { error: "no user identity on this request" },
       { status: 400 },
     );
+  }
+
+  // Shared rate limit (Upstash) — order creation should be rare per user;
+  // bound by cookie user-id + client IP to stop order/row spam. Fail-open on
+  // Redis unavailability so a blip never blocks a genuine purchase.
+  {
+    const rl = await checkRateLimit(
+      "seva_create_order",
+      userId,
+      clientIpFromRequest(req),
+    );
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "rate_limited" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
   }
 
   let body: { tier?: unknown; currency?: unknown };

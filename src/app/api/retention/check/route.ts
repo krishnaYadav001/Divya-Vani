@@ -17,7 +17,19 @@ import { sendRetentionEmail } from "@/lib/loopsEmail";
 
 export async function POST(req: Request) {
   const secret = process.env.RETENTION_CRON_SECRET;
-  if (secret) {
+  // Fail closed in production: an unset cron secret must NOT leave the endpoint
+  // open (it sends retention emails). Outside production the secret is optional.
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[retention/check] RETENTION_CRON_SECRET unset in production — refusing to run (fail closed)",
+      );
+      return NextResponse.json(
+        { error: "cron secret not configured" },
+        { status: 500 },
+      );
+    }
+  } else {
     const auth = req.headers.get("authorization");
     if (auth !== `Bearer ${secret}`) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });

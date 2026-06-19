@@ -54,7 +54,9 @@ Index: `ivfflat` on `embedding` using `vector_cosine_ops`.
 
 ## `user_feedback` (Phase 8.x+)
 
-User-submitted feedback. Written by `insertFeedback` from `/api/feedback` (Settings "Share feedback" form + the `/demo` star-rating card). `user_id` is `ON DELETE SET NULL` against `users_memory(user_id)` so DPDP erasure (`/api/delete-account`) is never blocked by feedback rows; a dangling cookie with no `users_memory` row is stored unattributed (null `user_id`) rather than erroring.
+User-submitted feedback. Written by `insertFeedback` from `/api/feedback` (Settings "Share feedback" form + the `/demo` star-rating card). **Live constraint: `user_id` is `ON DELETE CASCADE` against `users_memory(user_id)`** (verified against production 2026-06-18) — so when a user's `users_memory` row is deleted (DPDP erasure via `/api/delete-account`), their feedback rows are deleted too rather than anonymized. A dangling cookie with no `users_memory` row is stored unattributed (null `user_id`) by `insertFeedback`, which nulls the `user_id` before insert when the parent row is absent so the FK can never reject valid input.
+
+> NOTE (doc drift corrected 2026-06-18): an earlier version of this doc described `user_id` as `ON DELETE SET NULL`. Production uses `ON DELETE CASCADE`. The erasure outcome (feedback removed with the user) is still DPDP-compliant; the in-code comment that implied surviving-but-unattributed feedback after deletion does not match the live FK.
 
 | column | type | default | purpose |
 |---|---|---|---|
@@ -130,5 +132,9 @@ Beta-only full conversation log. Written from the chat route via `logChatTurn` f
 Indexes: `idx_chat_logs_user_id`, `idx_chat_logs_turn_at` (DESC), `idx_chat_logs_user_turn` (user_id, turn_at). RLS enabled, no policies.
 
 **RLS:** enabled on all tables, no policies (locks anonymous access). Service role bypasses; service role key is server-only.
+
+> RLS correction (2026-06-18): a production audit found `users_memory` had RLS **disabled** while every other table had it enabled. Fixed via `scripts/enable-rls-users-memory.sql` (`ALTER TABLE users_memory ENABLE ROW LEVEL SECURITY;`, no policies — matches the other tables). No behavioral impact: the app uses only the server-side service-role key (no browser-side / anon-key Supabase client exists), which bypasses RLS. The change closes the latent hole where a future anon-key client read/write would have had full access to this one table.
+
+**Erasure scope (`/api/delete-account` → `deleteUserData`):** deletes `chat_logs` + `safety_events` + `reward_transactions` + `referrals` (both referred and referrer rows) + `users_memory` for the user; `user_feedback` is removed via the `ON DELETE CASCADE` FK when the `users_memory` row goes. `payments` + `webhook_events` are intentionally retained (financial/audit law). Already-credited referrer wallet balances are not clawed back (they live on `users_memory.voice_seconds_balance` and are removed with that row). Previously `referrals`/`reward_transactions` were NOT cleared (a known erasure gap, closed 2026-06-18).
 
 **Migrations:** manual `ALTER TABLE` via Supabase SQL Editor. No tooling. Schema changes ALWAYS paired with the SQL given to the founder for manual execution. Phase 5.3 manual SQL adds `payments.refunded_at`, `payments.razorpay_refund_id`, and the `webhook_events` table — all idempotent (`IF NOT EXISTS`).

@@ -52,6 +52,7 @@ import {
   type ModerationFlag,
 } from "@/lib/moderation";
 import { attributeReferral, qualifyAndCreditReferral } from "@/lib/referral";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 
 const client = new Anthropic();
 const USER_COOKIE = "god_messenger_uid";
@@ -513,6 +514,22 @@ export async function POST(req: Request) {
   }
   const message = rawMessage.trim();
 
+  // Input length cap (cost + abuse guard). A normal chat turn is well under
+  // this; the bound stops a single request from sending a huge payload into
+  // the persona + 8-turn history + Sonnet call. Mirrors the /api/tts 2000-char
+  // ceiling. Generous enough to never clip a real devotee's message.
+  const MAX_MESSAGE_CHARS = 4000;
+  if (message.length > MAX_MESSAGE_CHARS) {
+    return NextResponse.json(
+      {
+        error: "message_too_long",
+        message:
+          "संदेश बहुत लंबा है — कृपया थोड़ा छोटा करके भेजो · Your message is too long — please shorten it a little.",
+      },
+      { status: 400 },
+    );
+  }
+
   // Phase 7.0 Path A — server-side word filter (defense in depth +
   // latency saver). Mirrors the client-side check in ChatUI; runs
   // here so direct-API hits and modified-client requests are still
@@ -562,6 +579,29 @@ export async function POST(req: Request) {
   }
   const userId: string = mutableUserId;
 
+  // Shared rate limit (Upstash) — bound cost/abuse on this AI-heavy route by
+  // BOTH cookie user-id and client IP. Fail-open: if Redis is unconfigured or
+  // errors, this allows the request (never blocks a real devotee on a blip).
+  // Runs after identity resolution but before any model/DB work so a throttled
+  // request costs nothing. The cookie is NOT set on a throttled response (same
+  // as the banned-word path) — identity is established on a real turn.
+  {
+    const rl = await checkRateLimit(
+      "chat",
+      userId,
+      clientIpFromRequest(req),
+    );
+    if (!rl.ok) {
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          message:
+            "थोड़ा रुको — बहुत तेज़ी से संदेश आ रहे हैं। कुछ क्षण बाद फिर कहो · One moment — too many messages too quickly. Please try again shortly.",
+        },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
+  }
   // 2. Fetch prior memory — needed for paywall check, returning-flag,
   //    onboarding-flag, extraction summary, and message_count increment.
   // Phase 9 — read prior memory + any active subscription in parallel (no

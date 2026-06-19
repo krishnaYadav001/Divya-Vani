@@ -553,6 +553,36 @@ export async function decrementSevaBalance(
   }
 }
 
+/**
+ * Atomic clamped debit of seva_balance via stored procedure. Subtracts `count`,
+ * flooring at 0 (never negative). Returns the new balance, or null if the user
+ * row doesn't exist or on error. Used by the full-refund auto-debit path so the
+ * debit cannot lose a concurrent purchase/decrement (replaces the prior
+ * read-modify-write). Requires the debit_seva_balance RPC (manual SQL:
+ * scripts/debit-seva-balance-rpc.sql).
+ */
+export async function debitSevaBalance(
+  userId: string,
+  count: number,
+): Promise<number | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("debit_seva_balance", {
+      p_user_id: userId,
+      p_amount: count,
+    });
+    if (error) {
+      console.error("[supabase] debitSevaBalance error:", error);
+      return null;
+    }
+    return typeof data === "number" ? data : null;
+  } catch (e) {
+    console.error("[supabase] debitSevaBalance threw:", e);
+    return null;
+  }
+}
+
 export async function fetchMemory(
   userId: string,
 ): Promise<UserMemory | null> {
@@ -874,7 +904,10 @@ export async function updateUserSettings(
 
 /**
  * Phase 8 pre-launch — DPDP-compliant data deletion for a user. Removes
- * chat_logs + safety_events + users_memory rows for the user.
+ * chat_logs + safety_events + users_memory rows for the user, plus the
+ * pseudonymous referral bookkeeping (referrals + reward_transactions) that
+ * carries this user's cookie-UUID. user_feedback is removed automatically by
+ * the ON DELETE CASCADE FK when the users_memory row goes.
  *
  * Intentionally NOT deleted:
  *   - payments: retained per Indian financial law (Income Tax Act + RBI
@@ -907,6 +940,42 @@ export async function deleteUserData(userId: string): Promise<void> {
         safetyErr,
       );
     }
+    // Referral bookkeeping carries the cookie-UUID (no FK to users_memory, so
+    // not cascade-cleared). Remove the deleted user's own reward transactions
+    // and any referral rows where they are the referred OR the referrer.
+    // Already-credited referrer wallet balances are NOT clawed back (the credit
+    // lives on users_memory.voice_seconds_balance, removed with that row).
+    const { error: rewardErr } = await client
+      .from("reward_transactions")
+      .delete()
+      .eq("user_id", userId);
+    if (rewardErr) {
+      console.error(
+        "[supabase] deleteUserData reward_transactions error:",
+        rewardErr,
+      );
+    }
+    const { error: refReferredErr } = await client
+      .from("referrals")
+      .delete()
+      .eq("referred_user_id", userId);
+    if (refReferredErr) {
+      console.error(
+        "[supabase] deleteUserData referrals (referred) error:",
+        refReferredErr,
+      );
+    }
+    const { error: refReferrerErr } = await client
+      .from("referrals")
+      .delete()
+      .eq("referrer_user_id", userId);
+    if (refReferrerErr) {
+      console.error(
+        "[supabase] deleteUserData referrals (referrer) error:",
+        refReferrerErr,
+      );
+    }
+    // users_memory LAST — its ON DELETE CASCADE removes user_feedback rows too.
     const { error: memErr } = await client
       .from("users_memory")
       .delete()

@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { fireMetaEvent } from "@/lib/metaEvents";
 import { fireGoogleAdsConversion } from "@/lib/googleAdsEvents";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 
 const USER_COOKIE = "god_messenger_uid";
 
@@ -33,6 +34,20 @@ export async function POST(req: Request) {
   const jar = await cookies();
   const userId = jar.get(USER_COOKIE)?.value ?? null;
   const gclid = jar.get("dv_gclid")?.value ?? null;
+
+  // Shared rate limit (Upstash) — lead capture fires conversion events + writes
+  // a DB row, so bound spam by cookie user-id (if any) + client IP. Fail-open
+  // on Redis unavailability. Placed after validation so a malformed body still
+  // 400s without consuming a token.
+  {
+    const rl = await checkRateLimit("lead", userId, clientIpFromRequest(req));
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "rate_limited" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
+  }
 
   const headersList = await headers();
   const clientIp =

@@ -57,7 +57,20 @@ function formatNewUser(record: Record<string, unknown>): string {
 export async function POST(req: Request) {
   try {
     const secret = process.env.NOTIFY_SECRET;
-    if (secret) {
+    // Fail closed in production: an unset notify secret must NOT leave the
+    // endpoint open (anyone could forge "new user"/"feedback" Telegram alerts).
+    // Outside production the secret is optional (dev/local).
+    if (!secret) {
+      if (process.env.NODE_ENV === "production") {
+        console.error(
+          "[notify/telegram] NOTIFY_SECRET unset in production — refusing to run (fail closed)",
+        );
+        return NextResponse.json(
+          { error: "notify secret not configured" },
+          { status: 500 },
+        );
+      }
+    } else {
       const incoming = req.headers.get("x-notify-secret");
       if (incoming !== secret) {
         console.error("[notify/telegram] invalid or missing x-notify-secret");

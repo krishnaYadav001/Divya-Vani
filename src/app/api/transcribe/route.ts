@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
+
+const USER_COOKIE = "god_messenger_uid";
 
 // Phase 8.0 voice-input STT — Sarvam AI Saaras V3.
 //
@@ -48,6 +52,22 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "SARVAM_API_KEY missing — STT not configured" },
       { status: 500 },
+    );
+  }
+
+  // Shared rate limit (Upstash) — paid STT per call; bound by cookie user-id
+  // (if any) + client IP. Fail-open on Redis unavailability.
+  const transcribeJar = await cookies();
+  const transcribeUserId = transcribeJar.get(USER_COOKIE)?.value ?? null;
+  const rl = await checkRateLimit(
+    "transcribe",
+    transcribeUserId,
+    clientIpFromRequest(req),
+  );
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
     );
   }
 

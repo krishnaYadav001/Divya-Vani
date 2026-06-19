@@ -29,6 +29,7 @@ import {
 // (byte-identical) and its INSERT doesn't include tts_mode.
 import { logVoiceGeneration } from "@/lib/voiceTelemetry";
 import { hasVoiceAccess } from "@/lib/voiceAccess";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 
 // Phase 10.1 — Krishna Voice TTS backend (standalone endpoint).
 //
@@ -202,6 +203,19 @@ export async function POST(req: Request) {
   const userId = jar.get(USER_COOKIE)?.value;
   if (!userId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  // 2b. Shared rate limit (Upstash) — burst guard in front of the existing
+  // 24h DB caps below, by cookie user-id + client IP. Fail-open on Redis
+  // unavailability so a blip never blocks a paying user's voice playback.
+  {
+    const rl = await checkRateLimit("tts", userId, clientIpFromRequest(req));
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "rate_limited", cap_type: "burst" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
   }
 
   // 3. Paywall — must have at least one verified payment.

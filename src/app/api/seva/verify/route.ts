@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
+import { waitUntil } from "@vercel/functions";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqualHex } from "@/lib/secureCompare";
 import { getTier, inferCurrencyFromAmount } from "@/lib/seva";
@@ -147,50 +148,58 @@ export async function POST(req: Request) {
     );
   }
 
-  // Fire Purchase events + mark lead converted — non-blocking async IIFE so the
-  // response returns immediately without waiting for external API calls.
-  void (async () => {
-    const supabaseLocal = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-    const { data: leadRow } = await supabaseLocal
-      .from("journey_leads")
-      .select("email")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const leadEmail: string | undefined = leadRow?.email ?? undefined;
-    // amount_paise holds the charged smallest unit (paise for INR, cents for
-    // USD); /100 gives the major-unit value in whichever currency was charged.
-    // Recover the currency from the stored amount so the Purchase event reports
-    // the right currency + value for an NRI (USD) vs India (INR) buyer.
-    const purchaseCurrency = inferCurrencyFromAmount(tier, payment.amount_paise);
-    const purchaseValue = payment.amount_paise / 100;
-    await Promise.allSettled([
-      fireMetaEvent(
-        "Purchase",
-        { email: leadEmail, clientIp, clientUserAgent },
-        { currency: purchaseCurrency, value: purchaseValue },
-        "https://divyavani.co.in/chat",
-      ),
-      fireGoogleAdsConversion({
-        conversionActionId: process.env.GOOGLE_ADS_CONVERSION_PURCHASE_ID,
-        gclid,
-        email: leadEmail,
-        valueRupees: purchaseValue,
-        currencyCode: purchaseCurrency,
-      }),
-      leadEmail
-        ? supabaseLocal
-            .from("journey_leads")
-            .update({ converted_at: new Date().toISOString() })
-            .eq("user_id", userId)
-            .is("converted_at", null)
-        : Promise.resolve(),
-    ]);
-  })();
+  // Fire Purchase events + mark lead converted — non-blocking, but wrapped in
+  // waitUntil so Vercel keeps the function alive until these external calls
+  // resolve. A bare fire-and-forget IIFE can be killed the instant the response
+  // returns, silently dropping the Purchase conversion + the lead-converted
+  // mark. The HTTP response is still sent immediately below; only the function
+  // lifetime is extended for this background work.
+  waitUntil(
+    (async () => {
+      const supabaseLocal = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      );
+      const { data: leadRow } = await supabaseLocal
+        .from("journey_leads")
+        .select("email")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const leadEmail: string | undefined = leadRow?.email ?? undefined;
+      // amount_paise holds the charged smallest unit (paise for INR, cents for
+      // USD); /100 gives the major-unit value in whichever currency was charged.
+      // Recover the currency from the stored amount so the Purchase event reports
+      // the right currency + value for an NRI (USD) vs India (INR) buyer.
+      const purchaseCurrency = inferCurrencyFromAmount(tier, payment.amount_paise);
+      const purchaseValue = payment.amount_paise / 100;
+      await Promise.allSettled([
+        fireMetaEvent(
+          "Purchase",
+          { email: leadEmail, clientIp, clientUserAgent },
+          { currency: purchaseCurrency, value: purchaseValue },
+          "https://divyavani.co.in/chat",
+        ),
+        fireGoogleAdsConversion({
+          conversionActionId: process.env.GOOGLE_ADS_CONVERSION_PURCHASE_ID,
+          gclid,
+          email: leadEmail,
+          valueRupees: purchaseValue,
+          currencyCode: purchaseCurrency,
+        }),
+        leadEmail
+          ? supabaseLocal
+              .from("journey_leads")
+              .update({ converted_at: new Date().toISOString() })
+              .eq("user_id", userId)
+              .is("converted_at", null)
+          : Promise.resolve(),
+      ]);
+    })().catch((e) => {
+      console.error("[seva/verify] deferred purchase side effects failed:", e);
+    }),
+  );
 
   return NextResponse.json({
     ok: true,

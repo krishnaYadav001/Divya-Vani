@@ -69,7 +69,20 @@ async function generateMorningQuote(
 
 export async function POST(req: Request) {
   const secret = process.env.MORNING_QUOTE_CRON_SECRET;
-  if (secret) {
+  // Fail closed in production: if the cron secret is not configured, refuse to
+  // run rather than leaving an open endpoint that anyone could POST to trigger
+  // a mass email blast. Outside production the secret is optional (dev/local).
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[morning-quote/send] MORNING_QUOTE_CRON_SECRET unset in production — refusing to run (fail closed)",
+      );
+      return NextResponse.json(
+        { error: "cron secret not configured" },
+        { status: 500 },
+      );
+    }
+  } else {
     const auth = req.headers.get("authorization");
     if (auth !== `Bearer ${secret}`) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -88,6 +101,11 @@ export async function POST(req: Request) {
     .from("verses")
     .select("source, reference, sanskrit, english, hindi")
     .not("english", "is", null)
+    // Explicit, stable ordering so the day-offset picks a DETERMINISTIC verse.
+    // Without ORDER BY, Postgres row order is unspecified and "today's verse"
+    // could differ across reads/days. Order by reference (unique) for a fixed
+    // sequence the dayOffset indexes into.
+    .order("reference", { ascending: true })
     .range(dayOffset, dayOffset);
 
   if (verseErr || !verseRows || verseRows.length === 0) {
