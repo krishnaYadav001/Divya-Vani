@@ -344,14 +344,27 @@ export default function ChatUI() {
     requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
-  function handlePromptCategory(prompt: string, label: string) {
+  function handlePromptCategory(prompt: string, label: string, index: number) {
     if (isSending) return;
     if (isListening) stopSession();
     dismissMicError();
     setServerModerationWarning(null);
     if (prompt.trim()) setInput(prompt);
     focusComposer();
+    // Existing event kept for dashboard continuity.
     track("chat_prompt_selected", { label });
+    // Phase-5 named engagement events. Only safe metadata (the static
+    // category label + page) is sent — never the user's own text.
+    track("prompt_card_clicked", { label, page: "chat" });
+    if (prompt.trim()) {
+      track("prompt_filled_input", { label, page: "chat" });
+    }
+    // The "I am just exploring" card sits at a fixed position (index 3)
+    // in t.chat.promptCategories for both languages; flag it distinctly
+    // so we can measure low-intent explorers vs directed prompts.
+    if (index === 3) {
+      track("just_exploring_clicked", { page: "chat" });
+    }
   }
 
   // Phase-1 engagement actions (rendered under each Krishna reply by
@@ -366,7 +379,17 @@ export default function ChatUI() {
     setServerModerationWarning(null);
     if (prompt.trim()) setInput(prompt);
     focusComposer();
+    // Existing generic event kept for dashboard continuity.
     track("chat_action", { action });
+    // Phase-5 named per-action events. action is a fixed key
+    // (explain_simply / gita_verse / step_by_step / follow_up), never
+    // user text. Only the two explicitly-requested actions get a
+    // dedicated named event; the rest stay under chat_action.
+    if (action === "explain_simply") {
+      track("response_explain_simply_clicked", { page: "chat" });
+    } else if (action === "gita_verse") {
+      track("response_gita_verse_clicked", { page: "chat" });
+    }
   }
 
   // Native share when available (mobile), else copy share text + URL to
@@ -376,6 +399,7 @@ export default function ChatUI() {
     const url = typeof window !== "undefined" ? window.location.href : BRAND.url;
     const shareText = `${t.chat.actions.shareText}\n\n${text}`;
     track("chat_action", { action: "share" });
+    track("response_share_clicked", { page: "chat" });
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({
@@ -1140,7 +1164,9 @@ export default function ChatUI() {
               <button
                 key={option.label}
                 type="button"
-                onClick={() => handlePromptCategory(option.prompt, option.label)}
+                onClick={() =>
+                  handlePromptCategory(option.prompt, option.label, i)
+                }
                 disabled={isSending}
                 className={`group flex min-h-16 w-full flex-col items-start justify-center gap-1 rounded-lg border border-gold/20 bg-ink2/45 px-4 py-3 text-left shadow-[0_1px_0_rgba(0,0,0,0.25)_inset] transition-colors hover:border-gold/45 hover:bg-ink2/65 focus:outline-none focus:ring-2 focus:ring-gold/35 disabled:cursor-not-allowed disabled:opacity-50 ${
                   i === t.chat.promptCategories.length - 1 ? "sm:col-span-2" : ""
@@ -1235,6 +1261,7 @@ export default function ChatUI() {
               href="/voice"
               aria-label={t.chat.ariaVoiceMode}
               title={t.chat.ariaVoiceMode}
+              onClick={() => track("voice_prompt_clicked", { page: "chat" })}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-devotional transition-colors hover:bg-devotional/10 focus:outline-none focus:ring-2 focus:ring-devotional/40"
             >
               <svg
@@ -1699,6 +1726,7 @@ function MessageActions({
         if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
         copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
         track("chat_action", { action: "copy" });
+        track("response_copy_clicked", { page: "chat" });
       }
     } catch {
       /* clipboard denied (insecure context / permission) — silent */

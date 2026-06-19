@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { BRAND } from "@/lib/brand";
 import { captureRefFromUrl } from "@/lib/referralCapture";
+import { track } from "@/lib/tracking";
 import Atmosphere from "./Atmosphere";
 import Wordmark from "./motifs/Wordmark";
 import DevoteeSilhouettes from "./motifs/DevoteeSilhouettes";
@@ -78,6 +79,7 @@ export default function LandingClient() {
             </Link>
             <Link
               href="/pricing"
+              onClick={() => track("pricing_clicked", { page: "landing", label: "nav_seva" })}
               className="hidden text-ink-soft transition-colors hover:text-ink sm:inline"
             >
               SEVĀ
@@ -90,6 +92,7 @@ export default function LandingClient() {
             </Link>
             <Link
               href="/chat"
+              onClick={() => track("start_chat_clicked", { page: "landing", label: "nav_begin" })}
               className="inline-flex min-h-9 items-center rounded-full border border-[oklch(85%_0.02_50)] bg-white/45 px-4 py-1.5 text-[11px] tracking-[0.2em] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
             >
               Begin →
@@ -186,12 +189,14 @@ export default function LandingClient() {
             <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
               <Link
                 href="/chat"
+                onClick={() => track("start_chat_clicked", { page: "landing", label: "hero" })}
                 className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
               >
                 {t.landing.ctaAsk}
               </Link>
               <Link
                 href="/voice"
+                onClick={() => track("try_voice_clicked", { page: "landing", label: "hero" })}
                 className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
               >
                 🎤&nbsp;{t.landing.ctaTalk}
@@ -330,18 +335,21 @@ export default function LandingClient() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <Link
               href="/chat"
+              onClick={() => track("start_chat_clicked", { page: "landing", label: "footer_cta" })}
               className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-8 py-3.5 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
             >
               {t.landing.ctaAsk}
             </Link>
             <Link
               href="/voice"
+              onClick={() => track("try_voice_clicked", { page: "landing", label: "footer_cta" })}
               className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-white/45 px-7 py-3 text-[15px] text-ink backdrop-blur transition-colors hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
             >
               🎤&nbsp;{t.landing.ctaTalk}
             </Link>
             <Link
               href="/pricing"
+              onClick={() => track("pricing_clicked", { page: "landing", label: "footer_cta" })}
               className={`inline-flex min-h-12 items-center rounded-full px-3 py-3 text-[15px] text-ink-soft underline decoration-[oklch(80%_0.06_80)] decoration-1 underline-offset-4 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
             >
               {t.landing.ctaPricing}
