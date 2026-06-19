@@ -29,12 +29,19 @@ test('Mostly English with one Hindi word below 30% → en', () => {
   assert.equal(detectLang('okay so मन'), 'en');
 });
 
-test('Empty string defaults to hi', () => {
-  assert.equal(detectLang(''), 'hi');
+// Founder decision 2026-06-19 — when the language is unknown/ambiguous,
+// default to English, not Hindi. An empty message carries no signal.
+test('Empty string with no prior language defaults to en', () => {
+  assert.equal(detectLang(''), 'en');
 });
 
-test('Whitespace-only string defaults to hi', () => {
-  assert.equal(detectLang('   \n\t '), 'hi');
+test('Whitespace-only string with no prior language defaults to en', () => {
+  assert.equal(detectLang('   \n\t '), 'en');
+});
+
+// Established-conversation continuity still wins for a no-signal message.
+test('Empty string inherits priorLang=hi', () => {
+  assert.equal(detectLang('', 'hi'), 'hi');
 });
 
 test('Single Devanagari character → hi', () => {

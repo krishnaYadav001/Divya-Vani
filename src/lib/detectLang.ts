@@ -135,7 +135,11 @@ export function detectLang(
   priorLang?: 'hi' | 'en',
 ): 'hi' | 'en' {
   const stripped = text.replace(/\s/g, '');
-  if (stripped.length === 0) return priorLang ?? 'hi';
+  // Empty / whitespace-only input carries NO language signal. Inherit the
+  // established conversation language if we have one; otherwise default to
+  // English (founder decision 2026-06-19 — when the language is unknown or
+  // ambiguous, Krishna replies in English, not Hindi).
+  if (stripped.length === 0) return priorLang ?? 'en';
   let devanagari = 0;
   for (const ch of stripped) {
     const code = ch.codePointAt(0);

@@ -250,7 +250,7 @@ async function extractMemory(
         ? 'The prior conversation was Hindi. Default to "hi" unless this message is unambiguously English with ZERO Hindi tokens (no "hai", "hain", "kya", "tum", "main", "mera", "ki", "ko", "ka", "ke", no Devanagari, no Hindi verb inflections like "-na", "-ta", "-rahi", "-rahe", "-kar"). Romanized Hindi mixed with English loanwords (project, time, office, manager) is HINGLISH and classifies as "hi", not "en".'
         : priorLang === "en"
           ? 'The prior conversation was English. Default to "en" unless this message has clear Hindi signal — Devanagari script, substantial Hinglish, or an explicit language-switch request like "hindi mein bolo".'
-          : 'No prior conversation language available. Classify based on this message alone. Romanized Hindi mixed with English loanwords classifies as "hi".';
+          : 'No prior conversation language available. Classify based on this message alone. Romanized Hindi mixed with English loanwords is still Hinglish and classifies as "hi". But if the message has no clear Hindi or Hinglish signal and you are unsure, default to "en" — do NOT default to "hi" when uncertain.';
 
     const growingEdgeInstruction = priorGrowingEdge
       ? `Update slowly: the prior growing_edge is "${priorGrowingEdge}". Keep it UNCHANGED unless this turn meaningfully shifts the long-term arc — return the same value if uncertain. The growing_edge is not the current emotion or topic; it is what Krishna has been pointing this user toward across multiple sessions.`
@@ -273,7 +273,7 @@ Produce these seven fields about the user, integrating the prior summary with th
 - context_summary: ONE OR TWO sentences that capture the user's running emotional thread — what they have been feeling and why, including how today's message fits into that thread. If there was no prior summary, write a fresh one based on this message alone. Write the summary in the SAME language/script as the user's most recent message: Devanagari Hindi if they wrote Devanagari, Romanized Hindi if they wrote Hinglish, English if they wrote English.
 ${nameInstruction}
 - query_themes: 1-7 themes from the fixed taxonomy below that capture what the user is feeling, asking about, or struggling with in THIS message. The same taxonomy was applied to the scripture corpus, so query themes can match retrieved-verse themes during scripture retrieval reranking.
-- language: classify the user's input language. Output "hi" if the message is Hindi (Devanagari OR Romanized Hindi/Hinglish), or "en" if unambiguously English. ${stickinessInstruction}
+- language: classify the user's input language. Output "hi" ONLY when there is a clear Hindi signal — Devanagari script OR clearly Romanized Hindi/Hinglish. Output "en" for English. If you CANNOT confidently determine the language — the message is ambiguous, too short to tell, mixed with no clear Hindi majority, gibberish, only emoji/numbers/punctuation, or in a script you cannot place — default to "en" (unless the guidance below overrides this for an established conversation). Never fall back to "hi" out of uncertainty. ${stickinessInstruction}
 - growing_edge: a short phrase (max 12 words, in English) capturing what Krishna has been pointing this user toward across MULTIPLE sessions. DISTINCT from main_problem (current concern). Examples: "letting go of what isn't yours to hold", "facing the work instead of waiting to feel ready", "honoring the parent without becoming the parent's mirror". ${growingEdgeInstruction}
 
 ${QUERY_TAXONOMY_BLOCK}
