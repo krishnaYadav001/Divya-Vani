@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import Link from "next/link";
 import type { Message, SafetyCard } from "@/lib/messages";
@@ -638,6 +638,35 @@ export default function ChatUI() {
       },
     ]);
   }
+
+  // Perf: stable callback identities for the memoized <MessageCard> rows.
+  // The refs always hold the latest handler (each closes over current
+  // state); the useCallback wrappers keep a CONSTANT identity across
+  // renders. Because a streaming token replaces only the streaming
+  // message object (applyFrameToMessages), React.memo(MessageCard) can
+  // then skip re-rendering every other message's subtree (incl. the
+  // VerseCardList) on each delta — the main chat-streaming smoothness win.
+  const actionPrefillRef = useRef(handleActionPrefill);
+  const actionShareRef = useRef(handleActionShare);
+  const paywallSuccessRef = useRef(handlePaywallSuccess);
+  useEffect(() => {
+    actionPrefillRef.current = handleActionPrefill;
+    actionShareRef.current = handleActionShare;
+    paywallSuccessRef.current = handlePaywallSuccess;
+  });
+  const stableActionPrefill = useCallback(
+    (prompt: string, action: string) =>
+      actionPrefillRef.current(prompt, action),
+    [],
+  );
+  const stableActionShare = useCallback(
+    (text: string) => actionShareRef.current(text),
+    [],
+  );
+  const stablePaywallSuccess = useCallback(
+    (messageId: string) => paywallSuccessRef.current(messageId),
+    [],
+  );
 
   const isEmpty = messages.length === 0 && !isSending;
   const bannedWord = findBannedWord(input);
@@ -1481,7 +1510,7 @@ export default function ChatUI() {
                   key={m.id}
                   message={m}
                   userLang={resolveUserLang(messages, i)}
-                  onPaywallSuccess={() => handlePaywallSuccess(m.id)}
+                  onPaywallSuccess={stablePaywallSuccess}
                   actionLabels={t.chat.actions}
                   // Hide the action row while this exact message is still
                   // streaming (last bubble + isSending) so buttons don't
@@ -1489,8 +1518,8 @@ export default function ChatUI() {
                   showActions={
                     !(isSending && i === messages.length - 1)
                   }
-                  onPrefill={handleActionPrefill}
-                  onShare={handleActionShare}
+                  onPrefill={stableActionPrefill}
+                  onShare={stableActionShare}
                 />
               ))}
               {isSending && messages[messages.length - 1]?.role === "user" && (
@@ -1568,7 +1597,7 @@ function resolveUserLang(
   return detectLang(messages[mostRecent].content, priorLang);
 }
 
-function MessageCard({
+const MessageCard = memo(function MessageCard({
   message,
   userLang,
   onPaywallSuccess,
@@ -1579,7 +1608,7 @@ function MessageCard({
 }: {
   message: Message;
   userLang: "hi" | "en";
-  onPaywallSuccess: () => void;
+  onPaywallSuccess: (messageId: string) => void;
   actionLabels: Messages["chat"]["actions"];
   showActions: boolean;
   onPrefill: (prompt: string, action: string) => void;
@@ -1677,12 +1706,15 @@ function MessageCard({
           <SafetyCardView card={message.safety_card} />
         )}
         {showPaywall && (
-          <SevaPaywall tiers={message.tiers!} onSuccess={onPaywallSuccess} />
+          <SevaPaywall
+            tiers={message.tiers!}
+            onSuccess={() => onPaywallSuccess(message.id)}
+          />
         )}
       </div>
     </div>
   );
-}
+});
 
 // Phase-1 engagement action row. Lives under each landed Krishna reply.
 // One horizontally-scrollable row of compact pill buttons so the mobile

@@ -64,7 +64,13 @@ export default function LandingClient() {
 
   return (
     <main className="relative flex-1 overflow-x-hidden overflow-y-auto">
-      <Atmosphere mode="hero" intensity={1} vignette={1} />
+      {/* Perf: the dawn-fresco painting is already the LCP hero (the
+          sharp <Image priority> arch-portal below). Passing fresco={false}
+          suppresses Atmosphere's duplicate RAW full-size /dawn-fresco.jpg
+          CSS background-image so the browser fetches the painting once
+          (optimized AVIF/WebP via next/image) instead of twice. The
+          gradient washes + drifting petals still give the z-0 ground. */}
+      <Atmosphere mode="hero" intensity={1} vignette={1} fresco={false} />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1320px] flex-col px-5 py-5 sm:px-8 lg:min-h-full lg:justify-center lg:px-14 lg:py-4">
         {/* Header */}

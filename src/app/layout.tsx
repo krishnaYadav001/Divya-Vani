@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import {
   Cormorant_Garamond,
-  Geist,
-  Geist_Mono,
   Marcellus,
   Tiro_Devanagari_Hindi,
 } from "next/font/google";
@@ -12,21 +10,18 @@ import { BRAND } from "@/lib/brand";
 import { jsonLdScript, SOCIAL_PROFILES } from "@/lib/seo";
 import "@/lib/startup";
 import SiteFooter from "./components/SiteFooter";
-import SupportWidget from "./components/SupportWidget";
+import SupportWidget from "./components/SupportWidgetLazy";
 import VisitTracker from "./components/VisitTracker";
 import { LanguageProvider } from "./providers/LanguageProvider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+// Perf: Geist + Geist Mono were dropped. The brand stack is Marcellus
+// (display/UI) + Cormorant Garamond italic (English body) + Tiro
+// Devanagari (all Devanagari); Geist was only mapped to the unused
+// `--font-sans`/`--font-mono` aliases (referenced solely by the support
+// widget + the internal /design-system page). Those aliases now point at
+// a system font stack in globals.css, so two render-path Google font
+// families no longer load on every route.
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
@@ -169,7 +164,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${marcellus.variable} ${tiroDevanagari.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${marcellus.variable} ${tiroDevanagari.variable} h-full antialiased`}
     >
       <body
         className="h-dvh flex flex-col overflow-hidden"

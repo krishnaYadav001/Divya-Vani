@@ -77,8 +77,14 @@
   --color-ink-faint: oklch(62% 0.02 30);
   --color-ink-line: oklch(80% 0.015 30);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Perf: Geist + Geist Mono dropped (see layout.tsx). These aliases now
+     resolve to native system fonts — used only by the support widget +
+     the internal /design-system page, neither of which needs a downloaded
+     webfont. The brand display/body/Devanagari faces are unchanged below. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono",
+    Menlo, Consolas, monospace;
   /* Type stack UNCHANGED — Marcellus (display/UI), Cormorant Garamond
      italic (English body), Tiro Devanagari Hindi (all Devanagari).
      `--font-devanagari` keeps its name so every existing usage
@@ -105,7 +111,12 @@ body {
       transparent 50%
     ),
     var(--color-mist);
-  background-attachment: fixed;
+  /* Perf: `background-attachment: fixed` removed. The body is a
+     non-scrolling app shell (h-dvh + overflow-hidden), so a fixed
+     background is visually identical to the default but forces the
+     browser to keep the multi-radial gradient on its own composited
+     layer — a known source of repaint/scroll jank on mobile while the
+     inner chat/landing containers scroll. */
   font-family: var(--font-cormorant), Georgia, serif;
   letter-spacing: 0.005em;
   /* Suppress the grey tap-flash on touch — the app supplies its own
@@ -606,6 +617,23 @@ body {
 @keyframes night-orb-drift {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ── Perf: trim the living-atmosphere paint cost on phones ───────────
+   On small / coarse-pointer screens the petals + sparkles are the main
+   continuous compositor/paint load (each sparkle animates a box-shadow
+   glow — the single most expensive per-frame paint here). The <Petals>
+   layer still emits the full deterministic, SSR-safe set; this just
+   display:none's the sparkle motes and every other petal on phones, so
+   ~half the nodes stop animating/painting. Pure CSS = no hydration
+   mismatch, no JS. Desktop visuals are unchanged. */
+@media (max-width: 640px) {
+  .dawn-sparkle {
+    display: none;
+  }
+  .dawn-petal:nth-child(2n) {
+    display: none;
   }
 }
 
