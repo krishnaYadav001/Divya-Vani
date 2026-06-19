@@ -122,3 +122,22 @@ test('English: "Bhagavad Gita is a beautiful book" → en (proper nouns do not t
 test('English: "What is the meaning of life" → en', () => {
   assert.equal(detectLang('What is the meaning of life'), 'en');
 });
+
+test('English first-turn astrology question with antardasha stays en', () => {
+  assert.equal(
+    detectLang(
+      'i am thinking to start my new work next month because i am waiting for new antardasha so what should be destiny vs freewill',
+    ),
+    'en',
+  );
+});
+
+test('English overlap words "to" and "do" do not trip Hinglish', () => {
+  assert.equal(detectLang('I want to go to work'), 'en');
+  assert.equal(detectLang('I need to talk to you'), 'en');
+});
+
+test('English with spiritual topic nouns stays en', () => {
+  assert.equal(detectLang('What is karma and dharma'), 'en');
+  assert.equal(detectLang('I want to understand bhakti and moksha'), 'en');
+});

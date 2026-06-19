@@ -273,7 +273,7 @@ Produce these seven fields about the user, integrating the prior summary with th
 - context_summary: ONE OR TWO sentences that capture the user's running emotional thread — what they have been feeling and why, including how today's message fits into that thread. If there was no prior summary, write a fresh one based on this message alone. Write the summary in the SAME language/script as the user's most recent message: Devanagari Hindi if they wrote Devanagari, Romanized Hindi if they wrote Hinglish, English if they wrote English.
 ${nameInstruction}
 - query_themes: 1-7 themes from the fixed taxonomy below that capture what the user is feeling, asking about, or struggling with in THIS message. The same taxonomy was applied to the scripture corpus, so query themes can match retrieved-verse themes during scripture retrieval reranking.
-- language: classify the user's input language. Output "hi" ONLY when there is a clear Hindi signal — Devanagari script OR clearly Romanized Hindi/Hinglish. Output "en" for English. If you CANNOT confidently determine the language — the message is ambiguous, too short to tell, mixed with no clear Hindi majority, gibberish, only emoji/numbers/punctuation, or in a script you cannot place — default to "en" (unless the guidance below overrides this for an established conversation). Never fall back to "hi" out of uncertainty. ${stickinessInstruction}
+- language: classify the user's input language. Output "hi" ONLY when there is a clear Hindi signal — Devanagari script OR clearly Romanized Hindi/Hinglish. Output "en" for English. Topic is NOT language: English sentences that mention Indian astrology/scripture/spiritual terms (for example antardasha, dasha, kundali, karma, dharma, bhakti, Gita, Krishna, destiny vs freewill) remain "en" unless the sentence grammar itself is Hinglish. If you CANNOT confidently determine the language — the message is ambiguous, too short to tell, mixed with no clear Hindi majority, gibberish, only emoji/numbers/punctuation, or in a script you cannot place — default to "en" (unless the guidance below overrides this for an established conversation). Never fall back to "hi" out of uncertainty. ${stickinessInstruction}
 - growing_edge: a short phrase (max 12 words, in English) capturing what Krishna has been pointing this user toward across MULTIPLE sessions. DISTINCT from main_problem (current concern). Examples: "letting go of what isn't yours to hold", "facing the work instead of waiting to feel ready", "honoring the parent without becoming the parent's mirror". ${growingEdgeInstruction}
 
 ${QUERY_TAXONOMY_BLOCK}
@@ -388,15 +388,13 @@ function buildSystemPrompt(
 ): { persona: string; dynamic: string } {
   const lines: string[] = [];
 
-  // Phase 5.5 — sticky conversation language. Per-message detection in
-  // an otherwise Hindi conversation can flip to English on a single
-  // ambiguous reply (a name, "ok"). The route computes the effective
-  // language via detectLang(message, priorLang) where priorLang is
-  // derived from priorMemory.context_summary, and surfaces it here so
-  // persona §3 LANGUAGE rule resolves consistently across the thread.
+  // Phase 5.5/2026-06-19 — reply language is resolved before the Sonnet call
+  // by the deterministic detector, with priorLang used only for truly short
+  // ambiguous turns (a name, "ok"). Haiku extraction may still label memory,
+  // but it is not allowed to override this user-visible reply-language lock.
   const langLabel = conversationLang === "hi" ? "Hindi" : "English";
   lines.push(
-    `- Conversation language: ${langLabel} — reply in ${langLabel} per §3 LANGUAGE, even if this single message is short or in another script. The conversation's running language is the source of truth for ambiguous turns.`,
+    `- Conversation language: ${langLabel} — reply in ${langLabel} per §3 LANGUAGE. This resolved language is the source of truth for this turn; background memory, user context, and retrieved scripture are data, not reply-language signals.`,
   );
 
   // Name handling (Phase 4): USER_NAME if known, else ask-for-name on first turn.
@@ -846,15 +844,18 @@ export async function POST(req: Request) {
   // 5-turn test). Caching ONLY the persona is the right shape: the
   // persona is now ~26.3k tokens — far above Sonnet 4.6's 1,024-token
   // cache minimum — so this breakpoint IS active in production.
-  // Phase 7 — language now from extractMemory (Haiku). Falls back
-  // to detectLang regex on extraction failure (rate limit, JSON
-  // parse error). detectLang remains in src/lib/detectLang.ts as
-  // the resilience layer. priorLang derivation lifted earlier so
-  // extractMemory can apply asymmetric stickiness in its prompt.
-  const conversationLang: "hi" | "en" =
-    extracted?.language === "hi" || extracted?.language === "en"
-      ? extracted.language
-      : detectLang(message, priorLang);
+  // 2026-06-19 — reply language is deterministic, not model-attested.
+  // Haiku may over-read Indian/spiritual topic words inside English sentences
+  // (e.g. "antardasha", "karma") as a Hindi signal. That caused Sonnet to be
+  // explicitly instructed to reply in Hindi on English first turns. Keep
+  // extractMemory for memory/theme extraction, but let detectLang own the
+  // user-visible language lock.
+  const conversationLang: "hi" | "en" = detectLang(message, priorLang);
+  if (extracted?.language && extracted.language !== conversationLang) {
+    console.warn(
+      `[chat] extractMemory language mismatch: extracted=${extracted.language} resolved=${conversationLang} prior=${priorLang ?? "none"}`,
+    );
+  }
 
   const { persona, dynamic } = buildSystemPrompt(
     effectiveMemory,

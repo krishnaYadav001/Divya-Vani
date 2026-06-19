@@ -21,10 +21,11 @@
 // type Hindi in Latin script ("main bahut khush hu") because Devanagari
 // keyboards are slow on phones. Treat Hinglish as a writing-script variant
 // of Hindi, not a separate language: input → Hindi reply (Devanagari).
-// Triggers only on Latin-only input with >=3 tokens AND >=40% of tokens
-// matching the curated HINGLISH_VOCAB. The 40% threshold is the floor
-// that separates Hinglish from English-with-incidental-Hindi-noun
-// ("Tell me about Yashoda" — 0% match → en).
+// Triggers only on Latin-only input with >=3 tokens AND >=40% strong
+// Hinglish tokens. A few romanized Hindi tokens overlap with common English
+// ("to", "do", "the"), and spiritual topic words ("karma", "dharma") often
+// appear inside English questions. Those do NOT count as strong language
+// signals by themselves.
 
 const HINGLISH_VOCAB: ReadonlySet<string> = new Set([
   // Pronouns
@@ -120,6 +121,16 @@ const HINGLISH_VOCAB: ReadonlySet<string> = new Set([
   'neend', 'bhookh', 'pyaas', 'thakaan',
 ]);
 
+const WEAK_HINGLISH_TOKENS: ReadonlySet<string> = new Set([
+  // English/Hinglish overlap. These can support a Hinglish classification when
+  // surrounded by clearer Hindi tokens, but should never be enough alone.
+  'to', 'do', 'the',
+
+  // Indian/spiritual topic words commonly used in English sentences.
+  'dharma', 'dharm', 'karma', 'bhakti',
+  'atma', 'mukti', 'moksha',
+]);
+
 function tokenizeForHinglish(text: string): string[] {
   // Lowercase, strip diacritics, split on any non-letter, drop short fragments.
   return text
@@ -161,11 +172,13 @@ export function detectLang(
   if (!hasDevanagari && wordCount >= 3) {
     const tokens = tokenizeForHinglish(text);
     if (tokens.length >= 3) {
-      let matched = 0;
+      let strongMatched = 0;
       for (const t of tokens) {
-        if (HINGLISH_VOCAB.has(t)) matched++;
+        if (HINGLISH_VOCAB.has(t) && !WEAK_HINGLISH_TOKENS.has(t)) {
+          strongMatched++;
+        }
       }
-      if (matched / tokens.length >= 0.4) return 'hi';
+      if (strongMatched / tokens.length >= 0.4) return 'hi';
     }
   }
 
