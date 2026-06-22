@@ -25,6 +25,8 @@ This rule loads when Claude is touching ingestion / regeneration scripts, the Su
 | `last_active_at` | timestamptz | null | Returning-after-gap detection |
 | `message_count` | int | 0 | Free-tier counter |
 | `seva_balance` | int | 0 | Remaining purchased messages from seva tiers (Phase 5+) |
+| `voice_seconds_balance` | int | 0 | Remaining one-time voice wallet seconds |
+| `free_voice_trial_claimed_at` | timestamptz | null | One-time guard for the 120-second free voice trial |
 | `is_first_time` | bool | true | Onboarding flag |
 | `verses_referenced` | text[] | `{}` | Verse refs used in last reply (Phase 2+) |
 | `updated_at` | timestamptz | `now()` | Generic |
@@ -132,6 +134,8 @@ Beta-only full conversation log. Written from the chat route via `logChatTurn` f
 Indexes: `idx_chat_logs_user_id`, `idx_chat_logs_turn_at` (DESC), `idx_chat_logs_user_turn` (user_id, turn_at). RLS enabled, no policies.
 
 **RLS:** enabled on all tables, no policies (locks anonymous access). Service role bypasses; service role key is server-only.
+
+**Voice trial grant:** `/api/visits` and `/api/voice/bootstrap` call `grant_free_voice_trial(p_user_id, p_seconds)` via `grantFreeVoiceTrial`. The RPC increments `users_memory.voice_seconds_balance` by 120 seconds exactly once per user by setting `free_voice_trial_claimed_at`; refreshes and concurrent visit/bootstrap calls do not double-credit.
 
 > RLS correction (2026-06-18): a production audit found `users_memory` had RLS **disabled** while every other table had it enabled. Fixed via `scripts/enable-rls-users-memory.sql` (`ALTER TABLE users_memory ENABLE ROW LEVEL SECURITY;`, no policies — matches the other tables). No behavioral impact: the app uses only the server-side service-role key (no browser-side / anon-key Supabase client exists), which bypasses RLS. The change closes the latent hole where a future anon-key client read/write would have had full access to this one table.
 

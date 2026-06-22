@@ -47,7 +47,12 @@ ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;  -- no policies; service ro
 -- 2) Voice-minute WALLET (one-time top-ups, like seva message credits).
 --    Lives on users_memory so it's read in the same fetchMemory hit.
 ALTER TABLE users_memory
-  ADD COLUMN IF NOT EXISTS voice_seconds_balance int NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS voice_seconds_balance int NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS free_voice_trial_claimed_at timestamptz;
+
+-- free_voice_trial_claimed_at is the one-time guard for the 2-minute free
+-- voice-to-voice trial. The grant_free_voice_trial RPC in subscriptions-rpcs.sql
+-- is the only writer; it increments voice_seconds_balance exactly once.
 
 -- 3) Wallet purchases reuse the existing `payments` table. Widen the tier
 --    CHECK if one exists (the seva tier ids + the new wallet pack ids).
@@ -76,6 +81,7 @@ ALTER TABLE voice_sessions ENABLE ROW LEVEL SECURITY;  -- no policies; service r
 
 -- =============================================================================
 -- Done. After running: confirm `subscriptions` + `voice_sessions` exist and
--- `users_memory` has `voice_seconds_balance`. Then create the Razorpay Plans
--- (see the setup script / dashboard step) and set the RAZORPAY_PLAN_* env vars.
+-- `users_memory` has `voice_seconds_balance` + `free_voice_trial_claimed_at`.
+-- Then create the Razorpay Plans (see the setup script / dashboard step) and
+-- set the RAZORPAY_PLAN_* env vars.
 -- =============================================================================

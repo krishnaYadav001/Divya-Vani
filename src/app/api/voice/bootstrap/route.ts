@@ -26,7 +26,7 @@ import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { waitUntil } from "@vercel/functions";
-import { fetchMemory } from "@/lib/supabase";
+import { fetchMemory, grantFreeVoiceTrial } from "@/lib/supabase";
 import { hasVoiceAccess } from "@/lib/voiceAccess";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
 
@@ -104,6 +104,8 @@ export async function GET() {
     const existing = jar.get(USER_COOKIE)?.value;
     const userId = existing ?? randomUUID();
     const isNewUser = !existing;
+
+    await grantFreeVoiceTrial(userId);
 
     // hasVoiceAccess + fetchMemory in parallel. hasVoiceAccess fails closed
     // internally (any DB error → allowed:false), so a blip costs a paywall

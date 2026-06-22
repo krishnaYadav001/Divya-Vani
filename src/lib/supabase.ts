@@ -242,6 +242,8 @@ export interface VisitRecordResult {
   messageCount: number | null;
 }
 
+export const FREE_VOICE_TRIAL_SECONDS = 120;
+
 /**
  * Records the first browser visit immediately, before the user has sent a
  * chat message. INSERT tells callers whether this is a brand-new Supabase row
@@ -319,6 +321,34 @@ export async function recordVisit(userId: string): Promise<VisitRecordResult> {
   } catch (e) {
     console.error("[supabase] recordVisit threw:", e);
     return failed;
+  }
+}
+
+/**
+ * One-time free voice trial. The Postgres RPC owns the idempotency guard
+ * (`users_memory.free_voice_trial_claimed_at IS NULL`) so simultaneous
+ * /api/visits + /api/voice/bootstrap requests cannot double-credit refreshes.
+ * Returns the wallet balance after the call, or null if the migration/RPC is
+ * missing. Best-effort: a trial-credit miss must never block page load.
+ */
+export async function grantFreeVoiceTrial(
+  userId: string,
+): Promise<number | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("grant_free_voice_trial", {
+      p_user_id: userId,
+      p_seconds: FREE_VOICE_TRIAL_SECONDS,
+    });
+    if (error) {
+      console.error("[supabase] grantFreeVoiceTrial error:", error);
+      return null;
+    }
+    return typeof data === "number" ? data : null;
+  } catch (e) {
+    console.error("[supabase] grantFreeVoiceTrial threw:", e);
+    return null;
   }
 }
 

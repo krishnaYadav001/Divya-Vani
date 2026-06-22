@@ -132,20 +132,73 @@ BEGIN
 END;
 $$;
 
--- meter_voice_session — AUTHORITATIVE voice metering with double-charge
--- protection. Supersedes consume_voice_seconds (which is kept above for
--- backwards-compat but no longer called). A voice call is reported TWICE: once
--- by the browser on disconnect (provisional, instant, spoofable) and once by
--- ElevenLabs' post-call webhook (authoritative connection duration). Both call
--- this function with the SAME p_conversation_id; it tracks a per-conversation
--- high-water mark (voice_sessions.metered_seconds) and only ever debits the
--- INCREMENT beyond what was already charged. Consequences:
---   • webhook retries / duplicate deliveries → delta 0, no re-charge
---   • a client that under-reports or suppresses its report → the webhook's true
---     duration trues it up (debits the shortfall)
---   • the provisional client report keeps the balance UX snappy
--- Pool first, then wallet, each floored at 0 (mirrors consume_voice_seconds).
--- Row-locked (FOR UPDATE) so concurrent reports for the same call serialize.
+-- grant_free_voice_trial - one-time 2-minute voice-to-voice trial.
+-- The idempotency guard lives on users_memory.free_voice_trial_claimed_at so
+-- concurrent /api/visits + /api/voice/bootstrap calls cannot double-credit.
+-- Returns the user's wallet balance after the grant, or the existing balance
+-- if the trial was already claimed. p_seconds=0 is a read-only setup probe.
+CREATE OR REPLACE FUNCTION grant_free_voice_trial(
+  p_user_id text,
+  p_seconds int DEFAULT 120
+)
+RETURNS int
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  new_balance int;
+BEGIN
+  IF p_user_id IS NULL OR btrim(p_user_id) = '' THEN
+    RETURN NULL;
+  END IF;
+
+  IF p_seconds IS NULL OR p_seconds <= 0 THEN
+    SELECT voice_seconds_balance INTO new_balance
+      FROM users_memory WHERE user_id = p_user_id;
+    RETURN COALESCE(new_balance, 0);
+  END IF;
+
+  LOOP
+    UPDATE users_memory
+       SET voice_seconds_balance = voice_seconds_balance + p_seconds,
+           free_voice_trial_claimed_at = now(),
+           updated_at = now()
+     WHERE user_id = p_user_id
+       AND free_voice_trial_claimed_at IS NULL
+    RETURNING voice_seconds_balance INTO new_balance;
+
+    IF FOUND THEN
+      RETURN new_balance;
+    END IF;
+
+    SELECT voice_seconds_balance INTO new_balance
+      FROM users_memory WHERE user_id = p_user_id;
+    IF FOUND THEN
+      RETURN COALESCE(new_balance, 0);
+    END IF;
+
+    BEGIN
+      INSERT INTO users_memory (
+        user_id,
+        voice_seconds_balance,
+        free_voice_trial_claimed_at,
+        last_active_at,
+        updated_at
+      )
+      VALUES (p_user_id, p_seconds, now(), now(), now())
+      RETURNING voice_seconds_balance INTO new_balance;
+
+      RETURN new_balance;
+    EXCEPTION WHEN unique_violation THEN
+      -- A concurrent request created the row. Loop once more and apply the
+      -- guarded UPDATE path above.
+    END;
+  END LOOP;
+END;
+$$;
+
+-- meter_voice_session - authoritative voice metering with double-charge
+-- protection. It tracks a per-conversation high-water mark and only debits the
+-- increment beyond what was already charged.
 CREATE OR REPLACE FUNCTION meter_voice_session(
   p_conversation_id text,
   p_user_id         text,
@@ -245,5 +298,5 @@ $$;
 -- Done. Confirm all functions exist:
 --   SELECT proname FROM pg_proc WHERE proname IN
 --    ('increment_subscription_messages','consume_voice_seconds',
---     'credit_voice_seconds','meter_voice_session');
+--     'credit_voice_seconds','grant_free_voice_trial','meter_voice_session');
 -- =============================================================================

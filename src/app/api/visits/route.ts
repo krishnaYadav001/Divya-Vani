@@ -1,7 +1,11 @@
 import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { recordVisit, type VisitRecordResult } from "@/lib/supabase";
+import {
+  grantFreeVoiceTrial,
+  recordVisit,
+  type VisitRecordResult,
+} from "@/lib/supabase";
 import {
   escapeTelegramHtml,
   formatTelegramDateTime,
@@ -112,6 +116,8 @@ export async function POST() {
         false,
       );
     }
+
+    await grantFreeVoiceTrial(userId);
 
     await notifyReturningVisit(result, alreadySeenToday, today);
 

@@ -45,6 +45,19 @@ async function main() {
     record("column: users_memory.voice_seconds_balance", !error, error?.message ?? "");
   }
 
+  // 2a) users_memory.free_voice_trial_claimed_at column exists.
+  {
+    const { error } = await sb
+      .from("users_memory")
+      .select("free_voice_trial_claimed_at", { head: true })
+      .limit(0);
+    record(
+      "column: users_memory.free_voice_trial_claimed_at",
+      !error,
+      error?.message ?? "",
+    );
+  }
+
   // 2b) voice_sessions ledger table exists (high-water-mark metering).
   {
     const { error } = await sb
@@ -80,7 +93,16 @@ async function main() {
     record("rpc: credit_voice_seconds", !error, error?.message ?? "");
   }
 
-  // 6) meter_voice_session — p_total_seconds=0 short-circuits before any write.
+  // 6) grant_free_voice_trial - p_seconds=0 takes the read-only branch.
+  {
+    const { error: trialError } = await sb.rpc("grant_free_voice_trial", {
+      p_user_id: PROBE_USER,
+      p_seconds: 0,
+    });
+    record("rpc: grant_free_voice_trial", !trialError, trialError?.message ?? "");
+  }
+
+  // 7) meter_voice_session - p_total_seconds=0 short-circuits before any write.
   {
     const { error } = await sb.rpc("meter_voice_session", {
       p_conversation_id: "__setup_probe_conversation__",
