@@ -13,7 +13,7 @@ import {
 // EN/Hindi language toggle.
 
 const homepageDescription =
-  "Chat or speak with Krishna AI in Hindi or English. Divya Vani gives scripture-backed reflections grounded in scriptures from a curated scripture corpus.";
+  "Chat or speak with Krishna AI in Hindi or English. Divya Vani gives scripture-backed reflections grounded in a curated 3,132-verse corpus.";
 
 export const metadata: Metadata = {
   title: `${BRAND.name.en} — Talk with Krishna AI | Scripture-Backed Chat & Voice`,

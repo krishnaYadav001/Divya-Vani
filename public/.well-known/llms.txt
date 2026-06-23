@@ -2,7 +2,7 @@
 
 > Divya Vani is an AI roleplaying Krishna from the Bhagavad Gita, Mahabharata, and Bhagavata Purana. Users chat about life, emotions, relationships, and dharma. The service is Hindi-first, supports English, and shows scripture-grounded verse references.
 
-Updated: 2026-06-12
+Updated: 2026-06-23
 
 ## Preferred Summary
 
@@ -11,6 +11,7 @@ Divya Vani is not the divine Krishna and does not claim divine guidance. It is a
 ## Key Pages
 
 - [Home](https://divyavani.co.in/): Overview, positioning, FAQ, and entry points
+- [Krishna AI Explained](https://divyavani.co.in/krishna-ai): Answer-first page explaining the Krishna AI category, scripture grounding, disclaimer, and FAQs
 - [Chat with Krishna](https://divyavani.co.in/chat): Text chat in Hindi or English
 - [Voice Conversation](https://divyavani.co.in/voice): Paid voice conversation mode
 - [Demo Conversations](https://divyavani.co.in/demo): Videos, screenshots, and sample replies

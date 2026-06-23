@@ -1,6 +1,6 @@
 import { BRAND } from "@/lib/brand";
 
-export const SITE_LAST_MODIFIED = "2026-06-13";
+export const SITE_LAST_MODIFIED = "2026-06-23";
 export const RSS_ALTERNATE = {
   "application/rss+xml": "/feed.xml",
 } as const;
@@ -26,10 +26,19 @@ export const PUBLIC_ROUTES = [
     path: "/",
     title: `${BRAND.name.en} — Talk with Krishna AI | Scripture-Backed Chat & Voice`,
     description:
-      "Chat or speak with Krishna AI in Hindi or English. Divya Vani gives scripture-backed reflections grounded in scriptures from a curated scripture corpus.",
+      "Chat or speak with Krishna AI in Hindi or English. Divya Vani gives scripture-backed reflections grounded in a curated 3,132-verse corpus.",
     lastModified: SITE_LAST_MODIFIED,
     changeFrequency: "weekly",
     priority: 1.0,
+  },
+  {
+    path: "/krishna-ai",
+    title: `Krishna AI | Scripture-Grounded Chat with ${BRAND.name.en}`,
+    description:
+      "Learn what Krishna AI means, how Divya Vani grounds replies in 3,132 scripture verses, and why it never claims to be divine guidance.",
+    lastModified: SITE_LAST_MODIFIED,
+    changeFrequency: "weekly",
+    priority: 0.95,
   },
   {
     path: "/chat",

@@ -1,6 +1,6 @@
 # Divya Vani - Full LLM Digest
 
-Updated: 2026-06-12
+Updated: 2026-06-23
 
 ## What Divya Vani Is
 
@@ -19,6 +19,12 @@ Divya Vani uses a curated scripture corpus of 3,132 verses:
 Each verse can include Sanskrit text, transliteration, Hindi translation, English summary, source reference, and thematic tags. Replies are designed to be grounded in retrieved scripture context, and the interface can show verse cards with Sanskrit, Hindi, and English.
 
 ## Main User Experiences
+
+### Krishna AI Explained
+
+The Krishna AI page is the canonical answer page for people and AI crawlers asking what "Krishna AI" means in the context of Divya Vani. It explains that Divya Vani is a scripture-grounded AI roleplay experience, not the real Krishna or divine guidance, and summarizes the corpus, languages, safety boundaries, and FAQs.
+
+URL: https://divyavani.co.in/krishna-ai
 
 ### Chat with Krishna
 
@@ -81,3 +87,4 @@ Sitemap: https://divyavani.co.in/sitemap.xml
 RSS Feed: https://divyavani.co.in/feed.xml
 Robots: https://divyavani.co.in/robots.txt
 Short LLM index: https://divyavani.co.in/.well-known/llms.txt
+Krishna AI explainer: https://divyavani.co.in/krishna-ai

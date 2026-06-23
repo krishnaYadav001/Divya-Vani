@@ -87,6 +87,10 @@ export function SiteFooterContent() {
 
   return (
     <>
+      <Link href="/krishna-ai" className={LINK_CLASS}>
+        Krishna AI
+      </Link>
+      {DOT}
       <Link href="/demo" className={LINK_CLASS}>
         {t.footer.examples}
       </Link>
