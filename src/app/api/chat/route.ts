@@ -369,6 +369,85 @@ function formatScriptureBlock(verses: VerseHit[]): string {
   return `RELEVANT SCRIPTURE:\n${lines.join("\n")}`;
 }
 
+type ReplyLengthProfile = {
+  maxTokens: number;
+  instruction: string;
+};
+
+function buildReplyLengthProfile(
+  message: string,
+  safetyFlag: SafetyFlag | null,
+  isVoiceMode: boolean,
+): ReplyLengthProfile {
+  if (isVoiceMode) {
+    return {
+      maxTokens: 160,
+      instruction:
+        "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be <=30 words. Krishna's voice, register, and warmth stay exactly the same; only the length is shorter. It is fine to end cleanly mid-thought; the user can ask you to continue.",
+    };
+  }
+
+  if (safetyFlag) {
+    return {
+      maxTokens: 360,
+      instruction:
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): for this safety-sensitive turn, stay within 3-4 short sentences and 90 words. Presence first; do not expand into an essay, advice list, or long scripture explanation.",
+    };
+  }
+
+  const compact = message.replace(/\s+/g, " ").trim();
+  const wordCount = compact.length > 0 ? compact.split(/\s+/).length : 0;
+  const lower = compact.toLowerCase();
+  const asksForDepth =
+    /\b(explain|elaborate|detail|details|full|complete|story|summary|summarize|teach me|tell me about)\b/.test(
+      lower,
+    ) ||
+    /(विस्तार|समझाओ|समझाइए|पूरी|पूरा|कथा|सार)/.test(compact) ||
+    /\b(pura|poora|poori|vistaar|samjhao|samjhaiye|katha|kahani)\b/.test(
+      lower,
+    );
+  const asksForDirectHelp =
+    /\b(guide|help|advice|advise|verse|gita|shloka|sloka|calm|control|anger|angry|confused|what should i|how do i|how to|tell me what|need to|want to)\b/.test(
+      lower,
+    ) ||
+    /(मार्गदर्शन|सहायता|सलाह|श्लोक|गीता|शांत|क्रोध|गुस्सा|क्या करूँ|कैसे|उपाय|बताओ|बताइए)/.test(
+      compact,
+    ) ||
+    /\b(kya karu|kya karun|kaise|upay|shaant|gussa|krodh|madad)\b/.test(
+      lower,
+    );
+
+  if (asksForDepth) {
+    return {
+      maxTokens: 850,
+      instruction:
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user asked for explanation or story, so a longer answer is allowed, but cap it at 180 words or 8 short sentences. Give the spine, not the encyclopedia; the user can ask for the next layer.",
+    };
+  }
+
+  if (wordCount <= 10 && !asksForDirectHelp) {
+    return {
+      maxTokens: 220,
+      instruction:
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user gave a very short turn, so answer in 1-3 short sentences and 55 words or less. One warm reflection, one clean invitation, or one gentle question is enough. Do not add a scripture parallel unless the user directly asked for one.",
+    };
+  }
+
+  if (asksForDirectHelp) {
+    return {
+      maxTokens: 480,
+      instruction:
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user is asking for direct help. Reply in 3-5 short sentences and 100 words or less. Give one clear scripture-grounded direction. If they ask for a verse, give one short verse line or meaning plus a brief explanation, not a lecture.",
+    };
+  }
+
+  return {
+    maxTokens: 520,
+    instruction:
+      "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): default to 3-5 short sentences and 110 words or less. One reflection plus one useful Krishna-grounded insight is enough. Do not stack multiple similar reflections, long backstory, or repeated reassurance.",
+  };
+}
+
 // Phase 2.6 split: returns { persona, dynamic } so the chat route
 // can place cache_control on the persona block only. The persona is
 // the only stable-across-turns content; USER CONTEXT mutates as
@@ -873,6 +952,12 @@ export async function POST(req: Request) {
   const dynamicWithSteering = [dynamic, scriptureSteering]
     .filter((block) => block.length > 0)
     .join("\n\n");
+  const replyLengthProfile = buildReplyLengthProfile(
+    message,
+    safetyFlag,
+    isVoiceMode,
+  );
+  const sonnetMaxTokens = replyLengthProfile.maxTokens;
 
   const systemBlocks: Array<{
     type: "text";
@@ -933,19 +1018,14 @@ export async function POST(req: Request) {
       });
     }
   }
-  // Phase 10.11 — voice mode: make Sonnet GENERATE short. The /api/tts 60-word
-  // truncation only trims AFTER generation, saving no model time; this makes
-  // the model stop sooner. Additive instruction, NOT a persona change. MUST
-  // come after the persona block and carry NO cache_control so the persona
-  // cache breakpoint (the last cached block) stays on the persona — edge case 5.
-  // The 60-word /api/tts truncation remains as the safety net if Sonnet ignores
-  // this.
-  if (isVoiceMode) {
-    systemBlocks.push({
-      type: "text",
-      text: "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be ≤30 words. Krishna's voice, register, and warmth stay exactly the same — only shorter. It is fine to end cleanly mid-thought; the user can ask you to continue.",
-    });
-  }
+  // Text/voice reply length guard (2026-06-27): user transcript feedback showed
+  // text chat drifting into long reflective essays. Keep this additive and
+  // outside SYSTEM_PROMPT so the founder-approved persona stays untouched and
+  // the persona cache breakpoint remains on block 0.
+  systemBlocks.push({
+    type: "text",
+    text: replyLengthProfile.instruction,
+  });
 
   // 6. Persist memory + bump counters. While on the free pool, message_count
   //    bumps and caps at FREE_MESSAGE_LIMIT. Once the pool is spent the user
@@ -1221,7 +1301,7 @@ export async function POST(req: Request) {
               const messageStream = client.messages.stream(
                 {
                   model: "claude-sonnet-4-6",
-                  max_tokens: 3000,
+                  max_tokens: sonnetMaxTokens,
                   system: systemBlocks,
                   messages: messagesArray,
                 },
@@ -1395,7 +1475,7 @@ export async function POST(req: Request) {
         timing("sonnet_call_start");
         return await client.messages.create({
           model: "claude-sonnet-4-6",
-          max_tokens: 3000,
+          max_tokens: sonnetMaxTokens,
           system: systemBlocks,
           messages: messagesArray,
         });
