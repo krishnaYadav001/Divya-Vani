@@ -381,17 +381,17 @@ function buildReplyLengthProfile(
 ): ReplyLengthProfile {
   if (isVoiceMode) {
     return {
-      maxTokens: 160,
+      maxTokens: 120,
       instruction:
-        "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be <=30 words. Krishna's voice, register, and warmth stay exactly the same; only the length is shorter. It is fine to end cleanly mid-thought; the user can ask you to continue.",
+        "VOICE-MODE OUTPUT CONSTRAINT (additive, not a persona change): your spoken reply MUST be <=25 words. Krishna's voice, register, and warmth stay exactly the same; only the length is shorter. It is fine to end cleanly mid-thought; the user can ask you to continue.",
     };
   }
 
   if (safetyFlag) {
     return {
-      maxTokens: 360,
+      maxTokens: 240,
       instruction:
-        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): for this safety-sensitive turn, stay within 3-4 short sentences and 90 words. Presence first; do not expand into an essay, advice list, or long scripture explanation.",
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): for this safety-sensitive turn, stay within 2-3 short sentences and 55 words. Presence first; do not expand into an essay, advice list, or long scripture explanation.",
     };
   }
 
@@ -416,35 +416,51 @@ function buildReplyLengthProfile(
     /\b(kya karu|kya karun|kaise|upay|shaant|gussa|krodh|madad)\b/.test(
       lower,
     );
+  const isComplexEmotionalTurn =
+    wordCount >= 18 ||
+    /\b(relationship|relationships|anger|angry|rage|calm|confused|alone|lonely|hurt|pain|fear|afraid|anxious|anxiety|stuck|breakup|family|mother|father|friend|love|memory|negative|absurd|unwell)\b/.test(
+      lower,
+    ) ||
+    /\b(akela|akeli|gussa|krodh|darr|dar|dukh|dukhi|rishta|relationship|preshan|pareshan|shaant|ajeeb)\b/.test(
+      lower,
+    );
 
   if (asksForDepth) {
     return {
-      maxTokens: 850,
+      maxTokens: 620,
       instruction:
-        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user asked for explanation or story, so a longer answer is allowed, but cap it at 180 words or 8 short sentences. Give the spine, not the encyclopedia; the user can ask for the next layer.",
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user asked for explanation or story, so a longer answer is allowed, but cap it at 150 words or 7 short sentences. Give the spine, not the encyclopedia; the user can ask for the next layer.",
     };
   }
 
   if (wordCount <= 10 && !asksForDirectHelp) {
     return {
-      maxTokens: 220,
+      maxTokens: 160,
       instruction:
-        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user gave a very short turn, so answer in 1-3 short sentences and 55 words or less. One warm reflection, one clean invitation, or one gentle question is enough. Do not add a scripture parallel unless the user directly asked for one.",
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user gave a very short turn, so answer in 1-2 short sentences and 35 words or less. One warm reflection or one gentle question is enough. Do not add a scripture parallel unless the user directly asked for one.",
     };
   }
 
   if (asksForDirectHelp) {
     return {
-      maxTokens: 480,
+      maxTokens: 320,
       instruction:
-        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user is asking for direct help. Reply in 3-5 short sentences and 100 words or less. Give one clear scripture-grounded direction. If they ask for a verse, give one short verse line or meaning plus a brief explanation, not a lecture.",
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user is asking for direct help. Reply in 2-5 short sentences and 80 words or less. Give one clear Krishna-grounded direction and one tiny next step. Use at most one scripture or life parallel, in one line only. If they ask for a verse, give one short verse line or meaning plus a brief explanation, not a lecture.",
+    };
+  }
+
+  if (isComplexEmotionalTurn) {
+    return {
+      maxTokens: 380,
+      instruction:
+        "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): the user has shared a deeper emotional turn, so let the reply breathe without becoming an essay. Reply in 3-5 short sentences and 95 words or less. Reflect the core feeling once, offer one Krishna-grounded insight, and leave one simple opening. Do not add a long backstory or multiple scripture parallels.",
     };
   }
 
   return {
-    maxTokens: 520,
+    maxTokens: 280,
     instruction:
-      "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): default to 3-5 short sentences and 110 words or less. One reflection plus one useful Krishna-grounded insight is enough. Do not stack multiple similar reflections, long backstory, or repeated reassurance.",
+      "TEXT-CHAT BREVITY CONSTRAINT (additive, not a persona change): default to 2-4 short sentences and 70 words or less. Sound like a real person in chat, not a monologue. One feeling reflected, one useful Krishna-grounded insight, then stop. Do not stack similar reflections, long backstory, repeated reassurance, or multiple scripture parallels.",
   };
 }
 
