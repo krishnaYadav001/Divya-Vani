@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BRAND } from "@/lib/brand";
@@ -37,68 +37,140 @@ const VERSE_CARDS = {
 
 const TESTIMONIAL_COPY = {
   en: {
-    eyebrow: "Early beta reviews",
-    title: "People come for one question. Many stay for the conversation.",
-    body: "Review summaries from the closed beta: users brought career pressure, relationship grief, family conflict, devotion, doubt, and questions they were not ready to say anywhere else.",
-    cta: "Ask your first question",
-    note: "Start with one honest sentence.",
+    eyebrow: "Sample user stories",
+    title: "A calmer way to think, decide, and come back to yourself.",
+    body: "A polished testimonial slider with fictional sample profiles. Replace these names, photos, and reviews with verified user stories before publishing them as real testimonials.",
+    cta: "Start your conversation",
+    note: "10 free messages to begin.",
     signals: [
-      { value: "89%", label: "of beta chatters reached 6+ messages" },
-      { value: "9", label: "median turns among early chatters" },
+      { value: "5.0", label: "rating style" },
+      { value: "6", label: "distinct sample profiles" },
     ],
   },
   hi: {
-    eyebrow: "आरंभिक उपयोगकर्ताओं की बातें",
-    title: "लोग एक प्रश्न लेकर आते हैं। कई लोग बातचीत में ठहर जाते हैं।",
-    body: "Closed beta की अनाम झलकियां: लोगों ने करियर का दबाव, रिश्तों की पीड़ा, परिवार की उलझन, भक्ति, संशय, और वे बातें रखीं जिन्हें वे कहीं और कहने को तैयार नहीं थे।",
-    cta: "अपना पहला प्रश्न पूछें",
-    note: "बस एक सच्चा वाक्य लिखकर शुरू करें।",
+    eyebrow: "नमूना user stories",
+    title: "सोचने, निर्णय लेने और भीतर लौटने का एक शांत तरीका।",
+    body: "यह polished testimonial slider fictional sample profiles के साथ तैयार है। असली testimonials की तरह publish करने से पहले इन्हें verified user stories से बदलें।",
+    cta: "बातचीत शुरू करें",
+    note: "शुरुआत के लिए 10 निःशुल्क संदेश।",
     signals: [
-      { value: "89%", label: "बीटा चैटर्स 6+ संदेश तक गए" },
-      { value: "9", label: "आरंभिक बातचीतों का मध्यमान" },
+      { value: "5.0", label: "rating style" },
+      { value: "6", label: "अलग sample profiles" },
     ],
   },
 } as const;
 
-const REVIEW_SUMMARIES = {
+const TESTIMONIALS = {
   en: [
     {
-      summary:
-        "A quieter place to say the real problem without being judged.",
-      label: "Early beta theme",
-      context: "Family + relationship conflict",
+      name: "Aditi Rao",
+      occupation: "Product Designer",
+      city: "Bengaluru",
+      avatar: "/testimonials/testimonial-avatar-aditi-rao.webp",
+      rating: 5,
+      review:
+        "I opened Divya Vani after a messy client call and expected a quote. Instead, it helped me name what I was avoiding and choose one honest next step.",
     },
     {
-      summary:
-        "A slower conversation that helped users notice what they were really carrying.",
-      label: "Early beta theme",
-      context: "Career pressure",
+      name: "Vivek Soman",
+      occupation: "Startup Founder",
+      city: "Pune",
+      avatar: "/testimonials/testimonial-avatar-vivek-soman.webp",
+      rating: 5,
+      review:
+        "The answer did not flatter my ambition. It separated responsibility from ego in a way that made a difficult investor decision feel less noisy.",
     },
     {
-      summary:
-        "Scripture entered in simple language, without making the moment feel heavy.",
-      label: "Early beta theme",
-      context: "Scripture reflection",
+      name: "Nisha Menon",
+      occupation: "Psychology Student",
+      city: "Kochi",
+      avatar: "/testimonials/testimonial-avatar-nisha-menon.webp",
+      rating: 5,
+      review:
+        "During exam week, the Hindi-English response felt personal without becoming dramatic. I saved the last line and came back to it before studying.",
+    },
+    {
+      name: "Naman Bansal",
+      occupation: "Software Engineer",
+      city: "Gurugram",
+      avatar: "/testimonials/testimonial-avatar-naman-bansal.webp",
+      rating: 5,
+      review:
+        "I used it after another late release night. The reply was short, direct, and strangely grounding: rest was not treated like weakness.",
+    },
+    {
+      name: "Kavita Subramanian",
+      occupation: "School Teacher",
+      city: "Chennai",
+      avatar: "/testimonials/testimonial-avatar-kavita-subramanian.webp",
+      rating: 5,
+      review:
+        "A parent conversation had stayed with me all day. Divya Vani gave me a softer way to respond without losing the boundary I needed.",
+    },
+    {
+      name: "Harsh Jain",
+      occupation: "CA Aspirant",
+      city: "Jaipur",
+      avatar: "/testimonials/testimonial-avatar-harsh-jain.webp",
+      rating: 5,
+      review:
+        "After a poor mock-test score, I was spiraling. The conversation turned panic into a simple evening plan I could actually follow.",
     },
   ],
   hi: [
     {
-      summary:
-        "असली बात बिना डर और बिना judgement के कहने की शांत जगह।",
-      label: "आरंभिक बीटा संकेत",
-      context: "परिवार और रिश्ते की उलझन",
+      name: "Aditi Rao",
+      occupation: "Product Designer",
+      city: "Bengaluru",
+      avatar: "/testimonials/testimonial-avatar-aditi-rao.webp",
+      rating: 5,
+      review:
+        "एक कठिन client call के बाद मैंने Divya Vani खोला था। quote की जगह उसने मुझे साफ दिखाया कि मैं किस बात से बच रही थी।",
     },
     {
-      summary:
-        "धीमी बातचीत, जिसने लोगों को यह देखने में मदद की कि भीतर क्या भार चल रहा था।",
-      label: "आरंभिक बीटा संकेत",
-      context: "करियर का दबाव",
+      name: "Vivek Soman",
+      occupation: "Startup Founder",
+      city: "Pune",
+      avatar: "/testimonials/testimonial-avatar-vivek-soman.webp",
+      rating: 5,
+      review:
+        "जवाब ने ambition को flatter नहीं किया। उसने responsibility और ego को अलग किया, इसलिए investor वाला decision कम noisy लगा।",
     },
     {
-      summary:
-        "सरल भाषा में शास्त्र की बात, बिना बातचीत को भारी बनाए।",
-      label: "आरंभिक बीटा संकेत",
-      context: "शास्त्र-चिंतन",
+      name: "Nisha Menon",
+      occupation: "Psychology Student",
+      city: "Kochi",
+      avatar: "/testimonials/testimonial-avatar-nisha-menon.webp",
+      rating: 5,
+      review:
+        "Exam week में Hindi-English response personal लगा, dramatic नहीं। आखिरी line मैंने save की और पढ़ने से पहले वापस देखी।",
+    },
+    {
+      name: "Naman Bansal",
+      occupation: "Software Engineer",
+      city: "Gurugram",
+      avatar: "/testimonials/testimonial-avatar-naman-bansal.webp",
+      rating: 5,
+      review:
+        "एक और late release night के बाद मैंने पूछा। जवाब छोटा और direct था, पर grounding था: rest को weakness जैसा नहीं बताया।",
+    },
+    {
+      name: "Kavita Subramanian",
+      occupation: "School Teacher",
+      city: "Chennai",
+      avatar: "/testimonials/testimonial-avatar-kavita-subramanian.webp",
+      rating: 5,
+      review:
+        "Parent conversation पूरे दिन मन में थी। Divya Vani ने boundary रखकर भी softer way में respond करना आसान किया।",
+    },
+    {
+      name: "Harsh Jain",
+      occupation: "CA Aspirant",
+      city: "Jaipur",
+      avatar: "/testimonials/testimonial-avatar-harsh-jain.webp",
+      rating: 5,
+      review:
+        "Mock-test score खराब आने के बाद panic हो रहा था। conversation ने उसे एक simple evening plan में बदल दिया।",
     },
   ],
 } as const;
@@ -109,7 +181,56 @@ export default function LandingClient() {
   const casualCopy = BRAND.casual[lang];
   const verses = VERSE_CARDS[lang];
   const testimonialCopy = TESTIMONIAL_COPY[lang];
-  const reviewSummaries = REVIEW_SUMMARIES[lang];
+  const testimonials = TESTIMONIALS[lang];
+  const testimonialScrollerRef = useRef<HTMLDivElement>(null);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+  const scrollToTestimonial = useCallback(
+    (index: number) => {
+      const scroller = testimonialScrollerRef.current;
+      if (!scroller) return;
+
+      const nextIndex =
+        (index + testimonials.length) % testimonials.length;
+      const card = scroller.children.item(nextIndex) as HTMLElement | null;
+      if (!card) return;
+
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+      scroller.scrollTo({
+        left: Math.max(
+          0,
+          card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2,
+        ),
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+      setActiveTestimonial(nextIndex);
+    },
+    [testimonials.length],
+  );
+
+  const handleTestimonialScroll = useCallback(() => {
+    const scroller = testimonialScrollerRef.current;
+    if (!scroller) return;
+
+    const scrollerCenter = scroller.scrollLeft + scroller.clientWidth / 2;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    Array.from(scroller.children).forEach((child, index) => {
+      const card = child as HTMLElement;
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(cardCenter - scrollerCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setActiveTestimonial(closestIndex);
+  }, []);
 
   // Referral_Reward_System (Req 3.1, 3.3, 3.4): capture the `?ref` invite code
   // once on mount. captureRefFromUrl is silent-fail and guards typeof window,
@@ -354,13 +475,13 @@ export default function LandingClient() {
           </p>
         </section>
 
-        {/* Early-user review summaries. */}
+        {/* Sliding testimonial carousel. */}
         <section
           aria-labelledby="landing-reviews-title"
           className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
         >
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
-            <div>
+          <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-[760px]">
               <p
                 className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
                   lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
@@ -379,76 +500,162 @@ export default function LandingClient() {
               >
                 {testimonialCopy.body}
               </p>
-              <div className="mt-6 grid max-w-[520px] grid-cols-2 gap-3">
-                {testimonialCopy.signals.map((signal) => (
-                  <div
-                    key={signal.label}
-                    className="rounded-[18px] border border-[oklch(86%_0.04_70)] bg-white/40 px-4 py-4 backdrop-blur"
-                  >
-                    <p className="font-[family-name:var(--font-display)] text-[clamp(1.65rem,5vw,2.2rem)] leading-none text-[var(--color-gold-leaf)]">
-                      {signal.value}
-                    </p>
-                    <p
-                      className={`mt-2 text-[12px] leading-snug text-ink-soft ${
-                        lang === "hi"
-                          ? "font-[family-name:var(--font-devanagari)]"
-                          : "font-[family-name:var(--font-display)] uppercase tracking-[0.12em]"
-                      }`}
-                    >
-                      {signal.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
-                <Link
-                  href="/chat"
-                  onClick={() => track("start_chat_clicked", { page: "landing", label: "reviews_cta" })}
-                  className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-7 py-3 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
-                >
-                  {testimonialCopy.cta}
-                </Link>
-                <p className={`text-sm leading-relaxed text-ink-soft ${proseFont}`}>
-                  {testimonialCopy.note}
-                </p>
-              </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {reviewSummaries.map((review, i) => (
-                <article
-                  key={review.context}
-                  className={`min-h-[190px] rounded-[22px] border border-[oklch(86%_0.04_70)] bg-white/55 p-5 shadow-[0_12px_30px_-20px_oklch(40%_0.08_30_/_0.32)] backdrop-blur ${
-                    i === 0 ? "sm:col-span-2 sm:min-h-0 sm:p-6" : ""
-                  }`}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label="Previous testimonial"
+                onClick={() => scrollToTestimonial(activeTestimonial - 1)}
+                className="grid h-11 w-11 place-items-center rounded-full border border-[oklch(84%_0.04_70)] bg-white/55 font-[family-name:var(--font-display)] text-2xl leading-none text-ink shadow-[0_8px_22px_-16px_oklch(40%_0.08_30_/_0.3)] backdrop-blur transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+              >
+                <span aria-hidden>‹</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Next testimonial"
+                onClick={() => scrollToTestimonial(activeTestimonial + 1)}
+                className="grid h-11 w-11 place-items-center rounded-full border border-[oklch(84%_0.04_70)] bg-white/55 font-[family-name:var(--font-display)] text-2xl leading-none text-ink shadow-[0_8px_22px_-16px_oklch(40%_0.08_30_/_0.3)] backdrop-blur transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)]"
+              >
+                <span aria-hidden>›</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-stretch">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+              {testimonialCopy.signals.map((signal) => (
+                <div
+                  key={signal.label}
+                  className="rounded-[20px] border border-[oklch(86%_0.04_70)] bg-white/45 px-5 py-5 shadow-[0_10px_28px_-22px_oklch(40%_0.08_30_/_0.28)] backdrop-blur"
                 >
-                  <p
-                    className={`text-[15px] leading-relaxed text-ink ${proseFont}`}
-                  >
-                    {review.summary}
+                  <p className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,6vw,2.4rem)] leading-none text-[var(--color-gold-leaf)]">
+                    {signal.value}
                   </p>
-                  <div className="mt-5 border-t border-[var(--color-ink-line)] pt-4">
-                    <p
-                      className={`text-[13px] text-ink ${
-                        lang === "hi"
-                          ? "font-[family-name:var(--font-devanagari)]"
-                          : "font-[family-name:var(--font-display)] uppercase tracking-[0.12em]"
-                      }`}
-                    >
-                      {review.label}
-                    </p>
-                    <p
-                      className={`mt-1 text-[12px] leading-relaxed text-ink-faint ${proseFont}`}
-                    >
-                      {review.context}
-                    </p>
-                  </div>
-                </article>
+                  <p
+                    className={`mt-2 text-[12px] leading-snug text-ink-soft ${
+                      lang === "hi"
+                        ? "font-[family-name:var(--font-devanagari)]"
+                        : "font-[family-name:var(--font-display)] uppercase tracking-[0.12em]"
+                    }`}
+                  >
+                    {signal.label}
+                  </p>
+                </div>
               ))}
+              <Link
+                href="/chat"
+                onClick={() => track("start_chat_clicked", { page: "landing", label: "reviews_cta" })}
+                className={`col-span-2 inline-flex min-h-12 items-center justify-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-7 py-3 text-center text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 lg:col-span-1 ${ctaFont}`}
+              >
+                {testimonialCopy.cta}
+              </Link>
+              <p className={`col-span-2 text-sm leading-relaxed text-ink-soft lg:col-span-1 ${proseFont}`}>
+                {testimonialCopy.note}
+              </p>
+            </div>
+
+            <div className="relative min-w-0">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-16 bg-linear-to-r from-[var(--color-mist)] to-transparent lg:block"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-16 bg-linear-to-l from-[var(--color-mist)] to-transparent lg:block"
+              />
+              <div
+                ref={testimonialScrollerRef}
+                onScroll={handleTestimonialScroll}
+                role="region"
+                aria-label="Testimonials carousel"
+                className="dv-action-row flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
+              >
+                {testimonials.map((testimonial) => (
+                  <article
+                    key={`${testimonial.name}-${testimonial.city}`}
+                    className="relative flex min-h-[360px] w-[84vw] max-w-[390px] shrink-0 snap-center flex-col rounded-[24px] border border-[oklch(84%_0.04_70)] bg-white/65 p-6 shadow-[0_20px_48px_-28px_oklch(40%_0.08_30_/_0.42)] backdrop-blur sm:w-[360px] lg:w-[390px]"
+                  >
+                  <div className="flex items-center gap-4">
+                    <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[oklch(86%_0.04_70)] bg-[var(--color-mist-2)] shadow-[0_10px_24px_-16px_oklch(40%_0.08_30_/_0.35)]">
+                      <Image
+                        src={testimonial.avatar}
+                        alt=""
+                        fill
+                        sizes="72px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p
+                        className={`truncate text-[15px] text-ink ${
+                          lang === "hi"
+                            ? "font-[family-name:var(--font-devanagari)]"
+                            : "font-[family-name:var(--font-display)]"
+                        }`}
+                      >
+                        {testimonial.name}
+                      </p>
+                      <p className={`mt-1 truncate text-[13px] text-ink-soft ${proseFont}`}>
+                        {testimonial.occupation}
+                      </p>
+                      <p className="mt-1 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+                        {testimonial.city}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className="mt-6 flex items-center gap-1 text-[var(--color-gold-leaf)]"
+                    aria-label={`${testimonial.rating} out of 5 stars`}
+                  >
+                    {Array.from({ length: 5 }, (_, star) => (
+                      <span
+                        key={star}
+                        aria-hidden
+                        className="text-[18px] leading-none"
+                      >
+                        {star < testimonial.rating ? "★" : "☆"}
+                      </span>
+                    ))}
+                  </div>
+
+                  <blockquote
+                    className={`mt-5 flex-1 text-[17px] leading-relaxed text-ink ${proseFont}`}
+                  >
+                    <span aria-hidden className="text-[var(--color-gold-leaf)]">
+                      “
+                    </span>
+                    {testimonial.review}
+                    <span aria-hidden className="text-[var(--color-gold-leaf)]">
+                      ”
+                    </span>
+                  </blockquote>
+
+                  <div className="mt-6 h-px bg-linear-to-r from-transparent via-[var(--color-gold-faint)] to-transparent" />
+                  </article>
+              ))}
+              </div>
+
+              <div className="mt-3 flex justify-center gap-2">
+                {testimonials.map((testimonial, index) => (
+                  <button
+                    key={`${testimonial.name}-dot`}
+                    type="button"
+                    aria-label={`Show testimonial ${index + 1}`}
+                    aria-current={index === activeTestimonial}
+                    onClick={() => scrollToTestimonial(index)}
+                    className={`h-2.5 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] ${
+                      index === activeTestimonial
+                        ? "w-8 bg-[var(--color-gold-leaf)]"
+                        : "w-2.5 bg-[oklch(76%_0.12_80_/_0.28)] hover:bg-[oklch(76%_0.12_80_/_0.5)]"
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
-
         {/* \u2500\u2500 Why trust Divya Vani? \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
         <section
           aria-labelledby="landing-trust-title"
