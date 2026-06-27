@@ -34,7 +34,7 @@ export async function GET(req: Request) {
   }
 
   const html = `<!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -48,10 +48,10 @@ export async function GET(req: Request) {
   </style>
 </head>
 <body>
-  <h1>आपको हटा दिया गया है</h1>
-  <p>आप ${SITE_NAME} के प्रातःकालीन संदेशों से unsubscribe हो गए हैं।</p>
+  <h1>You have been unsubscribed</h1>
+  <p>You will no longer receive morning messages from ${SITE_NAME}.</p>
   <p style="margin-top: 28px">
-    <a href="${CHAT_URL}">Krishna से बात करें →</a>
+    <a href="${CHAT_URL}">Talk with Krishna →</a>
   </p>
 </body>
 </html>`;

@@ -13,9 +13,10 @@ import { SiteFooterContent } from "./SiteFooter";
 import { useLanguage } from "../providers/LanguageProvider";
 
 // Phase 12.x — simplified landing copy. Redundant sections (FAQ grid,
-// audience list, standalone verse-count section) merged into 3 lean
-// below-fold blocks: "What can you ask?", "Why trust?", and "Private by
-// design". Scripture corpus details appear exactly ONCE (the verse cards).
+// audience list, standalone verse-count section) stay collapsed into a lean
+// below-fold rhythm: "What can you ask?", early-user reviews, "Why trust?",
+// and the closing CTA. Scripture corpus details appear exactly ONCE (the
+// verse cards).
 
 const ARCH_SHADOW =
   "0 28px 70px -30px oklch(35% 0.08 30 / .35), 0 0 0 1px oklch(78% 0.06 60), inset 0 0 0 6px rgba(255,255,255,.5)";
@@ -34,11 +35,81 @@ const VERSE_CARDS = {
   ],
 } as const;
 
+const TESTIMONIAL_COPY = {
+  en: {
+    eyebrow: "Early beta reviews",
+    title: "People come for one question. Many stay for the conversation.",
+    body: "Review summaries from the closed beta: users brought career pressure, relationship grief, family conflict, devotion, doubt, and questions they were not ready to say anywhere else.",
+    cta: "Ask your first question",
+    note: "Start with one honest sentence.",
+    signals: [
+      { value: "89%", label: "of beta chatters reached 6+ messages" },
+      { value: "9", label: "median turns among early chatters" },
+    ],
+  },
+  hi: {
+    eyebrow: "आरंभिक उपयोगकर्ताओं की बातें",
+    title: "लोग एक प्रश्न लेकर आते हैं। कई लोग बातचीत में ठहर जाते हैं।",
+    body: "Closed beta की अनाम झलकियां: लोगों ने करियर का दबाव, रिश्तों की पीड़ा, परिवार की उलझन, भक्ति, संशय, और वे बातें रखीं जिन्हें वे कहीं और कहने को तैयार नहीं थे।",
+    cta: "अपना पहला प्रश्न पूछें",
+    note: "बस एक सच्चा वाक्य लिखकर शुरू करें।",
+    signals: [
+      { value: "89%", label: "बीटा चैटर्स 6+ संदेश तक गए" },
+      { value: "9", label: "आरंभिक बातचीतों का मध्यमान" },
+    ],
+  },
+} as const;
+
+const REVIEW_SUMMARIES = {
+  en: [
+    {
+      summary:
+        "A quieter place to say the real problem without being judged.",
+      label: "Early beta theme",
+      context: "Family + relationship conflict",
+    },
+    {
+      summary:
+        "A slower conversation that helped users notice what they were really carrying.",
+      label: "Early beta theme",
+      context: "Career pressure",
+    },
+    {
+      summary:
+        "Scripture entered in simple language, without making the moment feel heavy.",
+      label: "Early beta theme",
+      context: "Scripture reflection",
+    },
+  ],
+  hi: [
+    {
+      summary:
+        "असली बात बिना डर और बिना judgement के कहने की शांत जगह।",
+      label: "आरंभिक बीटा संकेत",
+      context: "परिवार और रिश्ते की उलझन",
+    },
+    {
+      summary:
+        "धीमी बातचीत, जिसने लोगों को यह देखने में मदद की कि भीतर क्या भार चल रहा था।",
+      label: "आरंभिक बीटा संकेत",
+      context: "करियर का दबाव",
+    },
+    {
+      summary:
+        "सरल भाषा में शास्त्र की बात, बिना बातचीत को भारी बनाए।",
+      label: "आरंभिक बीटा संकेत",
+      context: "शास्त्र-चिंतन",
+    },
+  ],
+} as const;
+
 export default function LandingClient() {
   const { lang, t } = useLanguage();
   const trustCopy = BRAND.trust[lang];
   const casualCopy = BRAND.casual[lang];
   const verses = VERSE_CARDS[lang];
+  const testimonialCopy = TESTIMONIAL_COPY[lang];
+  const reviewSummaries = REVIEW_SUMMARIES[lang];
 
   // Referral_Reward_System (Req 3.1, 3.3, 3.4): capture the `?ref` invite code
   // once on mount. captureRefFromUrl is silent-fail and guards typeof window,
@@ -281,6 +352,101 @@ export default function LandingClient() {
           >
             {t.landing.naturalLine}
           </p>
+        </section>
+
+        {/* Early-user review summaries. */}
+        <section
+          aria-labelledby="landing-reviews-title"
+          className="mt-14 border-t border-[var(--color-ink-line)] pt-8 lg:mt-12"
+        >
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
+            <div>
+              <p
+                className={`font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.32em] text-ink-faint ${
+                  lang === "hi" ? "font-[family-name:var(--font-devanagari)] tracking-[0.08em]" : ""
+                }`}
+              >
+                {testimonialCopy.eyebrow}
+              </p>
+              <h2
+                id="landing-reviews-title"
+                className={`mt-3 max-w-[760px] text-[clamp(1.65rem,4vw,2.75rem)] font-normal leading-tight text-ink ${displayFont}`}
+              >
+                {testimonialCopy.title}
+              </h2>
+              <p
+                className={`mt-4 max-w-[620px] text-base leading-relaxed text-ink-soft ${proseFont}`}
+              >
+                {testimonialCopy.body}
+              </p>
+              <div className="mt-6 grid max-w-[520px] grid-cols-2 gap-3">
+                {testimonialCopy.signals.map((signal) => (
+                  <div
+                    key={signal.label}
+                    className="rounded-[18px] border border-[oklch(86%_0.04_70)] bg-white/40 px-4 py-4 backdrop-blur"
+                  >
+                    <p className="font-[family-name:var(--font-display)] text-[clamp(1.65rem,5vw,2.2rem)] leading-none text-[var(--color-gold-leaf)]">
+                      {signal.value}
+                    </p>
+                    <p
+                      className={`mt-2 text-[12px] leading-snug text-ink-soft ${
+                        lang === "hi"
+                          ? "font-[family-name:var(--font-devanagari)]"
+                          : "font-[family-name:var(--font-display)] uppercase tracking-[0.12em]"
+                      }`}
+                    >
+                      {signal.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <Link
+                  href="/chat"
+                  onClick={() => track("start_chat_clicked", { page: "landing", label: "reviews_cta" })}
+                  className={`inline-flex min-h-12 items-center rounded-full border border-[oklch(80%_0.04_50)] bg-linear-to-b from-[oklch(96%_0.018_60)] to-[oklch(91%_0.04_50)] px-7 py-3 text-[15px] text-ink shadow-[0_1px_0_rgba(255,255,255,.7)_inset,0_6px_18px_-8px_oklch(50%_0.1_30_/_0.25)] transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(76%_0.12_80)] focus-visible:ring-offset-2 ${ctaFont}`}
+                >
+                  {testimonialCopy.cta}
+                </Link>
+                <p className={`text-sm leading-relaxed text-ink-soft ${proseFont}`}>
+                  {testimonialCopy.note}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {reviewSummaries.map((review, i) => (
+                <article
+                  key={review.context}
+                  className={`min-h-[190px] rounded-[22px] border border-[oklch(86%_0.04_70)] bg-white/55 p-5 shadow-[0_12px_30px_-20px_oklch(40%_0.08_30_/_0.32)] backdrop-blur ${
+                    i === 0 ? "sm:col-span-2 sm:min-h-0 sm:p-6" : ""
+                  }`}
+                >
+                  <p
+                    className={`text-[15px] leading-relaxed text-ink ${proseFont}`}
+                  >
+                    {review.summary}
+                  </p>
+                  <div className="mt-5 border-t border-[var(--color-ink-line)] pt-4">
+                    <p
+                      className={`text-[13px] text-ink ${
+                        lang === "hi"
+                          ? "font-[family-name:var(--font-devanagari)]"
+                          : "font-[family-name:var(--font-display)] uppercase tracking-[0.12em]"
+                      }`}
+                    >
+                      {review.label}
+                    </p>
+                    <p
+                      className={`mt-1 text-[12px] leading-relaxed text-ink-faint ${proseFont}`}
+                    >
+                      {review.context}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* \u2500\u2500 Why trust Divya Vani? \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}

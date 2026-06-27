@@ -8,13 +8,13 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="hi">
+    <html lang="en">
       <body style={{ margin: 0, background: "#faf7f2", display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh", flexDirection: "column", gap: "1.5rem", padding: "1.5rem", textAlign: "center", fontFamily: "serif" }}>
         <p style={{ fontSize: "1.5rem", color: "#3d2c1e" }}>
-          एक गंभीर त्रुटि हुई
+          A critical error occurred
         </p>
         <p style={{ fontSize: "0.875rem", color: "#8b7355", fontStyle: "italic" }}>
-          A critical error occurred. Please reload the page.
+          Please reload the page.
         </p>
         <button
           onClick={reset}
