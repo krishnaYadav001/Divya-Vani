@@ -1,0 +1,26 @@
+# Secret and local-only files. Vercel CLI has default ignores, but keep these
+# explicit because plaintext env exports are high risk.
+.env
+.env.*
+!.env.example
+**/vercel-env*.txt
+**/*secret*.txt
+**/*secrets*.txt
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local agent/runtime state.
+.agents/
+.swarm/
+.claude-flow/
+.mcp.json
+skills-lock.json
+
+# Development artifacts.
+*.swp
+*.mp3
+body.json
+smoke.sh
+test-results/

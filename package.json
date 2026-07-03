@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "security:secrets": "tsx scripts/check-secrets.ts",
     "ingest:gita": "tsx --env-file=.env.local scripts/ingest-gita.ts",
     "ingest:gita:dry": "tsx --env-file=.env.local scripts/ingest-gita.ts --dry-run",
     "ingest:mahabharata": "tsx --env-file=.env.local scripts/ingest-mahabharata.ts",

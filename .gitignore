@@ -39,6 +39,12 @@ yarn-error.log*
 
 # vercel env import file — contains live secrets, never commit
 scripts/vercel-env.txt
+**/vercel-env*.txt
+**/*secret*.txt
+**/*secrets*.txt
+*.key
+*.p12
+*.pfx
 
 # phase 6.2 snapshot helper + outputs — local-only, never commit
 scripts/phase6-2-snapshot.ts
@@ -86,4 +92,3 @@ data/*.backup-*
 /body.json
 /smoke.sh
 /*.mp3
-

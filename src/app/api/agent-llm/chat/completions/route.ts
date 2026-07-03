@@ -78,6 +78,7 @@ import {
   buildScriptureSteeringBlock,
   deterministicQueryThemesForTurn,
 } from "@/lib/scriptureSteering";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 import * as Sentry from "@sentry/nextjs";
 
 const client = new Anthropic();
@@ -511,6 +512,11 @@ const BANNED_WORD_REPLY =
 const MODERATION_REPLY =
   "इस पर मैं साथ नहीं दे सकता, मित्र। पर तुम्हारे मन में जो असली बोझ है — वो कहो। मैं यहीं हूँ।";
 const EMPTY_TURN_REPLY = "हाँ? बताओ — मैं सुन रहा हूँ।";
+const IDENTITY_REQUIRED_REPLY =
+  "I could not verify this voice session. Please refresh the page and try again.";
+const VOICE_RATE_LIMIT_REPLY =
+  "One moment - too many voice messages are arriving. Please pause briefly and then speak again.";
+const MIN_CUSTOM_LLM_KEY_LENGTH = 32;
 
 // Build a complete SSE stream for a fixed, non-Anthropic reply (banned word /
 // moderation refusal / whitespace-only turn). Emits role → content → stop →
@@ -645,6 +651,15 @@ export async function POST(req: Request): Promise<Response> {
     );
     return jsonError("server misconfiguration", 500);
   }
+  if (
+    process.env.NODE_ENV === "production" &&
+    expectedKey.length < MIN_CUSTOM_LLM_KEY_LENGTH
+  ) {
+    console.error(
+      "[agent-llm] CRITICAL: CUSTOM_LLM_KEY is too short for production. Generate at least 32 random characters, update ElevenLabs + Vercel, and redeploy.",
+    );
+    return jsonError("server misconfiguration", 500);
+  }
 
   // ── Step 1: auth gate. Bearer token, constant-time compare. ──
   // Edge case 5: missing/malformed Authorization header → 401.
@@ -747,8 +762,28 @@ export async function POST(req: Request): Promise<Response> {
       "agent-llm: voice turn with no real user_id — identity propagation broken (turn not persisted)",
       "error",
     );
+    if (process.env.NODE_ENV === "production") {
+      return new Response(
+        fixedReplyStream(IDENTITY_REQUIRED_REPLY, includeUsage, responseModel),
+        { status: 200, headers: SSE_HEADERS },
+      );
+    }
   }
   console.log(`[agent-llm] user_id=${userId} identified=${isIdentified}`);
+
+  {
+    const rl = await checkRateLimit(
+      "agent_llm",
+      isIdentified ? userId : null,
+      clientIpFromRequest(req),
+    );
+    if (!rl.ok) {
+      return new Response(
+        fixedReplyStream(VOICE_RATE_LIMIT_REPLY, includeUsage, responseModel),
+        { status: 200, headers: SSE_HEADERS },
+      );
+    }
+  }
 
   // ── Step 5b: paywall (Phase 11.4) — kicked off CONCURRENTLY here and checked
   // after the parallel pre-AI block, so its Supabase round-trip OVERLAPS the

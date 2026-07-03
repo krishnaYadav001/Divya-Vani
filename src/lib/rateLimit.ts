@@ -7,20 +7,18 @@
 // documents this). Upstash is a shared HTTP-based Redis that every lambda
 // instance reads/writes, so the limit holds globally.
 //
-// FAIL-OPEN by design: if Redis env vars are absent OR a Redis call throws
-// (network blip), the limiter ALLOWS the request. This matches the project's
-// ops invariant ("a DB blip must never lock out a paying user") — the limiter
-// is a cost/abuse guard, not a correctness gate. A transient Upstash outage
-// degrades to "no limit", never to "site down". The trade-off is acceptable:
-// the limiter's whole job is bounding sustained abuse, and sustained abuse
-// during a sustained Upstash outage is a far rarer event than a brief blip.
+// FAILURE MODE: production defaults to fail-closed. If Redis env vars are
+// absent, Redis init fails, or a Redis call throws, protected routes reject the
+// request before spending AI/STT/TTS/payment resources. Local/dev defaults to
+// fail-open for convenience. Set RATE_LIMIT_FAILURE_MODE=open only for an
+// explicit emergency override.
 //
 // IDENTITY: every protected route limits on BOTH the anonymous cookie user-id
 // AND the client IP, and blocks if EITHER bucket is exhausted. This stops both
 // a single cookie hammering an endpoint AND a cookie-rotating attacker from one
 // IP. IP is read from x-forwarded-for (Vercel sets it); first hop is the client.
 //
-// ENV (set in Vercel; absent locally → limiter no-ops / fail-open):
+// ENV (set in Vercel; absent locally defaults to fail-open):
 //   UPSTASH_REDIS_REST_URL
 //   UPSTASH_REDIS_REST_TOKEN
 
@@ -38,11 +36,11 @@ function getRedis(): Redis | null {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
     // Not configured (local dev, or env not yet set in Vercel). Mark
-    // unavailable so we don't re-check env every call; fail open.
+    // unavailable so we don't re-check env every call.
     redisUnavailable = true;
     if (process.env.NODE_ENV === "production") {
       console.warn(
-        "[rateLimit] UPSTASH_REDIS_REST_URL/TOKEN unset in production — rate limiting is DISABLED (fail-open). Set them in Vercel to enable.",
+        "[rateLimit] UPSTASH_REDIS_REST_URL/TOKEN unset in production — protected routes will fail closed. Set them in Vercel to enable.",
       );
     }
     return null;
@@ -51,7 +49,7 @@ function getRedis(): Redis | null {
     cachedRedis = new Redis({ url, token });
     return cachedRedis;
   } catch (e) {
-    console.error("[rateLimit] Redis init failed — fail-open:", e);
+    console.error("[rateLimit] Redis init failed:", e);
     redisUnavailable = true;
     return null;
   }
@@ -65,6 +63,7 @@ function getRedis(): Redis | null {
 // cheaper routes and tighter on the expensive AI/STT/TTS routes.
 export type RateLimitRoute =
   | "chat"
+  | "agent_llm"
   | "support"
   | "transcribe"
   | "tts"
@@ -76,9 +75,10 @@ type Duration = `${number} s` | `${number} m` | `${number} h` | `${number} d`;
 
 const LIMITS: Record<RateLimitRoute, Limits> = {
   // Streaming Sonnet + several Haiku calls per turn — the costliest path.
-  chat: { user: [30, "1 m"], ip: [60, "1 m"] },
+  chat: { user: [12, "1 m"], ip: [30, "1 m"] },
+  agent_llm: { user: [20, "1 m"], ip: [120, "1 m"] },
   // Haiku-backed, unauthenticated support widget.
-  support: { user: [20, "1 m"], ip: [40, "1 m"] },
+  support: { user: [10, "1 m"], ip: [25, "1 m"] },
   // Sarvam paid STT — chunked, so allow bursts but bound the minute.
   transcribe: { user: [60, "1 m"], ip: [120, "1 m"] },
   // ElevenLabs paid TTS (also has its own 24h DB caps; this is the burst guard).
@@ -115,12 +115,34 @@ function getLimiter(
 
 export type RateLimitResult =
   | { ok: true }
-  | { ok: false; scope: "user" | "ip"; retryAfterSec: number };
+  | { ok: false; scope: "user" | "ip" | "system"; retryAfterSec: number };
+
+function shouldFailOpen(): boolean {
+  const mode = process.env.RATE_LIMIT_FAILURE_MODE?.trim().toLowerCase();
+  if (mode === "open") return true;
+  if (mode === "closed") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
+function unavailableResult(context: string, err?: unknown): RateLimitResult {
+  if (shouldFailOpen()) {
+    if (err) {
+      console.error(`[rateLimit] ${context} - fail-open:`, err);
+    }
+    return { ok: true };
+  }
+  if (err) {
+    console.error(`[rateLimit] ${context} - fail-closed:`, err);
+  } else {
+    console.error(`[rateLimit] ${context} - fail-closed`);
+  }
+  return { ok: false, scope: "system", retryAfterSec: 60 };
+}
 
 /**
  * Check the rate limit for a route, against BOTH the user-id bucket and the IP
- * bucket. Blocks if EITHER is exhausted. Fail-open: any missing config or
- * thrown Redis error returns { ok: true } so the request proceeds.
+ * bucket. Blocks if EITHER is exhausted. Production fails closed on limiter
+ * unavailability unless RATE_LIMIT_FAILURE_MODE=open is explicitly set.
  *
  * @param route   which route-group limit set to apply
  * @param userId  the anonymous cookie user id (or null/undefined if none yet)
@@ -132,7 +154,7 @@ export async function checkRateLimit(
   ip: string | null | undefined,
 ): Promise<RateLimitResult> {
   const redis = getRedis();
-  if (!redis) return { ok: true }; // fail-open: not configured
+  if (!redis) return unavailableResult("Redis unavailable");
 
   try {
     // Build the checks we actually have an identity for. If neither a userId
@@ -170,10 +192,9 @@ export async function checkRateLimit(
     }
     return { ok: true };
   } catch (e) {
-    // Network / Redis error → fail open. The limiter must never take the site
-    // down; it only bounds abuse when healthy.
-    console.error("[rateLimit] check threw — fail-open:", e);
-    return { ok: true };
+    // Network / Redis error follows the configured failure mode. Production
+    // defaults closed so paid provider routes do not run unbounded.
+    return unavailableResult("check threw", e);
   }
 }
 
