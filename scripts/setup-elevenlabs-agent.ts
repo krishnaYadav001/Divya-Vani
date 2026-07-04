@@ -95,7 +95,14 @@ const CONFIG = {
     // /chat/completions this script strips it for you, see normalizeLlmUrl).
     url: "https://divyavani.co.in/api/agent-llm",
     modelId: "krishna-sonnet-4-6",
-    apiKeyValue: "test-12345",
+    // The Bearer key ElevenLabs sends to /api/agent-llm. It MUST match the
+    // CUSTOM_LLM_KEY env var deployed on Vercel, AND be >= 32 chars — the
+    // production route (src/app/api/agent-llm/chat/completions/route.ts) rejects
+    // every POST with 500 "server misconfiguration" when the key is shorter
+    // (MIN_CUSTOM_LLM_KEY_LENGTH). Read from the environment so the real secret
+    // is never committed and re-running this script always syncs the agent to
+    // whatever CUSTOM_LLM_KEY is currently set. Run with --env-file=.env.local.
+    apiKeyValue: process.env.CUSTOM_LLM_KEY ?? "",
     apiKeySecretName: "CUSTOM_LLM_KEY",
   },
   backupLlm: "disabled" as const,
@@ -287,12 +294,15 @@ type CreateAgentResponse = { agent_id: string };
 // `type: "new"` discriminator. The SDK's PostWorkspaceSecretRequest type omits
 // it (Fern injects it), but raw fetch must send it explicitly.
 //
-// NOTE (edge case 3 — secret already exists): we REUSE the existing secret_id
-// and do NOT overwrite its value. Rationale: re-running provisioning shouldn't
-// silently rotate a credential other resources might depend on, and the value
-// ("test-12345") is fixed for this test phase anyway. To rotate it, delete the
-// secret in the dashboard (or add a PATCH /v1/convai/secrets/{secret_id} call)
-// and re-run.
+// NOTE (edge case 3 — secret already exists): we UPDATE the existing secret's
+// value to the current CONFIG.customLlm.apiKeyValue via
+// PATCH /v1/convai/secrets/{secret_id} (body { name, value, type: "update" }).
+// This is what makes a key ROTATION actually reach ElevenLabs — an earlier
+// version merely reused the secret_id without overwriting the value, so a
+// re-run silently kept the OLD key and the agent kept sending it. The
+// production /api/agent-llm route then 500s ("server misconfiguration") on
+// every turn if the stale key is < 32 chars. Overwriting on every run keeps the
+// ElevenLabs secret in lockstep with .env.local / Vercel's CUSTOM_LLM_KEY.
 async function ensureSecret(apiKey: string): Promise<string> {
   const name = CONFIG.customLlm.apiKeySecretName;
 
@@ -302,7 +312,18 @@ async function ensureSecret(apiKey: string): Promise<string> {
   });
   const existing = (list.secrets ?? []).find((s) => s.name === name);
   if (existing) {
-    console.log(`• Secret "${name}" already exists — reusing (${existing.secret_id}).`);
+    await elevenFetch(`/v1/convai/secrets/${existing.secret_id}`, {
+      method: "PATCH",
+      apiKey,
+      body: {
+        type: "update",
+        name,
+        value: CONFIG.customLlm.apiKeyValue,
+      },
+    });
+    console.log(
+      `• Secret "${name}" already exists — updated its value (${existing.secret_id}).`,
+    );
     return existing.secret_id;
   }
 
@@ -452,6 +473,19 @@ async function main(): Promise<void> {
     fail(
       "CONFIG.customLlm.url is still the placeholder. Edit it near the top of\n" +
         "this file with your webhook.site URL (base URL only) before running.",
+    );
+  }
+
+  // The Bearer key ElevenLabs will send to /api/agent-llm. It MUST be present
+  // and >= 32 chars, or the production route 500s ("server misconfiguration")
+  // on every voice turn — the exact bug that silently broke voice-to-voice.
+  if (CONFIG.customLlm.apiKeyValue.length < 32) {
+    fail(
+      "CUSTOM_LLM_KEY is missing or shorter than 32 characters.\n" +
+        "The production /api/agent-llm route rejects every request when the key\n" +
+        "is too short. Set a strong key (>= 32 chars) in .env.local AND in the\n" +
+        "Vercel production env, then run:\n" +
+        "  npx tsx --env-file=.env.local scripts/setup-elevenlabs-agent.ts",
     );
   }
 
