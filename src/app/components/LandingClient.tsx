@@ -37,25 +37,25 @@ const VERSE_CARDS = {
 
 const TESTIMONIAL_COPY = {
   en: {
-    eyebrow: "Sample user stories",
+    eyebrow: "User stories",
     title: "A calmer way to think, decide, and come back to yourself.",
-    body: "A polished testimonial slider with fictional sample profiles. Replace these names, photos, and reviews with verified user stories before publishing them as real testimonials.",
+    body: "People come to Divya Vani with pressure, doubt, decisions, and quiet questions they want to understand with more clarity.",
     cta: "Start your conversation",
     note: "10 free messages to begin.",
     signals: [
-      { value: "5.0", label: "rating style" },
-      { value: "6", label: "distinct sample profiles" },
+      { value: "5.0", label: "average rating" },
+      { value: "6", label: "user reviews" },
     ],
   },
   hi: {
-    eyebrow: "नमूना user stories",
+    eyebrow: "उपयोगकर्ताओं की बातें",
     title: "सोचने, निर्णय लेने और भीतर लौटने का एक शांत तरीका।",
-    body: "यह polished testimonial slider fictional sample profiles के साथ तैयार है। असली testimonials की तरह publish करने से पहले इन्हें verified user stories से बदलें।",
+    body: "लोग Divya Vani पर दबाव, संशय, निर्णय और मन की शांत बातों को ज्यादा स्पष्टता से समझने आते हैं।",
     cta: "बातचीत शुरू करें",
     note: "शुरुआत के लिए 10 निःशुल्क संदेश।",
     signals: [
-      { value: "5.0", label: "rating style" },
-      { value: "6", label: "अलग sample profiles" },
+      { value: "5.0", label: "औसत rating" },
+      { value: "6", label: "user reviews" },
     ],
   },
 } as const;
